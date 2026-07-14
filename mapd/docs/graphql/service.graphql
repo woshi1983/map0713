@@ -1,0 +1,83 @@
+type Service {
+  name: String!
+  namespace: String!
+  labels: Map
+  spec: ServiceSpec!
+  status: ServiceStatus!
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Service(cluster: ID!, namespace: String!, name: String!): Service!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `spec.port.protocol`
+
+  - `spec.type` 
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Services(filters: [QueryFilter!] = []): [Service!]
+}
+
+type ServiceSpec {
+  selector: Map
+  clusterIP: String             
+	externalTrafficPolicy: String
+	ports: [ServiceSpecPort!]
+	sessionAffinity: String
+	type: String
+}
+
+type ServiceSpecPort {
+	name: String
+	nodePort: Int
+	port: Int
+	protocol: String
+	targetPort: IntOrString
+}
+
+type ServiceStatus {
+  ingress: [ServiceStatusIngress!]
+}
+
+type ServiceStatusIngress {
+  ip: IP!
+}
+
+input CreateServiceSpec {
+	ports: [AddServiceSpecPort!]
+  type: String = "ClusterIP"
+}
+
+input AddServiceSpecPort {
+  """name will be auto-generated to 'protocol-port' formation if it is omitted.
+  """
+  name: String
+  port: Int!
+  protocol: String = "TCP"
+	targetPort: IntOrString!
+}

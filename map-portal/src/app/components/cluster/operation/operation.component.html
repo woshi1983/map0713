@@ -1,0 +1,933 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'OPERATION.ALLOPERATIONS' | translate }}</span>
+    <clr-signpost>
+      <clr-signpost-content *clrIfOpen [clrPosition]="'right-bottom'" style="width: 800px;outline: none;">
+          <h3>{{ 'OPERATION.OPERATIONALERT-TITLE' | translate }}</h3>
+          <div style="font-size: 12px;">{{ 'OPERATION.OPERATIONALERT-NOTE1' | translate }}</div>
+          <div style="font-size: 12px;">{{ 'OPERATION.OPERATIONALERT-NOTE2' | translate }}</div>
+          <div style="font-size: 12px;">{{ 'OPERATION.OPERATIONALERT-NOTE3' | translate }}</div>
+          <div style="font-size: 12px;">{{ 'OPERATION.OPERATIONALERT-NOTE4' | translate }}</div>
+          <div style="font-size: 12px;">{{ 'OPERATION.OPERATIONALERT-NOTE5' | translate }}</div>
+      </clr-signpost-content>
+    </clr-signpost>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWrite">
+      <button (click)="showCreateOperator()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'OPERATION.ADDOPERATION' | translate }}
+      </button>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="serviceType" placeholder="{{ 'OPERATION.SEARCH' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-divider"></div>
+
+  <clr-spinner style="margin-left: 50%;margin-top: 8%;" *ngIf="loading">Loading ...</clr-spinner>
+  <div *ngIf="!loading">
+    <div class="chart-container mt-0">
+      <div class="clr-col-md-3" *ngIf="allExtension.length === 0">
+        <div class="card">
+            <div class="card-header CardTitle">
+              <div class="info-card-header clr-col-sm-12">
+                <span class="card-title">{{ 'OPERATION.VIEWPAGE.NOOPERATION' | translate }}</span>
+              </div>
+            </div>
+            <div class="custom-card-block">
+              <div class="info-card-block">
+                <div class="none-bg-img">
+                  <img src="{{backgroupImage}}" alt="bg-img">
+                </div>
+              </div>
+            </div>
+          <footer class="card-footer">
+              <div class="clr-row">
+                <div class="custom-card-footer">
+                  <div class="custom-card-footer-col1">
+                    <button class="btn btn-sm btn-link" type="button" disabled>
+                      None
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </footer>
+        </div>
+      </div>
+      <div class="clr-col-md-3" *ngFor="let extension of allExtension">
+        <div class="card clickable">
+          <a [href]="(extension.state === 'ENABLED' && !!extension.endpoints) ? (extension?.endpoints[0]) : null" target="_blank" [class.disabled]="extension.state === 'ENABLED' ? null : true" >
+            <div class="card-header CardTitle">
+              <div class="info-card-header clr-col-sm-12">
+                <span class="card-title">{{ extension.cluster.name }}</span>
+              </div>
+            </div>
+            <div class="custom-card-block">
+              <div class="info-card-block">
+                <div class="custom-card-icon">
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/octant.png" alt="icon" *ngIf="extension.name === 'OCTANT'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'OCTANT'"> {{ 'OPERATION.VIEWPAGE.OCTANT' | translate }} </span>
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/prometheus.png" alt="icon" *ngIf="extension.name === 'PROMETHEUS'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'PROMETHEUS'"> {{ 'OPERATION.VIEWPAGE.PROMETHEUS' | translate }} </span>
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/grafana.png" alt="icon" *ngIf="extension.name === 'GRAFANA'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'GRAFANA'"> {{ 'OPERATION.VIEWPAGE.GRAFANA' | translate }} </span>
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/kibana.png" alt="icon" *ngIf="extension.name === 'ELASTICSEARCH'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'ELASTICSEARCH'"> {{ 'OPERATION.VIEWPAGE.LOGGING' | translate }} </span>
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/fluent-bit.png" alt="icon" *ngIf="extension.name === 'FLUENTBIT'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'FLUENTBIT'"> {{ 'OPERATION.VIEWPAGE.FLUENTBIT' | translate }} </span>
+                    <img style="width: 3vw; max-height: 3vw" src="{{imagePath}}/default-svc.png" alt="icon" *ngIf="extension.name === 'OTHER'">
+                    <span style="margin-left: 5px;font-size: 0.7vw;" *ngIf="extension.name === 'OTHER'"> {{extension.cluster.description}} </span>
+                </div>
+                <div class="card-description-wrapper" *ngIf="extension.name === 'OCTANT' || extension.name === 'GRAFANA' || extension.name === 'FLUENTBIT'">
+                  <div class="card-description">
+                    <span *ngIf="extension.name === 'OCTANT'" style="font-size: 0.7vw;">{{ 'OPERATION.VIEWPAGE.MANAGED-CLUSTER' | translate }}</span>
+                    <span *ngIf="extension.name === 'GRAFANA' || extension.name === 'FLUENTBIT'" style="font-size: 0.7vw;">{{ 'OPERATION.VIEWPAGE.LINKED-CLUSTER' | translate }}</span>
+                    <span *ngFor="let node of extension.related?.edge?.nodes;let i = index;">
+                      <span *ngIf="i === 0" style="font-size: 0.7vw;">{{node.name}}</span>
+                      <span *ngIf="i !== 0" style="font-size: 0.7vw;">, {{node.name}}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+          <footer class="card-footer">
+            <div class="clr-row">
+              <div class="custom-card-footer">
+                <div class="custom-card-footer-col1">
+                  <button class="btn btn-sm btn-link" type="button" (click)="showExtensionService(extension)" *ngIf="extension.name != 'FLUENTBIT'">
+                    <clr-icon shape="eye"></clr-icon>
+                    {{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.VIEW' | translate }}
+                  </button>
+                  <button class="btn btn-sm btn-link" type="button" (click)="showEditExtensionService(extension)" [disabled]="!canWrite">
+                    <clr-icon shape="pencil"></clr-icon>
+                    {{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.EDIT' | translate }}
+                  </button>
+                  <button class="btn btn-sm btn-link" type="button" (click)="showRemoveOperationService(extension)" [disabled]="!canWrite">
+                    <clr-icon shape="trash"></clr-icon>
+                    {{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.DELETE' | translate }}
+                  </button>
+                </div>
+                <div class="none-card-footer-col2">
+                  <div class="footer-tags">
+                    <span class="label" [ngClass]="{'label-success': extension.state === 'ENABLED', 'label-info': (extension.state === 'ENABLING' && extension.status != 'FAILED') || (extension.state === 'DISABLING' && extension.status != 'FAILED'), 'label-danger': extension.state === 'UNKNOWN' || extension.status === 'FAILED'}">
+                      <span *ngIf="extension.state === 'ENABLED'">{{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.READY' | translate }}</span>
+                      <span *ngIf="extension.state === 'ENABLING' && extension.status != 'FAILED'">{{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.COMFIGING' | translate }}</span>
+                      <span *ngIf="extension.state === 'DISABLING' && extension.status != 'FAILED'">{{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.DELETING' | translate }}</span>
+                      <span *ngIf="extension.status=== 'FAILED'">{{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.FAILED' | translate }}</span>
+                      <span *ngIf="extension.state === 'UNKNOWN'">{{ 'OPERATION.VIEWPAGE.FOOTER-ACTIONS.UNKNOWN' | translate }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<clr-wizard #wizardoperation [(clrWizardOpen)]="addOperationOpen" (clrWizardOnFinish)="doOperationFinish()" (clrWizardOnCancel)="doOperationCancel()" clrWizardSize="xl">
+    <clr-wizard-title>{{ 'OPERATION.ADDOPERATION' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="!serviceType">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE1.PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE1.PAGEALERT' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE1.PAGEDESC' | translate }}
+        <br>
+        <br>
+        <div class="clr-row">
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'OCTANT'}" (click)="setServiceType('OCTANT')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.OCTANTTIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/octant.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Octant </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.OCTANTDESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'PROMETHEUS'}" (click)="setServiceType('PROMETHEUS')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.PROMETHEUSTIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/prometheus.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Prometheus Stack </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.PROMETHEUSDESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'GRAFANA'}" (click)="setServiceType('GRAFANA')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.GRAFANATIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/grafana.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Grafana </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.GRAFANADESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'ELASTICSEARCH'}" (click)="setServiceType('ELASTICSEARCH')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.LOGGINGTIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/kibana.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Logging Stack </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.LOGGINGDESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'FLUENTBIT'}" (click)="setServiceType('FLUENTBIT')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.FLUENTBITTIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/fluent-bit.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Fluent Bit </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.FLUENTBITDESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+          <div class="clr-col-lg-4">
+            <a role="none" class="card clickable" [ngClass]="{'card-selected' : serviceType === 'OTHER'}" (click)="setServiceType('OTHER')">
+              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left" style="margin-left: 90%;">
+                <cds-icon shape="info-circle" size="md"></cds-icon>
+                <span class="tooltip-content" style="font-size: 12px;">{{ 'OPERATION.ADDOPERATION-PAGE1.OTHERTIPS' | translate }}</span>
+              </a>
+              <div class="card-block" style="text-align: center;margin-top: -25px;">
+                <div class="card-icon">
+                  <img style="width: 72px; height: 72px" src="{{imagePath}}/default-svc.png" class="card-icon" alt="icon">
+                </div>
+                <p class="card-title"> Other </p>
+                <p class="card-text"> {{ 'OPERATION.ADDOPERATION-PAGE1.OTHERDESC' | translate }} </p>
+              </div>
+            </a>
+          </div>
+        </div>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="octantParamForm.invalid" *ngIf="serviceType === 'OCTANT'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-danger alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="octantParamForm">
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-CLUSTER-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.CLUSTER' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="cluster" required>
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-CLUSTER-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-combobox-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-MANAGED-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-MGNAGED' | translate }}</label>
+              <clr-combobox name="sharedCluster" clrMulti="true" formControlName="sharedCluster">
+                <ng-container *clrOptionSelected="let selected">
+                  <clr-icon shape="cluster" role="img"></clr-icon> {{selected.name}}
+                </ng-container>
+                <clr-options>
+                  <clr-option *clrOptionItems="let cluster of sharedClusterList; field: 'name'" [clrValue]="cluster">
+                    <clr-icon shape="cluster" role="img"></clr-icon> {{cluster.name}}
+                  </clr-option>
+                </clr-options>
+              </clr-combobox>
+            </clr-combobox-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="prometheusParamForm.invalid" *ngIf="serviceType === 'PROMETHEUS'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="prometheusParamForm">
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-CLUSTER-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.CLUSTER' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="cluster" required>
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-CLUSTER-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="storage" #stepInput type="number" min=20/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="grafanaParamForm.invalid || !checkPasswdValidation(grafanaParamForm.value.password, grafanaParamForm.value.confirmPassword)" *ngIf="serviceType === 'GRAFANA'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="grafanaParamForm">
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-CLUSTER-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.CLUSTER' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="cluster" required>
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-CLUSTER-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-password-container>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PASSWD' | translate }}</label>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PASSWD-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-10" name="password" clrPassword formControlName="password" type="string"/>
+            </clr-password-container>
+            <clr-password-container>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-CONFIRM' | translate }}</label>
+              <clr-control-helper *ngIf="checkPasswdValidation(grafanaParamForm.value.password, grafanaParamForm.value.confirmPassword)">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-CONFIRM-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-10" name="confirmPassword" clrPassword formControlName="confirmPassword" type="string"/>
+              <clr-control-helper *ngIf="!checkPasswdValidation(grafanaParamForm.value.password, grafanaParamForm.value.confirmPassword)" style="color: #c21d00">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-CONFIRM-ERROR' | translate }}</clr-control-helper>
+            </clr-password-container>
+            <clr-combobox-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED' | translate }}</label>
+              <clr-combobox class="clr-col-md-10" name="prometheusCluster" clrMulti="true" formControlName="prometheusCluster">
+                <ng-container *clrOptionSelected="let selected">
+                  <clr-icon shape="cluster" role="img"></clr-icon> {{selected.name}}
+                </ng-container>
+                <clr-options>
+                  <clr-option *clrOptionItems="let cluster of extensionEnabledClusters; field: 'name'" [clrValue]="cluster">
+                    <clr-icon shape="cluster" role="img"></clr-icon> {{cluster.name}}
+                  </clr-option>
+                </clr-options>
+              </clr-combobox>
+            </clr-combobox-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="esParamForm.invalid" *ngIf="serviceType === 'ELASTICSEARCH'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-danger alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="esParamForm">
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-CLUSTER-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.CLUSTER' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="cluster" required>
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-CLUSTER-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="esDataNodeCount" #stepInput type="number"/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="esRequestCPU" #stepInput type="number"/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="esRequestMEM" #stepInput type="number"/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="esDataVolume" #stepInput type="number"/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN' | translate }}</label>
+              <input class="clr-col-md-10" clrInput formControlName="esLogsRetainDays" #stepInput type="number"/>
+              <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="fluentbitParamForm.invalid" *ngIf="serviceType === 'FLUENTBIT'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-danger alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="fluentbitParamForm">
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-CLUSTER-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.CLUSTER' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="cluster" required>
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-CLUSTER-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-LINKED-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-LINKED' | translate }}</label>
+              <select class="clr-col-md-10" clrSelect formControlName="esCluster">
+                <option value="{{cluster.id}}" *ngFor="let cluster of extensionEnabledClusters">{{cluster.name}}</option>
+              </select>
+            </clr-select-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-4">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-AUDITLOG' | translate }}</label>
+                <input  type="checkbox" clrToggle [checked]="fluentbitParamForm.value.enableAudit" formControlName="enableAudit"  name="enableAudit"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-AUDITLOG-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="otherParamForm.invalid" *ngIf="serviceType === 'OTHER'">
+        <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-PAGETITLE' | translate }}</ng-template>
+        {{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="otherParamForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME' | translate }}</label>
+            <input clrInput class="clr-col-md-10" name="name" formControlName="name" type="string" required />
+            <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR3' | translate }} {{restricNamePattern}} </clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{otherParamForm.value.name}}{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR4' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-textarea-container>
+            <label class="clr-col-md-2">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+            <textarea class="clr-col-md-10" clrTextarea formControlName="description" type="string"></textarea>
+          </clr-textarea-container>
+          <clr-input-container>
+            <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS' | translate }}</label>
+            <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-HELP' | translate }}</clr-control-helper>
+            <input class="clr-col-md-10" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1"/>
+            <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-ERROR12' | translate }} {{broadEndpointPattern}}</clr-control-error>
+          </clr-input-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'OPERATION.ADDOPERATION-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'OPERATION.ADDOPERATION-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'OPERATION.ADDOPERATION-PAGE3.OPERATION-PARAMS' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.TYPE' | translate }}</span>
+                    <span>{{serviceType}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'OCTANT'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionDisableClusters">
+                      <span *ngIf="cluster.id === octantParamForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="serviceType === 'OCTANT'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.MANAGED' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of octantParamForm.value.sharedCluster; let i = index;">
+                      <span *ngIf="i === 0">{{cluster.name}}</span>
+                      <span *ngIf="i !== 0">, {{cluster.name}}</span>
+                    </div>
+                    <span *ngIf="!octantParamForm.value.sharedCluster">{{ 'OPERATION.ADDOPERATION-PAGE3.NONE' | translate }}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'PROMETHEUS'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionDisableClusters">
+                      <span *ngIf="cluster.id === prometheusParamForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="serviceType === 'PROMETHEUS'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.STORAGE' | translate }}</span>
+                    <span>{{prometheusParamForm.value.storage}} Gi</span>
+                  </div>
+                  <div *ngIf="serviceType === 'GRAFANA'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionDisableClusters">
+                      <span *ngIf="cluster.id === grafanaParamForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="serviceType === 'GRAFANA'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.LINDED' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of grafanaParamForm.value.prometheusCluster; let i = index;">
+                      <span *ngIf="i === 0">{{cluster.name}}</span>
+                      <span *ngIf="i !== 0">, {{cluster.name}}</span>
+                    </div>
+                    <span *ngIf="!grafanaParamForm.value.prometheusCluster">无</span>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionDisableClusters">
+                      <span *ngIf="cluster.id === esParamForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.DATANODE-COUNT' | translate }}</span>
+                    <span>{{esParamForm.value.esDataNodeCount}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.DATANODE-CPU' | translate }}</span>
+                    <span>{{esParamForm.value.esRequestCPU}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.DATANODE-MEM' | translate }}</span>
+                    <span>{{esParamForm.value.esRequestMEM}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.DATANODE-STORAGE' | translate }}</span>
+                    <span>{{esParamForm.value.esDataVolume}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'ELASTICSEARCH'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.DATANODE-DAYS' | translate }}</span>
+                    <span>{{esParamForm.value.esLogsRetainDays}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'FLUENTBIT'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionDisableClusters">
+                      <span *ngIf="cluster.id === fluentbitParamForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="serviceType === 'FLUENTBIT'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.LINDED' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of extensionEnabledClusters">
+                      <span *ngIf="!!cluster.id && cluster.id === fluentbitParamForm.value.esCluster">{{cluster.name}}</span>
+                    </div>
+                    <span *ngIf="!fluentbitParamForm.value.esCluster">{{ 'OPERATION.ADDOPERATION-PAGE3.NONE' | translate }}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'FLUENTBIT'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.AUDITLOGS' | translate }}</span>
+                    <span>{{fluentbitParamForm.value.enableAudit}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'OTHER'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.SVCNAME' | translate }}</span>
+                    <span>{{otherParamForm.value.name}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'OTHER'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.SVCDESC' | translate }}</span>
+                    <span>{{otherParamForm.value.description}}</span>
+                  </div>
+                  <div *ngIf="serviceType === 'OTHER'">
+                    <span class="validateTitle">{{ 'OPERATION.ADDOPERATION-PAGE3.SVCADDRESS' | translate }}</span>
+                    <span>{{otherParamForm.value.endpoint}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showExtensionOpen" [clrModalClosable]="false">
+  <h3 class="modal-title">{{selectedClusterName}}{{ 'OPERATION.VIEW.INFO' | translate }}</h3>
+  <div class="modal-body">
+    <div>
+      <b>{{ 'OPERATION.VIEW.ACCESS' | translate }}</b>
+      <b style="color: #0072a3" *ngIf="!selectedExtension?.endpoints">{{ 'OPERATION.ADDOPERATION-PAGE3.NONE' | translate }}</b>
+      <div *ngIf="!!selectedExtension?.endpoints" style="margin-left: 10px;">
+        <ul>
+          <div *ngFor="let ep of selectedExtension?.endpoints">
+          <li><b style="color: #0072a3">{{ep}}</b></li>
+        </div>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showExtensionrReset();">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditOctant" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.MANAGED' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateOctantRelatedForm">
+      <clr-combobox-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-MANAGED-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OCTANT-MGNAGED' | translate }}</label>
+        <clr-combobox name="sharedCluster" clrMulti="true" formControlName="sharedCluster">
+          <ng-container *clrOptionSelected="let selected">
+            <clr-icon shape="cluster" role="img"></clr-icon> {{selected.name}}
+          </ng-container>
+          <clr-options>
+            <clr-option *clrOptionItems="let cluster of sharedClusterList; field: 'name'" [clrValue]="cluster">
+              <clr-icon shape="cluster" role="img"></clr-icon> {{cluster.name}}
+            </clr-option>
+          </clr-options>
+        </clr-combobox>
+      </clr-combobox-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateOctantReset();showEditOctant = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateOctantRelated();updateOctantRelatedForm.reset()" [disabled]="updateOctantRelatedForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditGrafana" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.LINKED' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateGrafanaRelatedForm">
+      <clr-combobox-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED' | translate }}</label>
+        <clr-combobox name="prometheusCluster" clrMulti="true" formControlName="prometheusCluster">
+          <ng-container *clrOptionSelected="let selected">
+            <clr-icon shape="cluster" role="img"></clr-icon> {{selected.name}}
+          </ng-container>
+          <clr-options>
+            <clr-option *clrOptionItems="let cluster of extensionEnabledClusters; field: 'name'" [clrValue]="cluster">
+              <clr-icon shape="cluster" role="img"></clr-icon> {{cluster.name}}
+            </clr-option>
+          </clr-options>
+        </clr-combobox>
+      </clr-combobox-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateGrafanaReset();showEditGrafana = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateGrafanaRelated();updateGrafanaRelatedForm.reset()" [disabled]="updateGrafanaRelatedForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditPrometheus" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'OPERATION.UPDATE.ADD' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.ADDSTORAGE' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-info" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'OPERATION.UPDATE.STORAGEDESC' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <form clrForm [formGroup]="updatePrometheusParamForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="storage" #stepInput type="number" min=20/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.PROMETHEUS-STORAGE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdatePrometheusReset();showEditPrometheus = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdatePrometheusStorage();updatePrometheusParamForm.reset()" [disabled]="updatePrometheusParamForm.invalid || currentPrometheusStorage >= updatePrometheusParamForm.value.storage">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditElasticsearch" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.PARAM' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-info" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'OPERATION.UPDATE.ESPARAM-ALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <form clrForm [formGroup]="updateESParamForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="esDataNodeCount" #stepInput type="number"/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-COUNT-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="esRequestCPU" #stepInput type="number"/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-CPU-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="esRequestMEM" #stepInput type="number"/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-MEM-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="esDataVolume" #stepInput type="number" disabled/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATANODE-STORAGE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="esLogsRetainDays" #stepInput type="number"/>
+        <clr-control-error *clrIfError="'min'">{{ 'OPERATION.ADDOPERATION-PAGE2.LOGGING-DATARETAIN-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateElasticsearchReset();showEditElasticsearch = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateElasticsearchParams();updateESParamForm.reset()" [disabled]="updateESParamForm.invalid || currentElasticsearchStorage > updateESParamForm.value.esDataVolume">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditFluentbit" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.PARAM' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateFluentbitParamForm">
+      <clr-select-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-LINKED-HELP' | translate }}</clr-control-helper>
+        <label>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-LINKED' | translate }}</label>
+        <select clrSelect formControlName="esCluster">
+          <option value="{{cluster.id}}" *ngFor="let cluster of extensionEnabledClusters">{{cluster.name}}</option>
+        </select>
+      </clr-select-container>
+      <clr-toggle-container>
+        <clr-toggle-wrapper>
+          <label>{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-AUDITLOG' | translate }}</label>
+          <input  type="checkbox" clrToggle [checked]="updateFluentbitParamForm.value.enableAudit" formControlName="enableAudit"  name="enableAudit"/>
+        </clr-toggle-wrapper>
+        <clr-control-helper style="min-width: 120%;">{{ 'OPERATION.ADDOPERATION-PAGE2.FLUENTBIT-AUDITLOG-HELP' | translate }}</clr-control-helper>
+      </clr-toggle-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateFluentbitReset();showEditFluentbit = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateFluentbitParams();updateFluentbitParamForm.reset()" [disabled]="updateFluentbitParamForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEditOtherService" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}{{selectedClusterName}}{{ 'OPERATION.UPDATE.PARAM' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateOtherParamForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME' | translate }}</label>
+        <input clrInput class="clr-col-md-10" name="name" formControlName="name" type="string" required disabled/>
+        <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR3' | translate }} {{restricNamePattern}} 。</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{otherParamForm.value.name}}{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCNAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-DESC' | translate }}</label>
+        <textarea class="clr-col-md-10" clrTextarea formControlName="description" type="string"></textarea>
+      </clr-textarea-container>
+      <clr-input-container>
+        <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS' | translate }}</label>
+        <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-10" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1"/>
+        <clr-control-error *clrIfError="'required'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'OPERATION.ADDOPERATION-PAGE2.OTHER-SVCADDRESS-ERROR2' | translate }} {{broadEndpointPattern}}。</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateOtherServiceReset();showEditOtherService = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateOtherServiceParams();updateOtherParamForm.reset()" [disabled]="updateOtherParamForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'OPERATION.DELETE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-warning alert-sm" role="alert" *ngIf="selectedExtensionName === 'ELASTICSEARCH'">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'OPERATION.DELETE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <p>{{ 'OPERATION.DELETE.PAGEDESC' | translate }} <b>{{selectedClusterName}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteOperationForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedClusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog = false;deleteOperationReset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteOperationById();" [disabled]="deleteOperationForm.invalid || deleteOperationForm.value.confirm !== selectedClusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+

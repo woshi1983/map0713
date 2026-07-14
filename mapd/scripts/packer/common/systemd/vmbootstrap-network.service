@@ -1,0 +1,14 @@
+[Unit]
+Description=VMware Network Bootstrap Script
+Requires=vmbootstrap-base.service NetworkManager.service
+After=vmbootstrap-base.service NetworkManager.service
+Before=network.target network.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/vmbootstrap --networking --security
+RemainAfterExit=true
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,205 @@
+type LoadBalancer {
+  id: ID!
+  name: String!
+  description: String!
+  type: LoadBalancerType!
+  endpoint: URL!
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  tlsCertChain: [X509Certificate!]
+  authUser: String
+  spec: LoadBalancerSpec
+  status: LoadBalancerStatus
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type LoadBalancers {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: LoadBalancerNodes!
+}
+
+extend type Query {
+  """
+  requires `read:load_balancer` or above.
+  """
+  LoadBalancer(id: ID!): LoadBalancer!
+  """
+  requires `read:load_balancer` or above.
+
+  Filters:
+
+  - `name`
+
+  - `organization`
+  """
+  LoadBalancers(page: QueryPage = {}, filters: [QueryFilter!] = []): LoadBalancers!
+}
+
+extend type Mutation {
+  """
+  requires `write:load_balancer` or above.
+  """
+  CreateLoadBalancer(input: CreateLoadBalancer!): LoadBalancer!
+  """
+  requires `write:load_balancer` or above.
+  """
+  UpdateLoadBalancer(input: UpdateLoadBalancer!): LoadBalancer!
+  """
+  requires `modify:load_balancer` or above.
+  """
+  DeleteLoadBalancer(input: DeleteLoadBalancer!): LoadBalancer!
+}
+
+type LoadBalancerNodes {
+  nodes: [LoadBalancer!]
+}
+
+enum LoadBalancerType {
+  UNKNOWN
+  AVI
+  EXTERNAL
+}
+
+union LoadBalancerSpec = AviLoadBalancerSpec
+
+type AviLoadBalancerSpec {
+  _loadBalancer: ID!
+  seGroup: String
+  licenseTier: String
+  preferredNetwork: String
+}
+
+union LoadBalancerStatus = AviLoadBalancerStatus
+
+type AviLoadBalancerStatus {
+  _id: ID!
+  """
+  Filters:
+
+  - `name`
+  """
+  clouds(filters: [QueryFilter!] = []): [AviCloud!]
+  """
+  Filters:
+
+  - `name`
+
+  - `protocol`: `TCP` or `UDP`
+  """
+  networkProfiles(filters: [QueryFilter!] = []): [AviNetworkProfile!]
+  """
+  Filters:
+
+  - `name`
+
+  - `cloud`
+  """
+  networks(filters: [QueryFilter!] = []): [AviNetwork!]
+  """
+  Filters:
+
+  - `name`
+
+  - `cloud`
+  """
+  vsVips(filters: [QueryFilter!] = []): [AviVsVIP!]
+}
+
+type AviCloud {
+  _loadBalancer: ID!
+  id: String!
+  name: String!
+  vtype: String!
+}
+
+type AviNetworkProfile {
+  _loadBalancer: ID!
+  id: String!
+  name: String!
+}
+
+type AviNetwork {
+  _loadBalancer: ID!
+  id: String!
+  name: String!
+  subnets: [AviSubnet!]
+}
+
+type AviSubnet {
+  cidr: CIDR!
+  staticIPRanges: [AviSubnetIPRange!]
+}
+
+type AviSubnetIPRange {
+  begin: IP
+  end: IP
+}
+
+type AviVsVIP {
+  _loadBalancer: ID!
+  id: String!
+  name: String!
+  vips: [AviVIP!]
+}
+
+type AviVIP {
+  ip: IP
+  subnet: CIDR!
+}
+
+input CreateLoadBalancer {
+  name: String!
+  description: String
+  type: LoadBalancerType
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  """user credential is generally required for all
+  load balancers except external ones.
+  """
+  authUser: String
+  authPassword: String
+  spec: CreateLoadBalancerSpec
+  organization: ID!
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input CreateLoadBalancerSpec {
+  avi: CreateAVILoadBalancerSpec
+}
+
+input CreateAVILoadBalancerSpec {
+  preferredNetwork: String
+  seGroup: String = "Default-Group"
+}
+
+input UpdateLoadBalancer {
+  id: ID!
+  name: String
+  description: String
+  endpoint: URL
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String
+  authPassword: String
+  spec: UpdateLoadBalancerSpec
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateLoadBalancerSpec {
+  avi: UpdateAVILoadBalancerSpec
+}
+
+input UpdateAVILoadBalancerSpec {
+  preferredNetwork: String
+}
+
+input DeleteLoadBalancer {
+  id: ID!
+}

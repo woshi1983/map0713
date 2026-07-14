@@ -1,0 +1,384 @@
+<div *ngIf="authService.isLoggedIn">
+
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPVOLUME.CM.ALL_CM' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateConfigmap()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.CM.CREATE_CM' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+            <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-cm' type="button" [disabled]="!selectedConfigmap" (click)="showUpdateConfigmap(selectedConfigmap)" clrDropdownItem>{{ 'APPVOLUME.CM.ACTION.EDITCM' | translate }}</button>
+            <button id='delete-cm' type="button" (click)="showRemoveDialog(selectedConfigmap)" [disabled]="!selectedConfigmap" clrDropdownItem>{{ 'APPVOLUME.CM.ACTION.DELETECM' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="cmname" placeholder="{{ 'APPVOLUME.CM.SEARCHCM' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedConfigmap" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.CM.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'cluster.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.CM.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'namespace'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.CM.DATAGRIDFIELD.NAMESPACE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'component.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.CM.DATAGRIDFIELD.COMPONENT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'application.name'">
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'APPVOLUME.CM.DATAGRIDFIELD.APP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPVOLUME.CM.DATAGRIDFIELD.NOCM' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let cm of allConfigmap" [clrDgItem]="cm" [clrDgSelectable]="checkCanEditable(cm.labels)">
+      <clr-dg-cell class="datagrid-long-text">{{cm.name}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{cm.cluster.name}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{cm.namespace}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!cm.component ? cm.component.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!cm.application ? cm.application.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{cm.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{cm.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20" [clrDgTotalItems]="allConfigmap.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+</div>
+
+<clr-wizard #wizardconfigmap [(clrWizardOpen)]="createConfigmapOpen" (clrWizardOnFinish)="doCreateConfigmapFinish()"
+  (clrWizardOnCancel)="doCreateConfigmapCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPVOLUME.CM.CREATE_CM' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicComfigmapForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPVOLUME.CM.CREATECM-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.CM.CREATECM-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicComfigmapForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-10" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicComfigmapForm.value.name}}{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.CM.CREATECM-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'APPVOLUME.CM.CREATECM-PAGE1.CLUSTER' | translate }}</label>
+        <select class="clr-col-md-10" clrSelect formControlName="cluster" required (change)="getAllNamespaces($event)">
+          <option value="{{cluster.id}}" *ngFor="let cluster of clusterList">{{cluster.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper *ngIf="!showNoNonDefaultNamespaceAlert">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAMESPACE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAMESPACE' | translate }}</label>
+        <select class="clr-col-md-10" clrSelect formControlName="namespace" required>
+          <option value="{{ns.name}}" *ngFor="let ns of namespaceList">{{ns.name}}</option>
+        </select>
+        <clr-control-helper style="color: #c21d00" *ngIf="showNoNonDefaultNamespaceAlert">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAMESPACE-ERROR2' | translate }}</clr-control-helper>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE1.NAMESPACE-ERROR1' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="dataForm.invalid || !dataForm.value.cmData">
+    <ng-template clrPageTitle>{{ 'APPVOLUME.CM.CREATECM-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.CM.CREATECM-PAGE2.PAGEDESC' | translate }}
+    <br>
+    <form clrForm [formGroup]="dataForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                    <div class="card-text">
+                        <div class="card-text" formArrayName="cmData">
+                          <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                            <clr-input-container>
+                              <label style="min-width: 100%;">{{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDDATALABEL' | translate }}</label>
+                              <clr-control-helper>{{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDDATALABEL-HELP' | translate }}</clr-control-helper>
+                            </clr-input-container>
+                          </div>
+                          <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!dataList.controls?.length" fxHide>
+                            <clr-input-container>
+                              <label style="min-width: 96px;">{{ 'APPVOLUME.CM.CREATECM-PAGE2.KEY' | translate }}</label>
+                            </clr-input-container>
+                            <clr-input-container>
+                              <label style="min-width: 96px;">{{ 'APPVOLUME.CM.CREATECM-PAGE2.VALUE' | translate }}</label>
+                            </clr-input-container>
+                          </div>
+                          <div class="section" *ngFor="let each of dataList.controls; let i = index" [formGroupName]="i">
+                            <div fxLayout="row" fxLayoutAlign="start start">
+                              <clr-input-container>
+                                <label style="max-width: 0px; display: none"></label>
+                                <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                                autocomplete="off" required/>
+                                <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE2.KEY-HELP' | translate }}</clr-control-error>
+                              </clr-input-container>
+                              <clr-textarea-container style="margin-left: 8px;width: 200%;">
+                                <label style="max-width: 0px; display: none"></label>
+                                <textarea class="clr-col-md-12" fxFlex="1 1 auto" clrTextarea name="value" formControlName="value" type="string" style="height: 200px;font-size: 11px" required>
+                                </textarea>
+                                <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE2.VALUE-HELP' | translate }}</clr-control-error>
+                              </clr-textarea-container>
+                              <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteData(i)" fxLayout="row" fxLayoutAlign="start end">
+                                <clr-icon shape="minus-circle"></clr-icon>
+                              </button>
+                            </div>
+                          </div>
+                          <br>
+                          <button (click)="addKeyValueData()" class="btn btn-sm btn-outline">
+                            <clr-icon shape="plus"></clr-icon>
+                            {{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDKEYVALUE' | translate }}
+                          </button>
+                          <button (click)="showAddFileData()" class="btn btn-sm btn-outline">
+                            <clr-icon shape="plus"></clr-icon>
+                            {{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDFILE' | translate }}
+                          </button>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'APPVOLUME.CM.CREATECM-PAGE3.PAGETITLE' | translate }}</ng-template>
+        {{ 'APPVOLUME.CM.CREATECM-PAGE3.PAGEDESC' | translate }}
+        <br>
+
+    <div class="clr-row">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'APPVOLUME.CM.CREATECM-PAGE3.BASICINFO' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                <div>
+                  <span class="validateTitle">{{ 'APPVOLUME.CM.CREATECM-PAGE3.NAME' | translate }}</span>
+                  <span>{{basicComfigmapForm.value.name}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'APPVOLUME.CM.CREATECM-PAGE3.CLUSTER' | translate }}</span>
+                  <div style="display: inline" *ngFor="let cluster of clusterList">
+                    <span *ngIf="cluster.id === basicComfigmapForm.value.cluster">{{cluster.name}}</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'APPVOLUME.CM.CREATECM-PAGE3.NAMESPACE' | translate }}</span>
+                  <span>{{basicComfigmapForm.value.namespace}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="clr-row" *ngIf="!!dataList.controls">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'APPVOLUME.CM.CREATECM-PAGE3.DATAINFO' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                  <span class="validateTitle" style="min-width: 20%;">{{ 'APPVOLUME.CM.CREATECM-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'APPVOLUME.CM.CREATECM-PAGE3.VALUE' | translate }}</span>
+                  <div  style="margin-bottom: 10px;" *ngFor="let data of dataList.controls">
+                    <div style="display: inline">
+                      <span style="min-width: 20%;display: inline-block;" >{{data.value.key}}</span>
+                    </div>
+                    <div style="display: inline-block;max-width: 80%;">
+                      <span style="min-width: 80%;word-wrap: break-word;">{{data.value.value}}</span>
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+  </clr-wizard-page>
+
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="updateConfigmapOpen" [clrModalClosable]="false" clrModalSize="lg">
+  <h3 class="modal-title">{{ 'APPVOLUME.CM.ACTION.EDITCM' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.CM.ACTION.EDITCM-DESC' | translate }}</p>
+    <form clrForm [formGroup]="editDataForm">
+      <div class="card-text" formArrayName="cmData">
+        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!editDataList.controls?.length" fxHide>
+          <clr-input-container>
+            <label style="min-width: 96px;">{{ 'APPVOLUME.CM.CREATECM-PAGE2.KEY' | translate }}</label>
+          </clr-input-container>
+          <clr-input-container>
+            <label style="min-width: 96px;">{{ 'APPVOLUME.CM.CREATECM-PAGE2.VALUE' | translate }}</label>
+          </clr-input-container>
+        </div>
+        <div class="section" *ngFor="let each of editDataList.controls; let i = index" [formGroupName]="i">
+          <div fxLayout="row" fxLayoutAlign="start start">
+            <clr-input-container>
+              <label style="max-width: 0px; display: none"></label>
+              <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+              autocomplete="off" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE2.KEY-HELP' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container style="margin-left: 8px;width: 200%;">
+              <label style="max-width: 0px; display: none"></label>
+              <textarea class="clr-col-md-12" fxFlex="1 1 auto" clrTextarea name="value" formControlName="value" type="string" style="height: 200px;font-size: 11px" required>
+              </textarea>
+              <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.CM.CREATECM-PAGE2.VALUE-HELP' | translate }}</clr-control-error>
+            </clr-textarea-container>
+            <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditData(i)" fxLayout="row" fxLayoutAlign="start end">
+              <clr-icon shape="minus-circle"></clr-icon>
+            </button>
+          </div>
+        </div>
+        <br>
+        <button (click)="addEditData()" class="btn btn-sm btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDKEYVALUE' | translate }}
+        </button>
+        <button (click)="showAddEditFileData()" class="btn btn-sm btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.CM.CREATECM-PAGE2.ADDFILE' | translate }}
+        </button>
+      </div>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdateConfigmapCancel();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateConfigmapFinish();" [disabled]="editDataForm.invalid || !editDataForm.value.cmData">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showAddFile" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.SELECTFILE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.CM.FILEUPLOAD-DESC' | translate }}</p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-primary btn-outline" (click)="fileUpload.click()">
+          <span>{{ 'SHARED.SELECTFILE.BROWER' | translate }}</span>
+        <input type="file" #fileUpload id="fileUpload" name="fileUpload" (change)="getFileName()" style="display:none"/>
+        </button>
+      </div>
+      <label>{{filename ? filename : 'SHARED.SELECTFILE.NOFILE' | translate }}</label>
+    <br>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="fileUpload.value = null;cancelAddFile();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="addFileToData();" [disabled]="!fileUpload.value">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showAddEditFile" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'SHARED.SELECTFILE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.CM.FILEUPLOAD-DESC' | translate }}</p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-primary btn-outline" (click)="fileEditUpload.click()">
+          <span>{{ 'SHARED.SELECTFILE.BROWER' | translate }}</span>
+        <input type="file" #fileEditUpload id="fileEditUpload" name="fileEditUpload" (change)="getEditFileName()" style="display:none"/>
+        </button>
+      </div>
+      <label>{{editFilename ? editFilename : 'SHARED.SELECTFILE.NOFILE' | translate}}</label>
+    <br>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="fileEditUpload.value = null;cancelAddEditFile();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="addEditFileToData();" [disabled]="!fileEditUpload.value">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.CM.ACTION.DELETECM' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.CM.ACTION.DELETECM-DESC' | translate }} <b>{{selectedConfigmapName}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteConfigmapForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedConfigmapName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteConfigmapForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteConfigmapByName(selectedConfigmap);deleteConfigmapForm.reset()" [disabled]="deleteConfigmapForm.invalid || deleteConfigmapForm.value.confirm !== selectedConfigmapName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+

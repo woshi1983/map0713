@@ -1,0 +1,35 @@
+.title {
+  margin-left: 10px;
+}
+.nav-divider {
+    display: inline-block;
+    width: 1px;
+    height: 40px;
+    background-color: #fafafa;
+    position: relative;
+    top: 10px;
+    opacity: 0.15;
+    content: '';
+}
+
+.card-divider {
+  width: auto;
+  margin-top: .2rem;
+  margin-bottom: .2rem;
+  display: block;
+  border-bottom: 1px solid #eee;
+}
+
+.lang-selected {
+  font-weight: bold;
+  background-color: gainsboro;
+}
+
+a.disabled {
+   pointer-events: none;
+   cursor: default;
+}
+
+.eng-font {
+  font-size: 13.5px;
+}

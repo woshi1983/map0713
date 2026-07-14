@@ -1,0 +1,52 @@
+.refresh-btn {
+  cursor: pointer;
+}
+.refresh-btn:hover {
+  color: #007CBB;
+}
+
+.rightPos {
+  margin: 0 2rem 0 auto;
+  z-index: 100;
+}
+
+.capacity-entity01 {
+  border-width: 0 1px 0 0;
+  border-color: #cecece;
+  border-style: solid;
+}
+
+.capacity-entity02 {
+  border-width: 0 0 0 0;
+  border-color: #cecece;
+  border-style: solid;
+}
+
+.capacity-entity-content {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.capacity-entity-label {
+  margin-top: 0;
+  align-self: flex-start;
+}
+
+.capacity-entity-metrics-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.capacity-entity-free {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+
+
+
+

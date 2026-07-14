@@ -1,0 +1,303 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'USERMGMT.ALL-USERS' | translate }}</span>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="localUserDisabled">
+      <button (click)="showCreateUser()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'USERMGMT.NEWUSER' | translate }}
+      </button>
+    </div>
+    <div class="clr-form">
+      <button (click)="showSetSuperadmin()" class="btn btn-primary btn-outline" [disabled]="!selected">
+          <clr-icon shape="wrench"></clr-icon>
+          <span *ngIf="!selected || !selected?.admin"> {{ 'USERMGMT.ACTION.SETUP-SUPER' | translate }}</span>
+          <span *ngIf="!!selected && selected.admin"> {{ 'USERMGMT.ACTION.CANCEL-SUPER' | translate }}</span>
+      </button>
+    </div>
+    <div class="clr-form">
+      <clr-dropdown class="dropdown">
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button type="button" (click)="showResetUserPassword()" [disabled]="!selected || !selected.managed"
+              clrDropdownItem [fxHide]="localUserDisabled">{{ 'USERMGMT.ACTION.RESETPASSWORD' | translate }}</button>
+            <button type="button" (click)="showDeleteUser()" [disabled]="!selected"
+              clrDropdownItem>{{ 'USERMGMT.ACTION.DELETEUSER' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showSearch = !showSearch"></clr-icon>
+        </span>
+        <input type="text" id="username" placeholder="{{ 'USERMGMT.SEARCHUSER' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selected" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.EMAIL' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.ADMIN' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.LOCALUSER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column style="min-width: 15% !important;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.DISPLAYNAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'USERMGMT.DATAGRIDFIELD.PROJECT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'USERMGMT.DATAGRIDFIELD.NOUSER' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let user of usersList" [clrDgItem]="user" [clrDgSelectable]="user.name !== 'admin'">
+      <clr-dg-cell class="title-bold">{{user.name}}</clr-dg-cell>
+      <clr-dg-cell>{{user.email}}</clr-dg-cell>
+      <clr-dg-cell>{{ (user.admin ? 'SHARED.DATAGRID.YES' : 'SHARED.DATAGRID.NO') | translate }}</clr-dg-cell>
+      <clr-dg-cell>{{ (user.managed ? 'SHARED.DATAGRID.YES' : 'SHARED.DATAGRID.NO') | translate }}</clr-dg-cell>
+      <clr-dg-cell style="min-width: 15% !important;">{{user.displayName}}</clr-dg-cell>
+      <clr-dg-cell><a href="javascript:void(0)" class="nav-link" (click)="showUserRolebinding(user.roleBindings.edge.nodes)">{{ 'USERMGMT.DATAGRIDFIELD.VIEW' | translate }}</a></clr-dg-cell>
+      <clr-dg-cell>{{user.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{user.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizarduser [(clrWizardOpen)]="showCreateOpen" (clrWizardOnFinish)="doCreateUserFinsh()"
+  (clrWizardOnCancel)="doCreateUserCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'USERMGMT.NEWUSER' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicUserForm.invalid || !checkPasswdValidation(basicUserForm.value.password, basicUserForm.value.confirmPassword)">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'USERMGMT.NEWUSER-PAGE1.PAGETITLE' | translate }}</ng-template>
+    <div>{{ 'USERMGMT.NEWUSER-PAGE1.PAGEDESC' | translate }}</div>
+
+    <form clrForm [formGroup]="basicUserForm">
+      <div class="clr-row" style="margin-left: 0px;position: relative;">
+        <clr-input-container style="width: 100%;">
+          <label class="required clr-col-md-3">{{ 'USERMGMT.NEWUSER-PAGE1.NAME' | translate }}</label>
+          <clr-control-helper>{{ 'USERMGMT.NEWUSER-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+          <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required (input)="setDefaultDisplayName($event)"/>
+          <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.NEWUSER-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'maxlength'">{{ 'USERMGMT.NEWUSER-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'pattern'">{{ 'USERMGMT.NEWUSER-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+          <clr-control-error *clrIfError="'name'">{{basicUserForm.value.name}}{{ 'USERMGMT.NEWUSER-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container style="position: absolute;margin-left: 60%;">
+          <label style="font-size: .7rem;color: #8c8c8c">@tanzu.local</label>
+        </clr-input-container>
+      </div>
+      <clr-input-container>
+        <clr-control-helper>{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="displayName" formControlName="displayName" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-ERROR2' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-toggle-container>
+        <clr-toggle-wrapper>
+          <label>{{ 'USERMGMT.NEWUSER-PAGE1.RANDOMPASS' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="randomPass" name="randomPass" (change)="updatePasswordVaildtor(basicUserForm.value.randomPass)"/>
+        </clr-toggle-wrapper>
+      </clr-toggle-container>
+      <clr-password-container *ngIf="!basicUserForm.value.randomPass">
+        <label class="clr-col-md-3 required">{{ 'USERMGMT.NEWUSER-PAGE1.PASSWORD' | translate }}</label>
+        <clr-control-helper>{{ 'USERMGMT.NEWUSER-PAGE1.PASSWORD-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" name="password" clrPassword formControlName="password" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.NEWUSER-PAGE1.PASSWORD-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'USERMGMT.NEWUSER-PAGE1.PASSWORD-ERROR2' | translate }}</clr-control-error>
+      </clr-password-container>
+      <clr-password-container *ngIf="!basicUserForm.value.randomPass">
+        <label class="clr-col-md-3 required">{{ 'USERMGMT.NEWUSER-PAGE1.CONFRIMPASS' | translate }}</label>
+        <clr-control-helper *ngIf="checkPasswdValidation(basicUserForm.value.password, basicUserForm.value.confirmPassword)">{{ 'USERMGMT.NEWUSER-PAGE1.CONFRIMPASS-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" name="confirmPassword" clrPassword formControlName="confirmPassword" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.NEWUSER-PAGE1.CONFRIMPASS-ERROR1' | translate }}</clr-control-error>
+        <clr-control-helper *ngIf="!checkPasswdValidation(basicUserForm.value.password, basicUserForm.value.confirmPassword)" style="color: #c21d00">{{ 'USERMGMT.NEWUSER-PAGE1.CONFRIMPASS-ERROR2' | translate }}</clr-control-helper>
+      </clr-password-container>
+      <clr-toggle-container>
+        <clr-toggle-wrapper>
+          <label>{{ 'USERMGMT.NEWUSER-PAGE1.SUPERADMIN' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="superAdmin" name="superAdmin"/>
+        </clr-toggle-wrapper>
+      </clr-toggle-container>
+    </form>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'USERMGMT.ACTION.DELETEUSER' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'USERMGMT.ACTION.DELETEUSER-DESC' | translate }} <b>{{selected?.name}}</b> ?</p>
+      <div class="alert alert-danger" role="alert">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+            </div>
+            <span class="alert-text">{{ 'USERMGMT.ACTION.DELETEUSER-ALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteUserForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selected?.name}}" size="20"/>
+      </clr-input-container>
+    </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="removeDialog = false;deleteUserForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+      <button type="button" class="btn btn-primary" (click)="deleteUserById(selected.id);deleteUserForm.reset()" [disabled]="deleteUserForm.invalid || deleteUserForm.value.confirm !== selected?.name">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showRandomPass" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'USERMGMT.ACTION.RANDOMPASS.RANDOMPASS' | translate }}</h3>
+    <div class="modal-body">
+      <div class="alert alert-info" role="alert">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="info-standard"></clr-icon>
+            </div>
+            <span class="alert-text">{{ 'USERMGMT.ACTION.RANDOMPASS.RANDOMPASS-ALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+      <p>{{ 'USERMGMT.ACTION.RANDOMPASS.RANDOMPASS-DISPLAY' | translate }}<b style="font-size: 14px;">{{randomPassword}}</b></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" (click)="showRandomPass = false;randomPassword = '';">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showSetupSuperadmin" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'USERMGMT.ACTION.SUPER.DESC' | translate }}</h3>
+  <div class="modal-body">
+      <span class="alert-text">{{ 'USERMGMT.ACTION.SUPER.CONFRIM' | translate }} <b>{{(!!selected?.admin ? 'USERMGMT.ACTION.SUPER.CANCEL' : 'USERMGMT.ACTION.SUPER.SETUP') | translate }}</b> {{ 'USERMGMT.ACTION.SUPER.SUPER' | translate }}</span>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showSetupSuperadmin=false;selected = null;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="updateUserAdmin(selected);">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showResetPasswd" [clrModalClosable]="false" [clrModalStaticBackdrop]="false">
+  <h3 class="modal-title">{{ 'USERMGMT.ACTION.RESETPASSWORD' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="resetUserPasswordForm">
+      <clr-password-container>
+        <clr-control-helper>{{ 'USERMGMT.ACTION.NEWPASSWD-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'USERMGMT.ACTION.NEWPASSWD' | translate }}</label>
+        <input class="clr-col-md-10" clrPassword name="newPassword" formControlName="newPassword" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.ACTION.NEWPASSWD-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'USERMGMT.ACTION.NEWPASSWD-ERROR2' | translate }}</clr-control-error>
+      </clr-password-container>
+      <clr-password-container>
+        <clr-control-helper *ngIf="checkPasswdValidation(resetUserPasswordForm.value.newPassword, resetUserPasswordForm.value.reNewPassword)">{{ 'USERMGMT.ACTION.COMFIRMPASS-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'USERMGMT.ACTION.COMFIRMPASS' | translate }}</label>
+        <input class="clr-col-md-10" clrPassword name="reNewPassword" formControlName="reNewPassword" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.ACTION.COMFIRMPASS-ERROR1' | translate }}</clr-control-error>
+        <clr-control-helper *ngIf="!checkPasswdValidation(resetUserPasswordForm.value.newPassword, resetUserPasswordForm.value.reNewPassword)" style="color: #c21d00">{{ 'USERMGMT.ACTION.COMFIRMPASS-ERROR2' | translate }}</clr-control-helper>
+      </clr-password-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showResetPasswd=false;resetUserPasswordForm.reset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doResetUserPassword();" [disabled]="resetUserPasswordForm.invalid || !checkPasswdValidation(resetUserPasswordForm.value.newPassword, resetUserPasswordForm.value.reNewPassword)">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showRolebindingModel" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'USERMGMT.DATAGRIDFIELD.PROJECTTITLE' | translate }}</h3>
+    <div class="modal-body">
+      <clr-datagrid [clrDgRowSelection]="false">
+        <clr-dg-column [clrDgField]="'organization.name'" [clrDgSorted]="true">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'USERMGMT.DATAGRIDFIELD.PROJECTNAME' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column>
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'USERMGMT.DATAGRIDFIELD.ROLE' | translate }}
+          </ng-container>
+        </clr-dg-column>
+
+        <clr-dg-placeholder>{{ 'USERMGMT.DATAGRIDFIELD.NOROLEBINDING' | translate }}</clr-dg-placeholder>
+        <clr-dg-row *clrDgItems="let rolebinding of allRolebindings" [clrDgItem]="rolebinding">
+          <clr-dg-cell>{{rolebinding.organization.name}}</clr-dg-cell>
+          <clr-dg-cell>{{rolebinding.role}}</clr-dg-cell>
+        </clr-dg-row>
+        <clr-dg-footer>
+          <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allRolebindings.length">
+            {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+          </clr-dg-pagination>
+        </clr-dg-footer>
+      </clr-datagrid>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showRolebindingModel=false;allRolebindings=[];">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>
+

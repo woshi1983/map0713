@@ -1,0 +1,67 @@
+type DockerfileBuild {
+  name: String!
+  annotations: Map
+  spec: DockerfileBuildSpec!
+  status: DockerfileBuildStatus!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  DockerfileBuild(cluster: ID!, name: String!): DockerfileBuild!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `image`
+
+  - `cluster`
+
+  - `organization`
+  """
+  DockerfileBuilds(filters: [QueryFilter!] = []): [DockerfileBuild!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateDockerfileBuild(input: CreateDockerfileBuild!): DockerfileBuild!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteDockerfileBuild(input: DeleteDockerfileBuild!): DockerfileBuild!
+}
+
+type DockerfileBuildSpec {
+  source: String
+  distImage: String
+  branch: String
+  subDir: String
+  fileName: String
+  url: URL
+}
+
+type DockerfileBuildStatus {
+  num: Int!
+  status: JobStatus!
+  image: String
+  job: Job!
+}
+
+input CreateDockerfileBuild {
+  image: String!
+  cluster: ID!
+}
+
+input DeleteDockerfileBuild {
+  name: String!
+  cluster: ID!
+}

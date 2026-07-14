@@ -1,0 +1,398 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'ORGMGMT.ALL-ORGS' | translate }}</span>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWrite">
+      <button (click)="showCreateOrg()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'ORGMGMT.NEWORG' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWrite">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button type="button" (click)="showUpdateOrg(selected)" [disabled]="!selected"
+              clrDropdownItem>{{ 'ORGMGMT.ACTION.EDITORG' | translate }}</button>
+            <button type="button" (click)="showDeleteOrg(selected)" [disabled]="!selected || orgList.length === 1"
+              clrDropdownItem>{{ 'ORGMGMT.ACTION.DELETEORG' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form">
+      <div style="height: 1.8rem; line-height: 1.8rem"></div>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showSearch = !showSearch"></clr-icon>
+        </span>
+        <input type="text" id="org" placeholder="{{ 'ORGMGMT.SEARCHORG' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading"  [(clrDgSingleSelected)]="selected" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'ORGMGMT.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'SHARED.DATAGRID.DESC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'ORGMGMT.DATAGRIDFIELD.NOORG' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let org of orgList" [clrDgItem]="org">
+      <clr-dg-cell class="title-bold"><a routerLink="{{org.id}}" routerLinkActive="active">{{org.name}}</a></clr-dg-cell>
+      <clr-dg-cell>{{org.description}}</clr-dg-cell>
+      <clr-dg-cell>{{org.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{org.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [(clrDgTotalItems)]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardorg [(clrWizardOpen)]="showCreateOrgOpen" (clrWizardOnFinish)="doCreateOrgFinish()"
+  (clrWizardOnCancel)="doCreateOrgCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'ORGMGMT.NEWORG' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicOrgForm.invalid">
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'ORGMGMT.NEWORG-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicOrgForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicOrgForm.value.name}}{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 150px;"></textarea>
+      </clr-textarea-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="resourceQuotaForm.invalid">
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE2.PAGETITLE' | translate }}</ng-template>
+    <div class="alert alert-warning alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text" style="font-size: 12px">{{ 'ORGMGMT.NEWORG-PAGE2.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text" style="font-size: 12px">{{ 'ORGMGMT.NEWORG-PAGE2.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    {{ 'ORGMGMT.NEWORG-PAGE2.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="resourceQuotaForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.CPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.CPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="cpu" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.CPU-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.MEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.MEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="memory" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.MEM-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="storage" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'ORGMGMT.NEWORG-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'ORGMGMT.NEWORG-PAGE3.BASEINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.PROJECTNAME' | translate }}</span>
+                    <span>{{basicOrgForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.DESC' | translate }}</span>
+                    <span>{{basicOrgForm.value.description}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'ORGMGMT.NEWORG-PAGE3.RESOURCE' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.CPU' | translate }}</span>
+                  <span>{{resourceQuotaForm.value.cpu === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : resourceQuotaForm.value.cpu + ' vCPU'}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.MEM' | translate }}</span>
+                  <span>{{resourceQuotaForm.value.memory === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : resourceQuotaForm.value.memory + ' Gi'}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.STORAGE' | translate }}</span>
+                  <span>{{resourceQuotaForm.value.storage === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : resourceQuotaForm.value.storage + ' Gi'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardupdateorg [(clrWizardOpen)]="showUpdateOrgOpen" (clrWizardOnFinish)="doUpdateOrgFinish()"
+  (clrWizardOnCancel)="doUpdateOrgCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'ORGMGMT.ACTION.EDITORG' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="updateOrgForm.invalid">
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'ORGMGMT.ACTION.EDITORG-PAGE.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="updateOrgForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}{{ 'APPLICATION.CREATEAPP-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{updateOrgForm.value.name}}{{ 'ORGMGMT.NEWORG-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 150px;"></textarea>
+      </clr-textarea-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="updateResourceQuotaForm.invalid">
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE2.PAGETITLE' | translate }}</ng-template>
+    <div class="alert alert-warning alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text" style="font-size: 12px">{{ 'ORGMGMT.NEWORG-PAGE2.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text" style="font-size: 12px">{{ 'ORGMGMT.NEWORG-PAGE2.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    {{ 'ORGMGMT.NEWORG-PAGE2.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="updateResourceQuotaForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.CPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.CPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="cpu" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.CPU-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.MEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.MEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="memory" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.MEM-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="storage" #stepInput type="number" min=0/>
+        <clr-control-error *clrIfError="'min'">{{ 'ORGMGMT.NEWORG-PAGE2.STORAGE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'ORGMGMT.NEWORG-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'ORGMGMT.NEWORG-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'ORGMGMT.NEWORG-PAGE3.BASEINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.PROJECTNAME' | translate }}</span>
+                    <span>{{updateOrgForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.DESC' | translate }}</span>
+                    <span>{{updateOrgForm.value.description}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'ORGMGMT.NEWORG-PAGE3.RESOURCE' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.CPU' | translate }}</span>
+                  <span>{{updateResourceQuotaForm.value.cpu === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : updateResourceQuotaForm.value.cpu + ' vCPU'}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.MEM' | translate }}</span>
+                  <span>{{updateResourceQuotaForm.value.memory === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : updateResourceQuotaForm.value.memory + ' Gi'}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'ORGMGMT.NEWORG-PAGE3.STORAGE' | translate }}</span>
+                  <span>{{updateResourceQuotaForm.value.storage === 0 ? ('ORGMGMT.NEWORG-PAGE3.NOLIMIT' | translate) : updateResourceQuotaForm.value.storage + ' Gi'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'ORGMGMT.ACTION.DELETEORG' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'ORGMGMT.ACTION.DELETEORG-PAGE.PAGEDESC' | translate }} <b>{{selectedOrgName}}</b> ?</p>
+    <div class="alert alert-danger" role="alert" *ngIf="lastOrg">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'ORGMGMT.ACTION.DELETEORG-PAGE.LASTORGALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+     <div class="alert alert-danger" role="alert" *ngIf="!lastOrg">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'ORGMGMT.ACTION.DELETEORG-PAGE.DELETEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" *ngIf="!lastOrg">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteOrgForm" *ngIf="!lastOrg">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedOrgName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteOrgForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteOrgById(selected);deleteOrgForm.reset()" [disabled]="deleteOrgForm.invalid || deleteOrgForm.value.confirm !== selectedOrgName || orgList.length === 1">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

@@ -1,0 +1,11 @@
+.git
+.editorconfig
+/node_modules
+/e2e
+/docs
+/kubernetes
+.gitignore
+*.zip
+*.md
+/local-build
+/proxy.config.json

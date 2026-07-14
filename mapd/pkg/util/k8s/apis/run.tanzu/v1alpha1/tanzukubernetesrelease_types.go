@@ -1,0 +1,114 @@
+// Copyright (c) 2020 VMware, Inc. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+package v1alpha1
+
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	ConditionCompatible       = "Compatible"
+	ConditionUpdatesAvailable = "UpdatesAvailable"
+	ConditionUpgradeAvailable = "UpgradeAvailable"
+
+	ReasonNoUpdates    = "NoUpdates"
+	ReasonNotAvailable = "NotAvailable"
+	ReasonIncompatible = "Incompatible"
+	ReasonDeactivated  = "Deactivated"
+
+	LabelIncompatible = "incompatible"
+	LabelDeactivated  = "deactivated"
+	LabelDeleted      = "deleted"
+)
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// TanzuKubernetesRelease is the schema for the tanzukubernetesreleases API.
+// TanzuKubernetesRelease objects represent Kubernetes releases available via TKG Service, which can be used to create
+// TanzuKubernetesCluster instances. TKRs are immutable to end-users. They are created and managed by TKG Service to
+// provide discovery of Kubernetes releases to TKG Service users.
+type TanzuKubernetesRelease struct { // nolint:maligned
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   TanzuKubernetesReleaseSpec   `json:"spec,omitempty"`
+	Status TanzuKubernetesReleaseStatus `json:"status,omitempty"`
+}
+
+func (tkr *TanzuKubernetesRelease) GetConditions() Conditions {
+	return tkr.Status.Conditions
+}
+
+func (tkr *TanzuKubernetesRelease) SetConditions(conditions Conditions) {
+	tkr.Status.Conditions = conditions
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// TanzuKubernetesReleaseList contains a list of TanzuKubernetesRelease objects.
+type TanzuKubernetesReleaseList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []TanzuKubernetesRelease `json:"items"`
+}
+
+// TanzuKubernetesReleaseSpec defines the desired state of TanzuKubernetesRelease
+type TanzuKubernetesReleaseSpec struct {
+	// Version is the fully qualified Semantic Versioning conformant version of the TanzuKubernetesRelease.
+	// Version MUST be unique across all TanzuKubernetesRelease objects.
+	Version string `json:"version"`
+
+	// KubernetesVersion is the fully qualified Semantic Versioning conformant version of Kubernetes shipped by this TKR.
+	// The same KubernetesVersion MAY be shipped by different TKRs.
+	// +optional
+	KubernetesVersion string `json:"kubernetesVersion,omitempty"`
+
+	// Repository is the container image repository for Kubernetes core images, such as kube-apiserver, kube-proxy, etc.
+	// It MUST be a DNS-compatible name.
+	// +optional
+	Repository string `json:"repository,omitempty"`
+
+	// Images is the list of (other than Kubernetes core) essential container images shipped by this TKR (e.g. coredns, etcd).
+	// +optional
+	Images []ContainerImage `json:"images,omitempty"`
+
+	// NodeImageRef refers to an object representing the image used to create TKC nodes (e.g. VirtualMachineImage).
+	// +optional
+	NodeImageRef *corev1.ObjectReference `json:"nodeImageRef,omitempty"`
+}
+
+// ContainerImage is a struct representing a single fully qualified container image name, constructed as
+// `{Repository}/{Name}:{Tag}`.
+type ContainerImage struct {
+	// Repository is the container image repository used by this image. It MUST be a DNS-compatible name.
+	// +optional
+	Repository string `json:"repository,omitempty"`
+
+	// Name is the container image name without the repository prefix.
+	// It MUST be a valid URI path, MAY contain zero or more '/', and SHOULD NOT start or end with '/'.
+	Name string `json:"name"`
+
+	// Tag is the container image version tag. It is the suffix coming after ':' in a fully qualified image name.
+	// +optional
+	Tag string `json:"tag,omitempty"`
+}
+
+func (ci ContainerImage) String() string {
+	var prefix, suffix string
+	if ci.Repository != "" {
+		prefix = ci.Repository + "/"
+	}
+	if ci.Tag != "" {
+		suffix = ":" + ci.Tag
+	}
+	return prefix + ci.Name + suffix
+}
+
+// TanzuKubernetesReleaseStatus defines the observed state of TanzuKubernetesRelease
+type TanzuKubernetesReleaseStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
+}

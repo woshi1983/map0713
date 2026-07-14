@@ -1,0 +1,89 @@
+type DockerfileImage {
+  name: String!
+  annotations: Map
+  labels: Map
+  spec: DockerfileImageSpec!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  DockerfileImage(cluster: ID!, name: String!): DockerfileImage!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  DockerfileImages(filters: [QueryFilter!] = []): [DockerfileImage!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateDockerfileImage(input: CreateDockerfileImage!): DockerfileImage!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateDockerfileImage(input: UpdateDockerfileImage!): DockerfileImage!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteDockerfileImage(input: DeleteDockerfileImage!): DockerfileImage!
+}
+
+type DockerfileImageSpec {
+  source: String!
+  distImage: String!
+  branch: String!
+  subDir: String!
+  fileName: String!
+  url: URL!
+}
+
+input CreateDockerfileImage {
+  name: String!
+  annotations: Map
+  spec: CreateDockerfileImageSpec!
+  cluster: ID!
+}
+
+input UpdateDockerfileImage {
+  name: String!
+  annotations: Map
+  spec: UpdateDockerfileImageSpec
+  cluster: ID!
+}
+
+input DeleteDockerfileImage {
+  name: String!
+  cluster: ID!
+}
+
+input CreateDockerfileImageSpec {
+  source: String = "git"
+  distImage: String!
+  branch: String = "master"
+  subDir: String = "/"
+  fileName: String = "Dockerfile"
+  url: URL!
+}
+
+input UpdateDockerfileImageSpec {
+  source: String
+  distImage: String
+  branch: String
+  subDir: String
+  fileName: String
+  url: URL
+}

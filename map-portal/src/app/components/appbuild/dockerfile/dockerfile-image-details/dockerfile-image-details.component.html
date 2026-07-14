@@ -1,0 +1,221 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!image || loading">Loading ...</clr-spinner>
+  <div *ngIf="!!image && !loading">
+    <div>
+      <clr-icon shape="undo"></clr-icon>
+      <a (click)="backToImages()" class="backStyle">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.BACK' | translate }}</a>
+    </div>
+    <h2>
+      <div>
+        <span class="ml-05"> {{ imageName }}</span>
+      </div>
+    </h2>
+
+    <div class="clr-row">
+      <div style="margin: 0 3% 0 auto">
+        <div class="rightPos">
+          <button class="refresh-btn btn btn-link" style="margin-right: -20px;">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </button>
+          <div class="nav-divider" [fxHide]="!canWriteResources"></div>
+          &nbsp;
+          <div class="clr-form" style="margin-left: 5px;" [fxHide]="!canWriteResources">
+            <clr-dropdown class="dropdown">
+              <button class="btn-sm btn btn-outline custom-dropdown-toggle" clrDropdownTrigger>
+                <clr-icon shape="bars"></clr-icon>
+                {{ 'SHARED.MOREACTIONS' | translate }}
+              </button>
+              <clr-dropdown-menu *clrIfOpen>
+                <button id='edit-image' type="button" (click)="showUpdateDockerfileImage()" clrDropdownItem><span style="font-size: 12px;">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.EDITIMAGE-SHORTTITLE' | translate }}</span></button>
+                <button id='delete-image' type="button" (click)="showDeleteImage()" clrDropdownItem><span style="font-size: 12px;">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DELETEIMAGE-SHORTDESC' | translate }}</span></button>
+              </clr-dropdown-menu>
+            </clr-dropdown>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="clr-row" fxLayout="none">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-text" fxLayout="flex">
+                <div class="clr-col-md-12" fxLayout="flex">
+                  <div class="summary-left clr-col-md-6">
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-7-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.DOCKERFILE' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.spec.source}}</li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05" *ngIf="image.spec.source === 'git'">
+                      <h5 class="mt-0 width-7-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.GITBRANCH' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.spec.branch}}</li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-7-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.DOCKERFILENAME' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.spec.fileName}}</li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-7-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.OUTPUTIMAGE' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.spec.distImage}}</li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-7-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.MODIFYTIME' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.lastModified | datetimeTransition}}</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="summary-right clr-col-md-6">
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-9-5" *ngIf="image.spec.source === 'git'">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.GITREPO' | translate }}</h5>
+                      <h5 class="mt-0 width-9-5" *ngIf="image.spec.source === 'tar.gz'">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.TARURL' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>
+                          {{image.spec.url}}
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05" *ngIf="image.spec.source === 'git'">
+                      <h5 class="mt-0 width-9-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.SUBDIR' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>{{image.spec.subDir}}</li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-9-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.CLUSTER' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>
+                          {{image.cluster.name}}
+                        </li>
+                      </ul>
+                    </div>
+                    <div class="display-flex summary pt-05">
+                      <h5 class="mt-0 width-9-5">{{ 'BUILD.DOCKERFILEIMAGE-DETAILS.DETAILS-PAGE.CREATETIME' | translate }}</h5>
+                      <ul class="list-unstyled">
+                        <li>
+                          {{image.createdAt | datetimeTransition}}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <div>
+        <clr-tabs id="build-details" class="tabs">
+          <clr-tab>
+              <button clrTabLink id="build-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD' | translate }}</button>
+              <clr-tab-content id="build-content" *clrIfActive>
+                  <app-dockerfile-build [image]="image"></app-dockerfile-build>
+              </clr-tab-content>
+          </clr-tab>
+        </clr-tabs>
+    </div>
+  </div>
+</div>
+
+<clr-wizard #wizardeditdockerfileimage [(clrWizardOpen)]="editDockerfileImageOpen" (clrWizardOnFinish)="doUpdateDockerfileImageFinish()" (clrWizardOnCancel)="doUpdateDockerfileImageCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'BUILD.DOCKERFILEIMAGE.ACTION.EDITIMAGE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editDockerfileImageSourceForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editDockerfileImageSourceForm.invalid">
+        <ng-template clrPageTitle>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editDockerfileImageSourceForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput  name="name" formControlName="name" type="string" required disabled/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{editDockerfileImageSourceForm.value.name}}{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.NAME-ERROR5' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.CLUSTER-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.CLUSTER' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="cluster" disabled>
+              <option value="{{clusterId}}">{{image?.cluster?.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.CLUSTER-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.DOCKERFILE-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.DOCKERFILE' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="sourceType" required>
+               <option value="git">git</option>
+               <option value="tar.gz">tar.gz</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.DOCKERFILE-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.APPREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.APPREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageRegistry" (change)="getAllOutputProjects(editDockerfileImageSourceForm.value.appImageRegistry, true)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of pushableRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.APPREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageProject" (change)="changeNoOutputProjectAlert();">
+              <option value="{{outputProject}}" *ngFor="let outputProject of outputProjectList">{{outputProject}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-NOAPPIMAGEPROJECT' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-input-container style="width: 100%;" *ngIf="editDockerfileImageSourceForm.value.sourceType === 'git'">
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITREPO' | translate }}</label>
+            <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput name="dockerfileURL" formControlName="dockerfileURL" type="string" required placeholder="https://github.com/tanzu/example.git"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITREPO-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITREPO-ERROR2' | translate }} {{gitUrlPattern}}。</clr-control-error>
+          </clr-input-container>
+          <clr-input-container style="width: 100%;" *ngIf="editDockerfileImageSourceForm.value.sourceType === 'tar.gz'">
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.TARURL-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.TARURL' | translate }}</label>
+            <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput name="dockerfileURL" formControlName="dockerfileURL" type="string" required placeholder="http://192.168.1.1/app.tar.gz"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.TARURL-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.TARURL-ERROR2' | translate }} {{packagePattern}}。</clr-control-error>
+          </clr-input-container>
+          <clr-input-container *ngIf="editDockerfileImageSourceForm.value.sourceType === 'git'">
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.BRANCH-HELP' | translate }}</clr-control-helper>
+            <label class="clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.BRANCH' | translate }}</label>
+            <input class="clr-col-md-9" clrInput name="gitBranch" formControlName="gitBranch" type="string" placeholder="master"/>
+          </clr-input-container>
+          <clr-input-container *ngIf="editDockerfileImageSourceForm.value.sourceType === 'git'">
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITDIR-HELP' | translate }}</clr-control-helper>
+            <label class="clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.GITDIR' | translate }}</label>
+            <input class="clr-col-md-9" clrInput name="gitSubdir" formControlName="gitSubdir" type="string" placeholder="/"/>
+          </clr-input-container>
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.DOCKERFILENAME-HELP' | translate }}</clr-control-helper>
+            <label class="clr-col-md-3">{{ 'BUILD.DOCKERFILEIMAGE.CREATEIMAGE-PAGE.DOCKERFILENAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput name="dockerfileName" formControlName="dockerfileName" type="string" placeholder="Dockerfile"/>
+          </clr-input-container>
+        </form>
+    </clr-wizard-page>
+
+</clr-wizard>
+
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteDockerfileImage($event)"></app-delete-object>
+
+<router-outlet></router-outlet>

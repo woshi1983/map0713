@@ -1,0 +1,1125 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-info" role="alert" *ngIf="noTbsEnabledClusterAlert">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <span class="alert-text">{{ 'BUILD.SOURCEIMAGE.NOTBSCLUSTERALERT' | translate }}</span>
+      </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="noTbsEnabledClusterAlert = false;">
+      <clr-icon aria-hidden="true" shape="close"></clr-icon>
+    </button>
+  </div>
+
+  <div>
+    <span class="custom-h2">{{ 'BUILD.SOURCEIMAGE.ALL-IMAGES' | translate }}</span>
+  </div>
+  <br>
+
+<div class="clr-row" style="margin-left: 0px">
+  <div class="clr-form" [fxHide]="!canWriteResources">
+    <button (click)="showCreateSourceImage()" class="btn btn-primary btn-outline" [disabled]="noTbsEnabledClusterAlert">
+        <clr-icon shape="plus"></clr-icon>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE' | translate }}
+    </button>
+  </div>
+  <div class="clr-form" [fxHide]="!canWriteResources">
+    <clr-dropdown class="dropdown" >
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+            <clr-icon shape="bars"></clr-icon>
+            {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='edit-source-image' (click)="showUpdateSourceImage(selectedImage)" type="button" [disabled]="!selectedImage" clrDropdownItem>{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE' | translate }}</button>
+          <button id='delete-source-image' type="button" (click)="showDeleteSourceImage(selectedImage)" [disabled]="!selectedImage" clrDropdownItem>{{ 'BUILD.SOURCEIMAGE.ACTION.DELETEIMAGE' | translate }}</button>
+        </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+  <div class="clr-form rightPos">
+    <div>
+      <span class="refresh-btn">
+        <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+      </span>
+      <input type="text" id="source-image-name" placeholder="{{ 'BUILD.SOURCEIMAGE.SEARCHIMAGE' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+
+      <div class="nav-divider"></div>
+      &nbsp;
+      <span class="refresh-btn">
+        <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+      </span>
+    </div>
+  </div>
+</div>
+
+
+<clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedImage" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'BUILD.SOURCEIMAGE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'status.ready'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'BUILD.SOURCEIMAGE.DATAGRIDFIELD.READY' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'cluster.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'BUILD.SOURCEIMAGE.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'BUILD.SOURCEIMAGE.DATAGRIDFIELD.NOBUILD' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let image of allImages" [clrDgItem]="image">
+      <clr-dg-cell><a routerLink="{{image.cluster.id}}/{{image.name}}">{{image.name}}</a></clr-dg-cell>
+      <clr-dg-cell>{{image.status.ready}}</clr-dg-cell>
+      <clr-dg-cell><a routerLink="/portal/cluster/management/{{image.cluster.id}}/{{image.cluster.name}}">{{image.cluster.name}}</a></clr-dg-cell>
+      <clr-dg-cell>{{image.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{image.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+        <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allImages.length">
+          <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+          {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+        </clr-dg-pagination>
+    </clr-dg-footer>
+</clr-datagrid>
+
+</div>
+
+
+<clr-wizard #wizardsourceimage [(clrWizardOpen)]="createSourceImageOpen" (clrWizardOnFinish)="doSourceImageFinish()" (clrWizardOnCancel)="doSourceImageCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="basicSourceImageForm.invalid">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.PAGEDESC' | translate }}
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="warning-standard"></clr-icon>
+              </div>
+              <span class="alert-text">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.BUILDALERT' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form clrForm [formGroup]="basicSourceImageForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{basicSourceImageForm.value.name}}{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="cluster" (change)="getAllRegistry(basicSourceImageForm.value.cluster)">
+              <option value="{{cluster.id}}" *ngFor="let cluster of allClusters">{{cluster.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageRegistry" (change)="getAllOutputProjects(basicSourceImageForm.value.appImageRegistry)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of pushableRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPIMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageProject">
+              <option value="{{outputProject}}" *ngFor="let outputProject of outputProjectList">{{outputProject}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="sourceType" required (change)="resetOtherTypeForm(basicSourceImageForm.value.sourceType)">
+               <option value="git">git</option>
+               <option value="blob">blob</option>
+              <option value="registry">registry</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="gitSourceParamForm.invalid" *ngIf="basicSourceImageForm.value.sourceType === 'git'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="gitSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-input-container style="width: 100%;">
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO' | translate }}</label>
+                      <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput formControlName="url" type="string" required placeholder="https://github.com/tanzu/example.git"/>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-ERROR1' | translate }}</clr-control-error>
+                      <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-ERROR2' | translate }} {{gitUrlPattern}}。</clr-control-error>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITBRANCH-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITBRANCH' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="gitBranch" formControlName="gitBranch" type="string" placeholder="master"/>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of envsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="addNewEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="bolbSourceParamForm.invalid" *ngIf="basicSourceImageForm.value.sourceType === 'blob'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="bolbSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-input-container style="width: 100%;">
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL' | translate }}</label>
+                      <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput name="url" formControlName="url" type="string" required placeholder="http://192.168.1.1/app.tar.gz"/>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-ERROR1' | translate }}</clr-control-error>
+                      <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-ERROR2' | translate }} {{packagePattern}}。</clr-control-error>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.BOLBDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.BOLBDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of envsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="addNewEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="imageSourceParamForm.invalid" *ngIf="basicSourceImageForm.value.sourceType === 'registry'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="imageSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-select-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageRegistry" (change)="getAllProjects(imageSourceParamForm.value.sourceImageRegistry)">
+                        <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of imageRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageProject" (change)="getAllImages(imageSourceParamForm.value.sourceImageProject)">
+                        <option value="{{sourceProject}}" *ngFor="let sourceProject of imageProjectList">{{sourceProject}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageName" (change)="getAllTags(imageSourceParamForm.value.sourceImageName)">
+                        <option value="{{image.name}}" *ngFor="let image of sourceImageList">{{image.name}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageTag">
+                            <option value="{{tag}}" *ngFor="let tag of sourceTagsList">{{tag}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.IMAGEDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.IMAGEDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of envsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="addNewEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PAGEDESC' | translate }}
+        <br>
+
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD1TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.NAME' | translate }}</span>
+                    <span>{{basicSourceImageForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of allClusters">
+                      <span *ngIf="cluster.id === basicSourceImageForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.REPO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of pushableRegistrytList">
+                      <span *ngIf="registry.imageRegistry.id === basicSourceImageForm.value.appImageRegistry">{{registry.imageRegistry.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PROJECT' | translate }}</span>
+                    <span>{{basicSourceImageForm.value.appImageProject}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOURCETYPE' | translate }}</span>
+                    <span>{{basicSourceImageForm.value.sourceType}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'git'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITREPO' | translate }}</span>
+                    <span>{{gitSourceParamForm.value.url}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITBRANCH' | translate }}</span>
+                    <span>{{gitSourceParamForm.value.gitBranch}}</span>
+                  </div>
+                  <div *ngIf="gitSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITDIR' | translate }}</span>
+                    <span>{{gitSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'git' && gitSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+               {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of gitSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'blob'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.TARURL' | translate }}</span>
+                    <span>{{bolbSourceParamForm.value.url}}</span>
+                  </div>
+                  <div *ngIf="bolbSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.TARDIR' | translate }}</span>
+                    <span>{{bolbSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'blob' && bolbSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of bolbSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'registry'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOURCEREPO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of imageRegistrytList">
+                      <span *ngIf="registry.imageRegistry.id === imageSourceParamForm.value.sourceImageRegistry">{{registry.imageRegistry.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOIRCEIMAGE' | translate }}</span>
+                    <span>{{imageSourceParamForm.value.sourceImageProject}}/{{imageSourceParamForm.value.sourceImageName}}:{{imageSourceParamForm.value.sourceImageTag}}</span>
+                  </div>
+                  <div *ngIf="imageSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.IMAGEDIR' | translate }}</span>
+                    <span>{{imageSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="basicSourceImageForm.value.sourceType === 'registry' && imageSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of imageSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardeditsourceimage [(clrWizardOpen)]="editSourceImageOpen" (clrWizardOnFinish)="doUpdateSourceImageFinish()" (clrWizardOnCancel)="doUpdateSourceImageCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editSourceImageForm.invalid">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editSourceImageForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput  name="name" formControlName="name" type="string" required disabled/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{editSourceImageForm.value.name}}{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="cluster" disabled>
+              <option value="{{editSourceImageForm.value.cluster}}">{{selectedImage?.cluster?.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageRegistry" (change)="getAllOutputProjects(editSourceImageForm.value.appImageRegistry, true)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of pushableRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.APPREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageProject" (change)="changeNoOutputProjectAlert();">
+              <option value="{{outputProject}}" *ngFor="let outputProject of outputProjectList;trackBy: customTrackBy;">{{outputProject}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-PAGE.NOAPPIMAGEPROJECT' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="sourceType" required>
+               <option value="git">git</option>
+               <option value="blob">blob</option>
+              <option value="registry">registry</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE1.SOURCETYPE-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editGitSourceParamForm.invalid" *ngIf="editSourceImageForm.value.sourceType === 'git'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editGitSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-input-container style="width: 100%;">
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO' | translate }}</label>
+                      <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput formControlName="url" type="string" required placeholder="https://github.com/tanzu/example.git"/>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-ERROR1' | translate }}</clr-control-error>
+                      <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITREPO-ERROR2' | translate }} {{gitUrlPattern}}。</clr-control-error>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITBRANCH-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITBRANCH' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="gitBranch" formControlName="gitBranch" type="string" placeholder="master"/>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.GITDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of editEnvsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="newEditEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editBolbSourceParamForm.invalid" *ngIf="editSourceImageForm.value.sourceType === 'blob'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editBolbSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-input-container style="width: 100%;">
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL' | translate }}</label>
+                      <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput name="url" formControlName="url" type="string" required placeholder="http://192.168.1.1/app.tar.gz"/>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-ERROR1' | translate }}</clr-control-error>
+                      <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.TARURL-ERROR2' | translate }} {{packagePattern}}。</clr-control-error>
+                    </clr-input-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.BOLBDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.BOLBDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of editEnvsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="newEditEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editImageSourceParamForm.invalid" *ngIf="editSourceImageForm.value.sourceType === 'registry'">
+        <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editImageSourceParamForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD1TITLE' | translate }}
+                  </h4>
+                  <div class="card-text">
+                    <clr-select-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageRegistry" (change)="getAllProjectsForUpdate(editImageSourceParamForm.value.sourceImageRegistry)">
+                        <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of imageRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGE-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper *ngIf="!noImageProjectAlert">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+                      <label  class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageProject" (change)="getAllImagesForUpdate(editImageSourceParamForm.value.sourceImageRegistry, editImageSourceParamForm.value.sourceImageProject)">
+                        <option value="{{sourceProject}}" *ngFor="let sourceProject of imageProjectList;trackBy: customTrackBy;">{{sourceProject}}</option>
+                      </select>
+                      <clr-control-helper style="color: #c21d00" *ngIf="noImageProjectAlert">{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.NOIMAGEPROJECT' | translate }}</clr-control-helper>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper *ngIf="!noImageNameAlert">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageName" (change)="getAllTags(editImageSourceParamForm.value.sourceImageName, true)">
+                        <option value="{{image.name}}" *ngFor="let image of sourceImageList;trackBy: customTrackBy;">{{image.name}}</option>
+                      </select>
+                      <clr-control-helper style="color: #c21d00" *ngIf="noImageNameAlert">{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.NOIMAGENAME' | translate }}</clr-control-helper>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOUREIMAGEREPO-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <clr-control-helper *ngIf="!noImageTagAlert">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="sourceImageTag" (change)="changeNoTagsAlert()">
+                            <option value="{{tag}}" *ngFor="let tag of sourceTagsList;trackBy: customTrackBy;">{{tag}}</option>
+                      </select>
+                      <clr-control-helper style="color: #c21d00" *ngIf="noImageTagAlert">{{ 'BUILD.SOURCEIMAGE.ACTION.EDITIMAGE-PAGE2.NOIMAGETAG' | translate }}</clr-control-helper>
+                      <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.SOURCEIMAGETAG-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-input-container>
+                      <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.IMAGEDIR-HELP' | translate }}</clr-control-helper>
+                      <label class="clr-col-md-3">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.IMAGEDIR' | translate }}</label>
+                      <input class="clr-col-md-9" clrInput name="subdir" formControlName="subdir" type="string" placeholder="./"/>
+                    </clr-input-container>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-block">
+                  <h4 class="card-title">
+                    {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.CARD2TITLE' | translate }}
+                  </h4>
+                  <div class="card-text" formArrayName="envs">
+                    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY' | translate }}</label>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <label style="min-width: 96px;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE' | translate }}</label>
+                      </clr-input-container>
+                    </div>
+                    <div class="section" *ngFor="let each of editEnvsList.controls; let i = index" [formGroupName]="i">
+                      <div fxLayout="row" fxLayoutAlign="start start">
+                        <clr-input-container>
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="key" type="string" size="20"
+                          autocomplete="off" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.KEY-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <clr-input-container style="margin-left: 8px">
+                          <clr-control-helper>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-HELP' | translate }}</clr-control-helper>
+                          <label style="max-width: 0px; display: none"></label>
+                          <input fxFlex="1 1 auto" clrInput  formControlName="value" type="string" required/>
+                          <clr-control-error *clrIfError="'required'">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.VALUE-ERROR' | translate }}</clr-control-error>
+                        </clr-input-container>
+                        <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                          <clr-icon shape="minus-circle"></clr-icon>
+                        </button>
+                      </div>
+                    </div>
+                    <br>
+                    <button (click)="newEditEnv()" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE2.ADDENV' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PAGEDESC' | translate }}
+        <br>
+
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD1TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.NAME' | translate }}</span>
+                    <span>{{editSourceImageForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CLUSTER' | translate }}</span>
+                    <span>{{selectedImage?.cluster?.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.REPO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of pushableRegistrytList">
+                      <span *ngIf="registry.imageRegistry.id === editSourceImageForm.value.appImageRegistry">{{registry.imageRegistry.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.PROJECT' | translate }}</span>
+                    <span>{{editSourceImageForm.value.appImageProject}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOURCETYPE' | translate }}</span>
+                    <span>{{editSourceImageForm.value.sourceType}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'git'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITREPO' | translate }}</span>
+                    <span>{{editGitSourceParamForm.value.url}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITBRANCH' | translate }}</span>
+                    <span>{{editGitSourceParamForm.value.gitBranch}}</span>
+                  </div>
+                  <div *ngIf="editGitSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.GITDIR' | translate }}</span>
+                    <span>{{editGitSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'git' && editGitSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of editGitSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'blob'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.TARURL' | translate }}</span>
+                    <span>{{editBolbSourceParamForm.value.url}}</span>
+                  </div>
+                  <div *ngIf="editBolbSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.TARDIR' | translate }}</span>
+                    <span>{{editBolbSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'blob' && editBolbSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of editBolbSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'registry'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD2TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOURCEREPO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of imageRegistrytList">
+                      <span *ngIf="registry.imageRegistry.id === editImageSourceParamForm.value.sourceImageRegistry">{{registry.imageRegistry.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.SOIRCEIMAGE' | translate }}</span>
+                    <span>{{editImageSourceParamForm.value.sourceImageProject}}/{{editImageSourceParamForm.value.sourceImageName}}:{{editImageSourceParamForm.value.sourceImageTag}}</span>
+                  </div>
+                  <div *ngIf="editImageSourceParamForm.value.subdir">
+                    <span class="validateTitle">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.IMAGEDIR' | translate }}</span>
+                    <span>{{editImageSourceParamForm.value.subdir}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row" *ngIf="editSourceImageForm.value.sourceType === 'registry' && editImageSourceParamForm.value.envs[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.CARD3TITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.KEY' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 50%;">{{ 'BUILD.SOURCEIMAGE.CREATEIMAGE-PAGE3.VALUE' | translate }}</span>
+                  <div *ngFor="let each of editImageSourceParamForm.value.envs;">
+                    <span style="min-width: 40%;display: inline-block; width: 18%">{{each.key}}</span>
+                    <span style="min-width: 50%;display: inline-block; width: 18%">{{each.value}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </clr-wizard-page>
+</clr-wizard>
+
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteSourceImage($event)"></app-delete-object>
+<router-outlet></router-outlet>
+
+
+
+

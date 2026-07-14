@@ -1,0 +1,35 @@
+<div class="main-container">
+  <app-navigator (showDialogModalAction)=openModal($event)></app-navigator>
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!authService.loginUserName">Loading ...</clr-spinner>
+  <div class="content-container" *ngIf="!!authService.loginUserName">
+      <div class="content-area">
+        <div class="clr-row">
+          <div class="clr-col-lg-5 clr-col-md-8 clr-col-12" style="margin-left: 29.2%;">
+            <div class="card">
+              <div class="card-header">
+                {{ 'NAVHEADER.ERRORPAGE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="alert alert-danger" role="alert">
+                  <div class="alert-items">
+                    <div class="alert-item static">
+                      <div class="alert-icon-wrapper">
+                        <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+                      </div>
+                      <div class="alert-text">
+                        {{ 'NAVHEADER.NOORG' | translate }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+<router-outlet></router-outlet>
+<app-userinfo-setting></app-userinfo-setting>
+<app-change-password></app-change-password>
+<app-about-dialog></app-about-dialog>

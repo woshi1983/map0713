@@ -1,0 +1,296 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'REGISTRYMGMT.ALL-REGISTRY' | translate }}</span>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <button (click)="showAddRepo()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'REGISTRYMGMT.ADDREGISTRY' | translate }}
+      </button>
+    </div>
+    <div class="clr-form">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-repo' type="button" (click)="showEditRepo(selectedRepo)" [disabled]="!selectedRepo" clrDropdownItem>{{ 'REGISTRYMGMT.ACTION.EDITREGISTRY' | translate }}</button>
+            <button id='delete-repo' type="button" (click)="showDeleteRepo(selectedRepo)" [disabled]="!selectedRepo" clrDropdownItem>{{ 'REGISTRYMGMT.ACTION.DELETEREGISTRY' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="reponame" placeholder="{{ 'REGISTRYMGMT.SEARCHREGISTRY' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="certResult.length > 0">
+    <div class="alert alert-warning" role="alert" *ngFor="let result of certResult">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text" *ngIf="!result.isCA"> {{result.name}}{{ 'REGISTRYMGMT.CERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'REGISTRYMGMT.CERTEXPIRED' | translate }}</span>
+          <span class="alert-text" *ngIf="result.isCA"> {{result.name}}{{ 'REGISTRYMGMT.CACERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'REGISTRYMGMT.CERTEXPIRED' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedRepo" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'REGISTRYMGMT.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'SHARED.DATAGRID.DESC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'REGISTRYMGMT.DATAGRIDFIELD.ADDRESS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'REGISTRYMGMT.DATAGRIDFIELD.PUSHABLE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'REGISTRYMGMT.DATAGRIDFIELD.AUTHUSER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'REGISTRYMGMT.DATAGRIDFIELD.TYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'REGISTRYMGMT.DATAGRIDFIELD.NOREGISTRY' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let repo of repositorys" [clrDgItem]="repo">
+      <clr-dg-cell>{{repo.name}}</clr-dg-cell>
+      <clr-dg-cell>{{repo.description}}</clr-dg-cell>
+      <clr-dg-cell><a href="{{repo.endpoint}}" target="_blank">{{repo.endpoint}}</a></clr-dg-cell>
+      <clr-dg-cell>{{!!repo.authUser}}</clr-dg-cell>
+      <clr-dg-cell>{{!!repo.authUser ? repo.authUser : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{repo.type}}</clr-dg-cell>
+      <clr-dg-cell>{{repo.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{repo.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+</clr-datagrid>
+</div>
+
+<clr-wizard #wizardrepo [(clrWizardOpen)]="addRepoOpen" (clrWizardOnFinish)="doRepoFinish()" (clrWizardOnCancel)="doRepoCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'REGISTRYMGMT.ADDREGISTRY' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicRepoForm.invalid || basicRepoForm.value.pushable ? !(checkStatus.checked && checkStatus.checkSuccess) : basicRepoForm.value.pushable">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="basicRepoForm">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{basicRepoForm.value.name}}{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-select-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PROVIDER' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="type">
+                <option value="{{ImageRegistryType.HARBOR}}">Harbor</option>
+              </select>
+              <clr-control-error>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PROVIDER-HELP' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="http(s)://registry.example.com" (change)="resetCheckStatus();"/>
+              <clr-control-error *clrIfError="'required'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+              </textarea>
+              <clr-control-error *clrIfError="'CAFormat'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA_ERROR' | translate }}</clr-control-error>
+            </clr-textarea-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-9">{{ (appBuild ? 'REGISTRYMGMT.ADDREGISTRY-PAGE.PUSHABLE' : 'REGISTRYMGMT.ADDREGISTRY-PAGE.PULLABLE') | translate }}</label>
+                <input type="checkbox" clrToggle [checked]="basicRepoForm.value.pushable" formControlName="pushable" name="pushable" (change)="setAuthInfoVaildtor(basicRepoForm.value.pushable);resetCheckStatus();"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper style="min-width: 120%">{{ (appBuild ? 'REGISTRYMGMT.ADDREGISTRY-PAGE.PUSHABLE-HELP' : 'REGISTRYMGMT.ADDREGISTRY-PAGE.PULLABLE-HELP') | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-input-container *ngIf="basicRepoForm.value.pushable">
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="user" formControlName="user" type="string" (change)="resetCheckStatus();"/>
+              <clr-control-error>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-password-container *ngIf="basicRepoForm.value.pushable">
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHPASS' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHPASS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrPassword name="password" formControlName="password" type="string" (change)="resetCheckStatus();"/>
+              <clr-control-error>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHPASS-ERROR' | translate }}</clr-control-error>
+            </clr-password-container>
+        </form>
+        <br>
+        <button (click)="checkCreateRepoAuth()" class="btn-sm btn btn-outline" *ngIf="basicRepoForm.value.pushable">
+           <clr-icon shape="connect"></clr-icon>
+           {{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CONTECTTEST' | translate }}
+        </button>
+        <div class="alert" [ngClass]="{'alert-success': checkStatus.checkSuccess, 'alert-danger': !checkStatus.checkSuccess}" role="alert" *ngIf="checkStatus.checked">
+          <div class="alert-items">
+           <div class="alert-item static">
+             <div class="alert-icon-wrapper">
+                <clr-icon *ngIf="checkStatus.checkSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+                <clr-icon *ngIf="!checkStatus.checkSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+             </div>
+             <span class="alert-text" *ngIf="checkStatus.checkSuccess">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.SUCCESS' | translate }}</span>
+             <span class="alert-text" *ngIf="!checkStatus.checkSuccess">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.FAILED' | translate }}</span>
+           </div>
+          </div>
+        </div>
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardeditrepo [(clrWizardOpen)]="editRepoOpen" (clrWizardOnFinish)="doEditRepoFinish()" (clrWizardOnCancel)="doEditRepoCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'REGISTRYMGMT.ACTION.EDITREGISTRY' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editRepoForm.invalid || checkStatus.checked ? !checkStatus.checkSuccess : checkStatus.checked">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'REGISTRYMGMT.ACTION.EDITPAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editRepoForm">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{editRepoForm.value.name}}{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-select-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PROVIDER' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="type" disabled>
+                <option value="{{ImageRegistryType.HARBOR}}">Harbor</option>
+              </select>
+              <clr-control-error>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PROVIDER-HELP' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="http(s)://registry.example.com" (change)="resetCheckStatus();"/>
+              <clr-control-error *clrIfError="'required'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+              </textarea>
+              <clr-control-error *clrIfError="'CAFormat'">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CA_ERROR' | translate }}</clr-control-error>
+            </clr-textarea-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-9">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PUSHABLE' | translate }}</label>
+                <input type="checkbox" clrToggle [checked]="editRepoForm.value.pushable" formControlName="pushable" name="pushable" (change)="setUpdateAuthInfoVaildtor(editRepoForm.value.pushable);resetCheckStatus();"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper style="min-width: 120%">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.PUSHABLE-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-input-container *ngIf="editRepoForm.value.pushable">
+              <label class="required clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="user" formControlName="user" type="string" (change)="resetCheckStatus();"/>
+              <clr-control-error>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHUSER-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-password-container *ngIf="editRepoForm.value.pushable">
+              <label class="clr-col-md-3">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHPASS' | translate }}</label>
+              <clr-control-helper>{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.AUTHPASS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrPassword name="password" formControlName="password" type="string" (change)="resetCheckStatus();"/>
+            </clr-password-container>
+        </form>
+        <br>
+        <button [disabled]="!editRepoForm.value.password" (click)="checkUpdateRepoAuth()" class="btn-sm btn btn-outline" *ngIf="editRepoForm.value.pushable">
+           <clr-icon shape="connect"></clr-icon>
+           {{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.CONTECTTEST' | translate }}
+        </button>
+        <div class="alert" [ngClass]="{'alert-success': checkStatus.checkSuccess, 'alert-danger': !checkStatus.checkSuccess}" role="alert" *ngIf="checkStatus.checked">
+          <div class="alert-items">
+           <div class="alert-item static">
+             <div class="alert-icon-wrapper">
+                <clr-icon *ngIf="checkStatus.checkSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+                <clr-icon *ngIf="!checkStatus.checkSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+             </div>
+             <span class="alert-text" *ngIf="checkStatus.checkSuccess">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.SUCCESS' | translate }}</span>
+             <span class="alert-text" *ngIf="!checkStatus.checkSuccess">{{ 'REGISTRYMGMT.ADDREGISTRY-PAGE.FAILED' | translate }}</span>
+           </div>
+          </div>
+        </div>
+    </clr-wizard-page>
+</clr-wizard>
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteRepo($event)"></app-delete-object>
+
+<router-outlet></router-outlet>

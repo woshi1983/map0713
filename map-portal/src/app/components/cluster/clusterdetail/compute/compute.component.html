@@ -1,0 +1,525 @@
+<div *ngIf="authService.isLoggedIn">
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showSetNodeCrodon()" class="btn btn-primary btn-outline" [disabled]="!selected">
+        <clr-icon shape="wrench"></clr-icon>
+          <span *ngIf="!selected || !selected?.spec.unschedulable"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.UNSCHEDULABLE' | translate }}</span>
+          <span *ngIf="!!selected && selected.spec.unschedulable"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE' | translate }}</span>
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='edit-label' type="button" [disabled]="!selected" (click)="showUpdateNodeLabels(selected)" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS' | translate }}</button>
+          <button id='edit-taint' type="button" [disabled]="!selected" (click)="showUpdateNodeTaints(selected)" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITTAINT' | translate }}</button>
+          <button id='drain-node' type="button" [disabled]="!selected" (click)="showDrainNode()" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showSearch = !showSearch"></clr-icon>
+        </span>
+        <input type="text" id="node" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SEARCH' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selected" [clrDgRowSelection]="true" style="overflow: visible;!important;">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true" style="min-width: 16% !important;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.SCHEDULABLE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.INTERNALIP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.EXTERNALIP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.KERNEL' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.OSIMAGE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.NODETYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.TITLE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.LABELS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.PLACEHOLDER' | translate }}</clr-dg-placeholder>
+    <clr-dg-row  *clrDgItems="let node of allNodes" [clrDgItem]="node">
+      <clr-dg-cell style="min-width: 16% !important;">{{node.name}}</clr-dg-cell>
+      <clr-dg-cell class="{{!!node?.status.ready ? 'READY' : 'NOTREADY'}}">{{!!node.status.ready ? 'Ready' : 'NotReady'}}</clr-dg-cell>
+      <clr-dg-cell>{{(node.spec.unschedulable ? 'SHARED.DATAGRID.NO' : 'SHARED.DATAGRID.YES') | translate}}</clr-dg-cell>
+      <clr-dg-cell>{{!!node?.status?.internalIP ? node.status.internalIP[0] : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{!!node?.status?.externalIP ? node.status.externalIP[0] : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{node.status.kernelVersion}}</clr-dg-cell>
+      <clr-dg-cell>{{node.status.osImage}}</clr-dg-cell>
+      <clr-dg-cell>{{node.capacity.cpu}} C / {{node.capacity.memory}} Gi</clr-dg-cell>
+      <clr-dg-cell>
+        <a href="javascript:void(0)" class="nav-link" (click)="showNodeResource(node.name)">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.VIEW' | translate }}</a>
+      </clr-dg-cell>
+      <clr-dg-cell style="min-width: 20% !important;">
+        <ng-container *ngIf="!!node?.labels">
+          <span class="label label-light-blue" style="margin-top: 2px;">{{(node.labels | keyvalue)[0].key}}{{(node.labels | keyvalue)[0].value ? ': ' : ''}}{{(node.labels | keyvalue)[0].value}}</span>
+          <span class="label label-light-blue" style="margin-top: 2px;">{{(node.labels | keyvalue)[1].key}}{{(node.labels | keyvalue)[1].value ? ': ' : ''}}{{(node.labels | keyvalue)[1].value}}</span>
+          <clr-signpost style="margin: 0;">
+            <a clrSignpostTrigger href="javascript:void(0)">
+              <span class="badge-light-blue badge" style="font-size: 12px;">  {{(node.labels | keyvalue).length}}+  </span>
+            </a>
+            <clr-signpost-content [clrPosition]="'left-middle'" *clrIfOpen style="max-width: 30rem;">
+              <span *ngFor="let each of node.labels | keyvalue" class="label label-light-blue" style="margin-top: 2px;">{{each.key}}{{!!each.value ? ': ' : ''}}{{each.value}}</span>
+            </clr-signpost-content>
+          </clr-signpost>
+        </ng-container>
+      </clr-dg-cell>
+      <clr-dg-cell>{{node.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{node.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allNodes.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-modal [(clrModalOpen)]="showNodeCordonModel" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE-TITLE' | translate }}</h3>
+  <div class="modal-body">
+      <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE-DESC1' | translate }} <b>{{(selected?.spec.unschedulable ? 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE-DESC2' : 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE-DESC3') | translate }}</b> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.SCHEDULABLE-DESC4' | translate }}</span>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showNodeCordonModel=false;selected = null;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="updateNodeCordon(selected);">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="updateLabelOpen" [clrModalClosable]="false" clrModalSize="lg">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.PAGETITLE' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="updateNodeLabelForm">
+          <div>
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <div class="clr-row clr-col-md-12">
+                  <clr-input-container style="margin-top: 0px;" class="clr-col-md-6">
+                    <label class="required" style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.KEY' | translate }}</label>
+                  </clr-input-container>
+                  <clr-input-container style="margin-top: 0px;margin-left: 10px;" class="clr-col-md-6">
+                    <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.VALUE' | translate }}</label>
+                  </clr-input-container>
+                </div>
+              </div>
+              <div class="section" *ngFor="let each of updateNodeLabels.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container style="width: 100%;">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.INPUTKEY' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string"
+                    autocomplete="off" required [attr.disabled]="disAllowNodeLabels.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.KEYERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px" class="clr-col-md-6">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.INPUTVALUE' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" [attr.disabled]="disAllowNodeLabels.includes(each.value.key) ? true : null"/>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteupdatelable(i)" fxLayout="row" fxLayoutAlign="start end" [attr.disabled]="disAllowNodeLabels.includes(each.value.key) ? true : null">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addupdatelabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.ADDLABELS' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="updateLabelOpen=false;this.doUpdateLabelsReset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="updateNodeLables(selected)" [disabled]="updateNodeLabelForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="updateTaintOpen" [clrModalClosable]="false" clrModalSize="lg">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITTAINT' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="updateNodeTaintForm">
+          <div>
+            <div class="card-text" formArrayName="taints">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <div class="clr-row clr-col-md-12">
+                  <clr-input-container style="margin-top: 0px;" class="clr-col-md-4">
+                    <label class="required" style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.KEY' | translate }}</label>
+                  </clr-input-container>
+                  <clr-input-container style="margin-top: 0px;margin-left: 10px;" class="clr-col-md-4">
+                    <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.VALUE' | translate }}</label>
+                  </clr-input-container>
+                  <clr-input-container style="margin-top: 0px;margin-left: 10px;" class="clr-col-md-4">
+                    <label class="required" style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITTAINT-PAGE.EFFECT' | translate }}</label>
+                  </clr-input-container>
+                </div>
+              </div>
+              <div class="section" *ngFor="let each of updateNodeTaints.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container class="clr-col-md-4" style="width: 100%;">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.INPUTKEY' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string"
+                    autocomplete="off" required [attr.disabled]="disAllowNodeTaint.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.KEYERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container class="clr-col-md-4" style="width: 100%;">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITLABELS-PAGE.INPUTVALUE' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" [attr.disabled]="disAllowNodeTaint.includes(each.value.key) ? true : null"/>
+                  </clr-input-container>
+                  <clr-select-container class="clr-col-md-4">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITTAINT-PAGE.EFFECT-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <select clrSelect name="effect" formControlName="effect" type="string" required [attr.disabled]="disAllowNodeTaint.includes(each.value.key) ? true : null">
+                      <option value="NoSchedule">NoSchedule</option>
+                      <option value="PreferNoSchedule">PreferNoSchedule</option>
+                      <option value="NoExecute">NoExecute</option>
+                    </select>
+                  </clr-select-container>
+                  <button style="min-height: 48px; min-width: 48px;" class="btn btn-link btn-icon" (click)="deleteUpdateTaint(i)" fxLayout="row" fxLayoutAlign="start end" [attr.disabled]="disAllowNodeTaint.includes(each.value.key) ? true : null">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addUpdateTaint()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.EDITTAINT-PAGE.ADDTAINT' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="updateTaintOpen=false;this.doUpdateTaintsReset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="doUpdateNodeTaints(selected)" [disabled]="updateNodeTaintForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="drainNodeOpen" [clrModalClosable]="false" clrModalSize="lg">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body" *ngIf="!showDrainEvent">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.TIMEOUT' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="drainNodeForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input clrInput  formControlName="timeout" type="number" #stepInupt/>
+        <clr-control-error *clrIfError="'min'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.TIMEOUT-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-body" style="margin-top: 20px;" *ngIf="loadingNodeDrainEvent">
+    <clr-spinner style="margin-left: 50%;" [clrMedium]="true">Loading ...</clr-spinner>
+  </div>
+  <div class="modal-body" *ngIf="!loadingNodeDrainEvent && showDrainEvent">
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.DRAINALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <clr-datagrid [clrDgRowSelection]="false">
+        <clr-dg-column [clrDgField]="'timestamp'" [clrDgSorted]="true">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.TIME' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column>
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.COUNT' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column>
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.LEVEL' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column style="min-width: 50%;">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.MESSAGE' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.ACTIONS.DRAINNODE-PAGE.NOMESSAGE' | translate }}</clr-dg-placeholder>
+        <clr-dg-row *clrDgItems="let nodeEvent of DrainNodeEventList" [clrDgItem]="nodeEvent">
+          <clr-dg-cell>{{nodeEvent.timestamp | datetimeTransition}}</clr-dg-cell>
+          <clr-dg-cell>{{nodeEvent.evictedPods}}/{{nodeEvent.totalPods}}</clr-dg-cell>
+          <clr-dg-cell>{{!!nodeEvent.stderr ? 'ERROR' : 'INFO'}}</clr-dg-cell>
+          <clr-dg-cell style="min-width: 50%;">{{nodeEvent.stdout}}{{!!nodeEvent.stderr && nodeEvent.stdout ? '\n' : ''}}{{nodeEvent.stderr}}</clr-dg-cell>
+        </clr-dg-row>
+        <clr-dg-footer>
+          <clr-dg-pagination #taskpagination [clrDgPageSize]="20" [clrDgTotalItems]="DrainNodeEventList.length">
+            <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+            {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{taskpagination.firstItem + 1}} - {{taskpagination.lastItem + 1}} / {{taskpagination.totalItems}}
+          </clr-dg-pagination>
+        </clr-dg-footer>
+      </clr-datagrid>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doDrainNodeCancel()" *ngIf="!showDrainEvent">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doDrainNode(selected);" [disabled]="drainNodeForm.invalid" *ngIf="!showDrainEvent">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    <button type="button" class="btn btn-outline" (click)="stopDrainNode()" *ngIf="showDrainEvent">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showNodeResourceModel" [clrModalClosable]="false" clrModalSize="lg">
+    <h3 class="modal-title">{{nodeResource?.name}} {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.TITLE' | translate }}</h3>
+    <div class="modal-body" style="margin-top: 20px;">
+      <clr-spinner *ngIf="loadingNodeResource" style="margin-left: 50%;" [clrMedium]="true">Loading ...</clr-spinner>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="!loadingNodeResource">
+        <div class="card-text clr-col-lg-12 clr-row">
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeCpuChart" (chartInit)="nodeCPUChartInit($event)" [options]="nodeCPUOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.CPUUSED' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.cpu?.used}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.cpu?.total}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeMemoryChart" (chartInit)="nodeMemoryChartInit($event)" [options]="nodeMemoryOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.MEMUSED' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.memory?.used}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.memory?.total}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      <div class="card-text clr-col-lg-12 clr-row">
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeCPURequestChart" (chartInit)="nodeCPURequestChartInit($event)" [options]="nodeCPURequestOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.CPUREQUEST' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.cpu?.request}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.cpu?.allocatable}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeMemoryRequestChart" (chartInit)="nodeMemoryRequestChartInit($event)" [options]="nodeMemoryRequestOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.MEMREQUEST' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.memory?.request}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.memory?.allocatable}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-text clr-col-lg-12 clr-row">
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeCPULimitChart" (chartInit)="nodeCPULimitChartInit($event)" [options]="nodeCPULimitOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.CPULIMIT' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.cpu?.limit}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.cpu?.allocatable}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+        <div class="clr-col-lg-6 clr-col-12 clr-row" style="margin-left: 8px;">
+          <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;padding-left: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa;padding-left: 0px;">
+                  <div class="card-text center-title" style="min-height: 160px;">
+                      <div echarts id="nodeMemoryLimitChart" (chartInit)="nodeMemoryLimitChartInit($event)" [options]="nodeMemoryLimitOption" style="height: 160px;"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;padding-right: 0px;">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text" style="min-height: 160px;margin-left: -1.8vw;">
+                      <div>
+                        <div style="font-size: 0.8vw;padding-bottom: 5px;padding-top: 40%">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE-PAGE.COMPUTEDATAGRIDFEILD.RESOURCE.MEMLIMIT' | translate }}</div>
+                        <div>
+                          <span style="font-size: 1.2vw;">
+                            <b>{{nodeResource?.memory?.limit}}</b>
+                          </span>
+                          <span style="font-size: 0.8vw;"> /{{nodeResource?.memory?.allocatable}}</span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="this.doCloseNodeResource()">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+

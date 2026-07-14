@@ -1,0 +1,628 @@
+# Where are all the schema files located?
+schema:
+  - docs/graphql/*.graphql
+
+# Where should the generated server code go?
+exec:
+  filename: pkg/graphql/endpoint_generated.go
+  package: graphql
+
+# Uncomment to enable federation
+# federation:
+#   filename: lib/graphql/federation_generated.go
+#   package: graphql
+
+# Where should any generated models go?
+model:
+  filename: pkg/graphql/model/models_generated.go
+  package: model
+
+# Where should the resolver implementations go?
+resolver:
+  type: Resolver
+  layout: follow-schema
+  dir: pkg/graphql/resolver
+  package: resolver
+
+# Optional: turn on use `gqlgen:"fieldName"` tags in your models
+# struct_tag: json
+
+# Optional: turn on to use []Thing instead of []*Thing
+# omit_slice_element_pointers: false
+
+# Optional: set to speed up generation time by not performing a final validation pass.
+# skip_validation: true
+
+# gqlgen will search for any type names in the schema in these go packages
+# if they match it will use them, otherwise it will generate them.
+autobind:
+  - "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/model"
+
+# This section declares type mapping between the GraphQL and go type systems
+#
+# The first line in each type will be used as defaults for resolver arguments and
+# modelgen, the others will be allowed when binding to fields. Configure them to
+# your liking
+models:
+  Application:
+    fields:
+      organization:
+        resolver: true
+  Applications:
+    fields:
+      edge:
+        resolver: true
+  AuditLog:
+    fields:
+      user:
+        resolver: true
+      organization:
+        resolver: true
+  AuditLogs:
+    fields:
+      edge:
+        resolver: true
+  AviLoadBalancerSpec:
+    fields:
+      seGroup:
+        resolver: true
+  AviLoadBalancerStatus:
+    fields:
+      clouds:
+        resolver: true
+      vsVips:
+        resolver: true
+      networkProfiles:
+        resolver: true
+      networks:
+        resolver: true
+  AviRouteSpec:
+    fields:
+      networkProfile:
+        resolver: true
+  Backup:
+    fields:
+      restores:
+        resolver: true
+      location:
+        resolver: true
+      cluster:
+        resolver: true
+  BackupStorageLocation:
+    fields:
+      backups:
+        resolver: true
+      restores:
+        resolver: true
+      cluster:
+        resolver: true
+  BinaryBuild:
+    fields:
+      cluster:
+        resolver: true
+  BinaryImage:
+    fields:
+      cluster:
+        resolver: true
+  Build:
+    fields:
+      imageRegistry:
+        resolver: true
+      cluster:
+        resolver: true
+      history:
+        resolver: true
+  BuildHistory:
+    fields:
+      edge:
+        resolver: true
+  BuildHistoryEntry:
+    fields:
+      imageRegistry:
+        resolver: true
+      cluster:
+        resolver: true
+  Builds:
+    fields:
+      edge:
+        resolver: true
+  ChartRepo:
+    fields:
+      versions:
+        resolver: true
+  ChartVersion:
+    fields:
+      details:
+        resolver: true
+  Cluster:
+    fields:
+      tlsCertChain:
+        resolver: true
+      sshPrivateKey:
+        resolver: true
+      extensions:
+        resolver: true
+      namespaces:
+        resolver: true
+      imageRegistries:
+        resolver: true
+      loadBalancer:
+        resolver: true
+      provider:
+        resolver: true
+      organization:
+        resolver: true
+  ClusterBackupSchedule:
+    fields:
+      components:
+        resolver: true
+      cluster:
+        resolver: true
+      organization:
+        resolver: true
+  ClusterBackupSchedules:
+    fields:
+      edge:
+        resolver: true
+  ClusterExtension:
+    fields:
+      related:
+        resolver: true
+      cluster:
+        resolver: true
+      organization:
+        resolver: true
+  ClusterExtensions:
+    fields:
+      edge:
+        resolver: true
+  ClusterImageRegistry:
+    fields:
+      imageRegistry:
+        resolver: true
+  ClusterImageRegistries:
+    fields:
+      edge:
+        resolver: true
+  ClusterProvider:
+    fields:
+      tlsCertChain:
+        resolver: true
+      imageRegistries:
+        resolver: true
+      loadBalancer:
+        resolver: true
+      organization:
+        resolver: true
+  ClusterProviderImageRegistry:
+    fields:
+      imageRegistry:
+        resolver: true
+  ClusterProviderImageRegistries:
+    fields:
+      edge:
+        resolver: true
+  ClusterProviders:
+    fields:
+      edge:
+        resolver: true
+  Clusters:
+    fields:
+      edge:
+        resolver: true
+  Component:
+    fields:
+      application:
+        resolver: true
+      organization:
+        resolver: true
+  Components:
+    fields:
+      edge:
+        resolver: true
+  ConfigMap:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  ConfigMapVolume:
+    fields:
+      ref:
+        resolver: true
+  Deployment:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  DockerfileBuild:
+    fields:
+      cluster:
+        resolver: true
+  DockerfileImage:
+    fields:
+      cluster:
+        resolver: true
+  HelmComponentTemplate:
+    fields:
+      chart:
+        resolver: true
+  ImageRepo:
+    fields:
+      tags:
+        resolver: true
+  ImageRegistry:
+    fields:
+      tlsCertChain:
+        resolver: true
+      projects:
+        resolver: true
+      organization:
+        resolver: true
+  ImageRegistries:
+    fields:
+      edge:
+        resolver: true
+  ImageProject:
+    fields:
+      images:
+        resolver: true
+  Ingress:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  IngressClass:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  Instance:
+    fields:
+      health:
+        resolver: true
+      services:
+        resolver: true
+      cluster:
+        resolver: true
+      release:
+        resolver: true
+      federation:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      organization:
+        resolver: true
+  InstanceFederation:
+    fields:
+      instances:
+        resolver: true
+      routes:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      organization:
+        resolver: true
+  InstanceFederations:
+    fields:
+      edge:
+        resolver: true
+  Instances:
+    fields:
+      edge:
+        resolver: true
+  Job:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  LoadBalancer:
+    fields:
+      tlsCertChain:
+        resolver: true
+      organization:
+        resolver: true
+  LoadBalancers:
+    fields:
+      edge:
+        resolver: true
+  Namespace:
+    fields:
+      cluster:
+        resolver: true
+  Node:
+    fields:
+      cluster:
+        resolver: true
+  NodeStatus:
+    fields:
+      usage:
+        resolver: true
+      allocated:
+        resolver: true
+  Organization:
+    fields:
+      roleBindings:
+        resolver: true
+  OrganizationQuota:
+    fields:
+      used:
+        resolver: true
+      total:
+        resolver: true
+  Organizations:
+    fields:
+      edge:
+        resolver: true
+  PersistentVolumeClaim:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  PersistentVolumeClaimVolume:
+    fields:
+      ref:
+        resolver: true
+  Pod:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  Policies:
+    fields:
+      edge:
+        resolver: true
+  Release:
+    fields:
+      component:
+        resolver: true
+      application:
+        resolver: true
+      organization:
+        resolver: true
+  Releases:
+    fields:
+      edge:
+        resolver: true
+  Restore:
+    fields:
+      backup:
+        resolver: true
+      location:
+        resolver: true
+      cluster:
+        resolver: true
+  Role:
+    fields:
+      policies:
+        resolver: true
+  RoleBinding:
+    fields:
+      user:
+        resolver: true
+      organization:
+        resolver: true
+  RoleBindings:
+    fields:
+      edge:
+        resolver: true
+  Roles:
+    fields:
+      edge:
+        resolver: true
+  Route:
+    fields:
+      federation:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      backends:
+        resolver: true
+      loadBalancer:
+        resolver: true
+      organization:
+        resolver: true
+  RouteBackend:
+    fields:
+      instance:
+        resolver: true
+  Routes:
+    fields:
+      edge:
+        resolver: true
+  Secret:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  SecretVolume:
+    fields:
+      ref:
+        resolver: true
+  Service:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  Shortcut:
+    fields:
+      organization:
+        resolver: true
+  Shortcuts:
+    fields:
+      edge:
+        resolver: true
+  SourceBuild:
+    fields:
+      cluster:
+        resolver: true
+  SourceImage:
+    fields:
+      cluster:
+        resolver: true
+  StandardPackageRepositories:
+    fields:
+      edge:
+        resolver: true
+  StorageClass:
+    fields:
+      instance:
+        resolver: true
+      component:
+        resolver: true
+      application:
+        resolver: true
+      cluster:
+        resolver: true
+  Supervisors:
+    fields:
+      edge:
+        resolver: true
+  TKG2SClusterProviderSpec:
+    fields:
+      vmClasses:
+        resolver: true
+      tanzuKubernetesReleases:
+        resolver: true
+      namespaces:
+        resolver: true
+  TKG2MClusterProviderSpec:
+    fields:
+      tanzuKubernetesReleases:
+        resolver: true
+      namespaces:
+        resolver: true
+  TKGSClusterProviderSpec:
+    fields:
+      vmClasses:
+        resolver: true
+      clusterReleases:
+        resolver: true
+      namespaces:
+        resolver: true
+      trustedCAs:
+        resolver: true
+  TKG2SClusterProviderSpecNamespace:
+    fields:
+      storageClasses:
+        resolver: true
+  TKGSClusterProviderSpecNamespace:
+    fields:
+      storages:
+        resolver: true
+  TKGMClusterProviderSpec:
+    fields:
+      clusterReleases:
+        resolver: true
+      namespaces:
+        resolver: true
+  User:
+    fields:
+      roleBindings:
+        resolver: true
+  Users:
+    fields:
+      edge:
+        resolver: true
+  # ********************** Scalar types **********************
+  Any:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Any
+  Base64String:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Base64String
+  Boolean:
+    model:
+      - github.com/99designs/gqlgen/graphql.Boolean
+  CIDR:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.CIDR
+  Duration:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Duration
+  Float:
+    model:
+      - github.com/99designs/gqlgen/graphql.Float
+  ID:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.UUID
+  IP:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.IP
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int64
+  IntOrString:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.IntOrString
+  Map:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Map
+  NullableMap:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.NullableMap
+  String:
+    model:
+      - github.com/99designs/gqlgen/graphql.String
+  Time:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Time
+  URL:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.URL
+  Upload:
+    model:
+      - github.com/99designs/gqlgen/graphql.Upload
+  Version:
+    model:
+      - gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/abstract.Version

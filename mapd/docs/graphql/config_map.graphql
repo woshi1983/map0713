@@ -1,0 +1,76 @@
+type ConfigMap {
+  name: String!
+  namespace: String!
+  labels: Map
+  data: Map
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  ConfigMap(cluster: ID!, namespace: String!, name: String!): ConfigMap!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `namespace`
+
+  - `cluster`
+
+  - `organization`
+
+  - `omitKappChanges`
+  """
+  ConfigMaps(filters: [QueryFilter!] = []): [ConfigMap!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateConfigMap(input: CreateConfigMap!): ConfigMap!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateConfigMap(input: UpdateConfigMap!): ConfigMap!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteConfigMap(input: DeleteConfigMap!): ConfigMap!
+}
+
+input CreateConfigMap {
+  name: String!
+  namespace: String!
+  data: Map!
+  cluster: ID!
+}
+
+input UpdateConfigMap {
+  name: String!
+  namespace: String!
+  data: Map
+  cluster: ID!
+}
+
+input DeleteConfigMap {
+  name: String!
+  namespace: String!
+  cluster: ID!
+}

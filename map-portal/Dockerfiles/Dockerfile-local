@@ -1,0 +1,13 @@
+# add application into nginx
+FROM nginx:1.21.4
+
+ENV DEX_IDP_ENDPOINT http://dex-service:5556
+ENV MAP_API_ENDPOINT http://mapd-service:9800
+ENV ENABLE_SSL off
+ENV TLS_CERT_PATH /etc/nginx/ssl/server.crt
+ENV TLS_KEY_PATH /etc/nginx/ssl/server.key
+COPY ./dist/map-portal /usr/share/nginx/html/portal
+RUN rm -f /etc/nginx/conf.d/default.conf && rm -f /etc/nginx/nginx.conf
+COPY Dockerfiles/ssl/ /etc/nginx/ssl/
+COPY Dockerfiles/nginx.conf /etc/nginx/nginx.conf
+COPY Dockerfiles/nginx.conf.template /etc/nginx/templates/nginx.conf.template

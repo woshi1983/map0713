@@ -1,0 +1,287 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'BUILD.BINARYIMAGE.ALL-IMAGES' | translate }}</span>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateBinaryImage()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'BUILD.BINARYIMAGE.CREATEIMAGE' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+            <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-binary-image' (click)="showUpdateBinaryImage(selectedImage)" type="button" [disabled]="!selectedImage" clrDropdownItem>{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE' | translate }}</button>
+            <button id='delete-binary-image' type="button" (click)="showDeleteBinaryImage(selectedImage)" [disabled]="!selectedImage" clrDropdownItem>{{ 'BUILD.BINARYIMAGE.ACTION.DELETEIMAGE' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="binary-image-name" placeholder="{{ 'BUILD.BINARYIMAGE.SEARCHIMAGE' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedImage" [clrDgRowSelection]="true">
+      <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'BUILD.BINARYIMAGE.DATAGRIDFIELD.NAME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column [clrDgField]="'cluster.name'">
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'BUILD.BINARYIMAGE.DATAGRIDFIELD.CLUSTER' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+
+      <clr-dg-placeholder>{{ 'BUILD.BINARYIMAGE.DATAGRIDFIELD.NOBUILD' | translate }}</clr-dg-placeholder>
+      <clr-dg-row *clrDgItems="let image of allImages;" [clrDgItem]="image">
+        <clr-dg-cell><a routerLink="{{image.cluster.id}}/{{image.name}}">{{image.name}}</a></clr-dg-cell>
+        <clr-dg-cell><a routerLink="/portal/cluster/management/{{image.cluster.id}}/{{image.cluster.name}}">{{image.cluster.name}}</a></clr-dg-cell>
+        <clr-dg-cell>{{image.createdAt | datetimeTransition}}</clr-dg-cell>
+        <clr-dg-cell>{{image.lastModified | datetimeTransition}}</clr-dg-cell>
+      </clr-dg-row>
+      <clr-dg-footer>
+          <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allImages.length">
+            <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+            {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+          </clr-dg-pagination>
+      </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+
+<clr-wizard #wizardbinaryimage [(clrWizardOpen)]="createBinaryImageOpen" (clrWizardOnFinish)="doCreateBinaryImageFinish()" (clrWizardOnCancel)="doCreateBinaryImageCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="binaryImageSourceForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="binaryImageSourceForm.invalid">
+        <ng-template clrPageTitle>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="binaryImageSourceForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{binaryImageSourceForm.value.name}}{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR5' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="cluster" (change)="getAllRegistry(binaryImageSourceForm.value.cluster)">
+              <option value="{{cluster.id}}" *ngFor="let cluster of allClusters">{{cluster.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-input-container style="width: 100%;">
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL' | translate }}</label>
+            <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput id="sourceURL" name="sourceURL" formControlName="sourceURL" type="string" required placeholder="http://192.168.1.1/app.war"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-ERROR2' | translate }} {{packagePattern}}。</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderRegistry" (change)="getAllBuilderProjects(binaryImageSourceForm.value.builderRegistry)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of builderRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderProject" (change)="getAllImages(binaryImageSourceForm.value.builderProject)">
+              <option value="{{builderProject}}" *ngFor="let builderProject of builderProjectList;trackBy: customTrackBy;">{{builderProject}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderImage" (change)="getAllTags(binaryImageSourceForm.value.builderImage)">
+              <option value="{{image.name}}" *ngFor="let image of builderImageList;trackBy: customTrackBy;">{{image.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect name="builderImageTag" formControlName="builderImageTag">
+                  <option value="{{tag}}" *ngFor="let tag of builderTagsList; trackBy: customTrackBy;">{{tag}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageRegistry" (change)="getAllOutputProjects(binaryImageSourceForm.value.appImageRegistry)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of pushableRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageProject">
+              <option value="{{outputProject}}" *ngFor="let outputProject of outputProjectList;trackBy: customTrackBy;">{{outputProject}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR' | translate }}</label>
+            <input class="clr-col-md-9" clrInput id="deployDir" name="deployDir" formControlName="deployDir" type="string" required placeholder="/app"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR-ERROR' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.UID-HELP' | translate }}</clr-control-helper>
+            <label class="clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.UID' | translate }}</label>
+            <input class="clr-col-md-9" clrInput id="processId" name="processId" formControlName="processId" type="number" placeholder="0"/>
+          </clr-input-container>
+        </form>
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardeditbinaryimage [(clrWizardOpen)]="editBinaryImageOpen" (clrWizardOnFinish)="doUpdateBinaryImageFinish()" (clrWizardOnCancel)="doUpdateBinaryImageCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editBinaryImageSourceForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editBinaryImageSourceForm.invalid">
+        <ng-template clrPageTitle>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editBinaryImageSourceForm">
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME' | translate }}</label>
+            <input class="clr-col-md-9" clrInput  name="name" formControlName="name" type="string" required disabled/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{editBinaryImageSourceForm.value.name}}{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.NAME-ERROR5' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="cluster" disabled>
+              <option value="{{editBinaryImageSourceForm.value.cluster}}">{{selectedImage?.cluster?.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.CLUSTER-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-input-container style="width: 100%;">
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL' | translate }}</label>
+            <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  name="sourceURL" formControlName="sourceURL" type="string" required placeholder="http://192.168.1.1/app.war"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.URL-ERROR2' | translate }} {{packagePattern}}。</clr-control-error>
+          </clr-input-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderRegistry" (change)="getAllBuilderProjectsForUpdate(editBinaryImageSourceForm.value.builderRegistry)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of builderRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noImageProjectAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderProject" required (change)="getAllImagesForUpdate(editBinaryImageSourceForm.value.builderRegistry, editBinaryImageSourceForm.value.builderProject)">
+              <option value="{{builderProject}}" *ngFor="let builderProject of builderProjectList">{{builderProject}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noImageProjectAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-PAGE.NOIMAGEPROJECT' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noImageNameAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderImage" required (change)="getAllTags(editBinaryImageSourceForm.value.builderImage, true)">
+              <option value="{{image.name}}" *ngFor="let image of builderImageList">{{image.name}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noImageNameAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-PAGE.NOIMAGENAME' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGE-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noImageTagAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="builderImageTag" required (change)="changeNoTagsAlert()">
+                  <option value="{{tag}}" *ngFor="let tag of builderTagsList">{{tag}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noImageTagAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-PAGE.NOIMAGETAG' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.IMAGETAG-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageRegistry" (change)="getAllOutputProjectsForUpdate(editBinaryImageSourceForm.value.appImageRegistry)">
+              <option value="{{registry.imageRegistry.id}}" *ngFor="let registry of pushableRegistrytList;trackBy: customTrackBy;">{{registry.imageRegistry.name}}</option>
+            </select>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPREPO-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-select-container>
+            <clr-control-helper *ngIf="!noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT' | translate }}</label>
+            <select class="clr-col-md-9" clrSelect formControlName="appImageProject" (change)="changeNoOutputProjectAlert();">
+              <option value="{{outputProject}}" *ngFor="let outputProject of outputProjectList">{{outputProject}}</option>
+            </select>
+            <clr-control-helper style="color: #c21d00" *ngIf="noOutputProjectAlert">{{ 'BUILD.BINARYIMAGE.ACTION.EDITIMAGE-PAGE.NOAPPIMAGEPROJECT' | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.APPIMAGEPROJECT-ERROR' | translate }}</clr-control-error>
+          </clr-select-container>
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR-HELP' | translate }}</clr-control-helper>
+            <label class="required clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR' | translate }}</label>
+            <input class="clr-col-md-9" clrInput  name="deployDir" formControlName="deployDir" type="string" required placeholder="/app"/>
+            <clr-control-error *clrIfError="'required'">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.DEPLOYDIR-ERROR' | translate }}</clr-control-error>
+          </clr-input-container>
+          <clr-input-container>
+            <clr-control-helper>{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.UID-HELP' | translate }}</clr-control-helper>
+            <label class="clr-col-md-3">{{ 'BUILD.BINARYIMAGE.CREATEIMAGE-PAGE.UID' | translate }}</label>
+            <input class="clr-col-md-9" clrInput  name="processId" formControlName="processId" type="number" placeholder="0"/>
+          </clr-input-container>
+        </form>
+    </clr-wizard-page>
+</clr-wizard>
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteBinaryImage($event)"></app-delete-object>
+
+<router-outlet></router-outlet>

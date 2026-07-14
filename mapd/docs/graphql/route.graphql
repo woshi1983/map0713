@@ -1,0 +1,250 @@
+type Route {
+  id: ID!
+  name: String!
+  description: String!
+  type: LoadBalancerType!
+  protocol: RouteProtocol!
+  ip: IP
+  port: Int!
+  backends: [RouteBackend!]
+  spec: RouteSpec
+  status: RouteStatus!
+  component: Component!
+  application: Application!
+  loadBalancer: LoadBalancer!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Routes {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: RouteNodes!
+}
+
+extend type Query {
+  """
+  requires `read:route` or above.
+  """
+  Route(id: ID!): Route!
+  """
+  requires `read:route` or above.
+
+  Filters:
+
+  - `name`
+
+  - `application`
+
+  - `loadBalancer`
+
+  - `organization`
+  """
+  Routes(page: QueryPage = {}, filters: [QueryFilter!] = []): Routes!
+}
+
+extend type Mutation {
+  """
+  requires `write:route` or above.
+  """
+  CreateRoute(input: CreateRoute!): Route!
+  """
+  requires `write:route` or above.
+  """
+  UpdateRoute(input: UpdateRoute!): Route!
+  """
+  requires `modify:route` or above.
+  """
+  DeleteRoute(input: DeleteRoute!): Route!
+}
+
+type RouteNodes {
+  nodes: [Route!]
+}
+
+enum RouteProtocol {
+  TCP
+  UDP
+}
+
+union RouteSpec = AviRouteSpec
+
+type AviRouteSpec {
+  _loadBalancer: ID!
+  _networkProfileID: String!
+  networkProfile: String!
+  lbAlgorithm: String!
+  lbAlgorithmHash: String!
+  lbAlgorithmConsistentHashHeader: String!
+  """manualAllocatedVsVIP indicates if the VsVIP was specified by user manually.
+  """
+  manualAllocatedVsVIP: Boolean!
+  """a route's VsVIP being `persistent` means it will not be removed from
+  AVI even after the route is deleted.
+  """
+  persistentVsVIP: Boolean!
+}
+
+type RouteBackend {
+  id: ID!
+  name: String!
+  namespace: String!
+  type: String!
+  ip: IP!
+  port: Int!
+  ratio: Int!
+  instance: Instance!
+}
+
+enum RouteStatus {
+  PROVISIONING
+  PROVISIONED
+  DELETING
+}
+
+"""
+CreateRoute checks given backends if they are allocated to the same LB but in
+different cluster.
+"""
+input CreateRoute {
+  name: String!
+  description: String
+  protocol: RouteProtocol = "TCP"
+  port: Int!
+  backends: [AddRouteBackend!]
+  spec: CreateRouteSpec
+  component: ID!
+  loadBalancer: ID!
+}
+
+input CreateRouteSpec {
+  avi: CreateAviRouteSpec
+}
+
+input CreateAviRouteSpec {
+  """Specify the name of a particular network profile that the virtual service
+  will be associated with.
+
+  Avi provides the following profiles by default:
+
+  - System-TCP-Fast-Path
+  - System-TCP-Proxy
+  - System-UDP-Fast-Path
+  - System-UDP-Fast-Path-VDI
+  - System-UDP-No-SNAT
+  - System-UDP-Per-Pkt
+
+  You can also use profiles that were created by yourself. Be sure it matches
+  the value of `protocol`.
+  """
+  networkProfile: String
+  """The load balancing algorithm will pick a server within the pool’s list of
+  available servers. Values `LB_ALGORITHM_NEAREST_SERVER` and 
+  `LB_ALGORITHM_TOPOLOGY` are only allowed for GSLB pool (for this, they are
+  never used).
+  
+  Enum options:
+
+  - LB_ALGORITHM_LEAST_CONNECTIONS
+  - LB_ALGORITHM_ROUND_ROBIN
+  - LB_ALGORITHM_FASTEST_RESPONSE
+  - LB_ALGORITHM_CONSISTENT_HASH
+  - LB_ALGORITHM_LEAST_LOAD
+  - LB_ALGORITHM_FEWEST_SERVERS
+  - LB_ALGORITHM_RANDOM
+  - LB_ALGORITHM_FEWEST_TASKS
+  - LB_ALGORITHM_NEAREST_SERVER
+  - LB_ALGORITHM_CORE_AFFINITY
+  - LB_ALGORITHM_TOPOLOGY
+  """
+  lbAlgorithm: String = "LB_ALGORITHM_LEAST_CONNECTIONS"
+  """Criteria used as a key for determining the hash between the client and
+  server. User can specify this value only if `lbAlgorithm` is set to
+  `LB_ALGORITHM_CONSISTENT_HASH`.
+  
+  Enum options:
+
+  - LB_ALGORITHM_CONSISTENT_HASH_SOURCE_IP_ADDRESS
+  - LB_ALGORITHM_CONSISTENT_HASH_SOURCE_IP_ADDRESS_AND_PORT
+  - LB_ALGORITHM_CONSISTENT_HASH_URI
+  - LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER
+  - LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_STRING
+  - LB_ALGORITHM_CONSISTENT_HASH_CALLID
+  """
+  lbAlgorithmHash: String = "LB_ALGORITHM_CONSISTENT_HASH_SOURCE_IP_ADDRESS"
+  """HTTP header name to be used for the hash key. Required when
+  `lbAlgorithmHash` is set to `LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER`.
+  """
+  lbAlgorithmConsistentHashHeader: String
+  """name of a VsVIP to allocate.
+
+  This field is used for allocating existed VsVIP to a route.
+
+  If `vsVip` is specified, the `preferedNetwork` on its LoadBalancer will
+  be ignored.
+  """
+  vsVip: String
+  """a route's VsVIP being `persistent` means it will not be removed from
+  AVI even after the route is deleted.
+  """
+  persistentVsVIP: Boolean
+}
+
+input UpdateRoute {
+  id: ID!
+  description: String
+  port: Int
+  addBackends: [AddRouteBackend!]
+  removeBackends: [RemoveRouteBackend!]
+  spec: UpdateRouteSpec
+}
+
+input UpdateRouteSpec {
+  avi: UpdateAviRouteSpec
+}
+
+input UpdateAviRouteSpec {
+  lbAlgorithm: String
+  lbAlgorithmHash: String
+  lbAlgorithmConsistentHashHeader: String
+  persistentVsVIP: Boolean
+}
+
+input DeleteRoute {
+  id: ID!
+  """when specified as true, will only delete the route from the database.
+
+  Should be only used when network is disconnected with the load balancer, and
+  the route has been manually removed from the load balancer.
+
+  This should not be specified if the route is still in use. Pools, VSVIPs (if
+  necessary), virtual services SHALL be fully removed before removing route
+  from the database.
+  """
+  force: Boolean = false
+}
+
+input AddRouteBackend {
+  """name is the name of Service or Ingress to be referenced.
+
+  ** Ingress is currently not supported yet. **
+  """
+  name: String!
+  type: String = "Service"
+  """ip is attempted to be automatically determined if unspecified.
+  """
+  ip: IP
+  """port is automatically determined only if there is only one available port.
+  """
+  port: Int
+  """value range: 1 - 20
+  """
+  ratio: Int = 20
+  instance: ID!
+}
+
+input RemoveRouteBackend {
+  id: ID!
+}

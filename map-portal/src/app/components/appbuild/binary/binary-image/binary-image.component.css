@@ -1,0 +1,165 @@
+.refresh-btn {
+    cursor: pointer;
+}
+.refresh-btn:hover {
+    color: #007CBB;
+}
+.custom-dropdown-toggle {
+  margin-top: 6px;
+  padding-right: .6rem !important;
+}
+.rightPos {
+  margin: 0 2rem 0 auto;
+  z-index: 100;
+}
+
+.nav-divider {
+  display: inline-block;
+  width: 2px;
+  height: 30px;
+  background-color: gray;
+  position: relative;
+  top: 10px;
+  left: 5px;
+  right: 5px;
+  opacity: 0.3;
+  content: '';
+}
+.validateTitle {
+  color: #005e94;
+  font-weight: bold;
+  width: 28%;
+  text-align: left;
+  display: inline-block;
+}
+
+.execution-card-name {
+  margin-left: 5px;
+  font-size: large;
+  font-weight: bold;
+}
+
+a.card-title {
+  line-height: 2rem;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+clr-icon.is-purple {
+  color: #781da0;
+}
+clr-icon.is-highlight {
+  color: #0079b8;
+}
+
+.tag-container {
+  width: 100%;
+  height: 26px;
+  overflow: hidden;
+  margin-top: .5rem;
+  padding: 0;
+  display: inline-block;
+}
+
+.label-danger {
+  background: #f5dbd9;
+  color: #a32100;
+  border: 1px solid #ebafa6;
+}
+
+.card-divider {
+  margin-left: -.75rem;
+  margin-right: -.75rem;
+  width: auto;
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+  display: block;
+  border-bottom: 1px solid #eee;
+}
+.valuefield {
+  white-space: pre-wrap;
+  word-break: normal;
+  word-wrap: break-word;
+}
+
+.status-bar-container .clr-tooltip{
+    flex: 1 1 auto;
+    height: 6px;
+    margin: 5px;
+    max-width: 50px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    min-width: 10px;
+}
+.tooltip {
+    overflow: visible;
+    text-align: center;
+}
+.stage-status-bar {
+  flex: 5 1 auto;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  height: 6px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 3px;
+}
+.execution-success-bg-color .with-border {
+  border-color: #60b515;
+}
+.execution-success-bg-color {
+  background-color: #60b515;
+}
+.custom-progress {
+  width: 30%;
+  color: #0072a3;
+  vertical-align: middle;
+}
+.clip-text {
+  font-size: .7rem;
+  width: 120%;
+}
+
+.loop{
+  color: #0072a3;
+  text-align: left;
+}
+.completed {
+  fill: #60b515;
+  stroke: #fff;
+}
+.failed {
+  fill: #c92100;
+  stroke: #fff;
+}
+.unkowned {
+  fill: #c9a30d;
+  stroke: #fff;
+}
+
+.RUNNING {
+  font-weight: bold;
+  color: #0072a3;
+  stroke: #fff;
+}
+.SUCCESS {
+  font-weight: bold;
+  color: #60b515;
+  stroke: #fff;
+}
+.FAILURE {
+  font-weight: bold;
+  color: #c92100;
+  stroke: #fff;
+}
+.PENDING{
+  font-weight: bold;
+  color: #c9a30d;
+  stroke: #fff;
+}
+.UNKNOWN{
+  font-weight: bold;
+  color: rgba(184, 184, 184, 0.47);
+  stroke: #fff;
+}

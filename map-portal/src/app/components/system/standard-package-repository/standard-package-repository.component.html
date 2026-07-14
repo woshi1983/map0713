@@ -1,0 +1,133 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'STANDARDPACKAGEMGMT.ALL' | translate }}</span>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <button (click)="showAdd()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus"></clr-icon>
+        {{ 'STANDARDPACKAGEMGMT.ADD' | translate }}
+      </button>
+    </div>
+    <div class="clr-form">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button type="button" (click)="showEdit(selectedRepository)" [disabled]="!selectedRepository" clrDropdownItem>{{ 'STANDARDPACKAGEMGMT.ACTION.EDIT' | translate }}</button>
+          <button type="button" (click)="setDefault(selectedRepository)" [disabled]="!selectedRepository || selectedRepository.default" clrDropdownItem>{{ 'STANDARDPACKAGEMGMT.ACTION.SETDEFAULT' | translate }}</button>
+          <button type="button" (click)="showDelete(selectedRepository)" [disabled]="!selectedRepository" clrDropdownItem>{{ 'STANDARDPACKAGEMGMT.ACTION.DELETE' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" placeholder="{{ 'STANDARDPACKAGEMGMT.SEARCH' | translate }}" class="clr-input" size="24" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedRepository" [clrDgRowSelection]="true">
+    <clr-dg-column>{{ 'STANDARDPACKAGEMGMT.DATAGRID.NAME' | translate }}</clr-dg-column>
+    <clr-dg-column>{{ 'SHARED.DATAGRID.DESC' | translate }}</clr-dg-column>
+    <clr-dg-column>{{ 'STANDARDPACKAGEMGMT.DATAGRID.IMAGE' | translate }}</clr-dg-column>
+    <clr-dg-column>{{ 'STANDARDPACKAGEMGMT.DATAGRID.DEFAULT' | translate }}</clr-dg-column>
+    <clr-dg-column>{{ 'SHARED.DATAGRID.CREATETIME' | translate }}</clr-dg-column>
+    <clr-dg-column>{{ 'SHARED.DATAGRID.UPDATETIME' | translate }}</clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'STANDARDPACKAGEMGMT.DATAGRID.EMPTY' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let repository of standardPackageRepositories" [clrDgItem]="repository">
+      <clr-dg-cell>{{repository.name}}</clr-dg-cell>
+      <clr-dg-cell>{{repository.description}}</clr-dg-cell>
+      <clr-dg-cell class="image-cell">{{repository.image}}</clr-dg-cell>
+      <clr-dg-cell>
+        <span class="label label-success" *ngIf="repository.default">{{ 'STANDARDPACKAGEMGMT.DEFAULT' | translate }}</span>
+        <span *ngIf="!repository.default">-</span>
+      </clr-dg-cell>
+      <clr-dg-cell>{{repository.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{repository.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-modal [(clrModalOpen)]="addOpen" [clrModalSize]="'lg'">
+  <h3 class="modal-title">{{ 'STANDARDPACKAGEMGMT.ADD' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="repositoryForm">
+      <ng-container *ngTemplateOutlet="repositoryFormFields"></ng-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="addOpen = false">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" [disabled]="repositoryForm.invalid" (click)="doAddFinish()">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="editOpen" [clrModalSize]="'lg'">
+  <h3 class="modal-title">{{ 'STANDARDPACKAGEMGMT.ACTION.EDIT' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="repositoryForm">
+      <ng-container *ngTemplateOutlet="repositoryFormFields"></ng-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="editOpen = false">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" [disabled]="repositoryForm.invalid" (click)="doEditFinish()">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="deleteOpen">
+  <h3 class="modal-title">{{ 'STANDARDPACKAGEMGMT.ACTION.DELETE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'STANDARDPACKAGEMGMT.ACTION.DELETECONFIRM' | translate }} <b>{{selectedRepository?.name}}</b>?</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="deleteOpen = false">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-danger" (click)="deleteRepository()">{{ 'SHARED.DELETE.DELETE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<ng-template #repositoryFormFields>
+  <clr-input-container>
+    <label class="required clr-col-md-3">{{ 'STANDARDPACKAGEMGMT.FORM.NAME' | translate }}</label>
+    <input class="clr-col-md-9" clrInput [formControl]="repositoryForm.controls.name" type="string" required/>
+    <clr-control-error *clrIfError="'required'">{{ 'STANDARDPACKAGEMGMT.FORM.NAME-ERROR1' | translate }}</clr-control-error>
+    <clr-control-error *clrIfError="'maxlength'">{{ 'STANDARDPACKAGEMGMT.FORM.NAME-ERROR2' | translate }}</clr-control-error>
+    <clr-control-error *clrIfError="'pattern'">{{ 'STANDARDPACKAGEMGMT.FORM.NAME-ERROR3' | translate }} {{restricNamePattern}}</clr-control-error>
+    <clr-control-error *clrIfError="'name'">{{repositoryForm.value.name}}{{ 'STANDARDPACKAGEMGMT.FORM.NAME-ERROR4' | translate }}</clr-control-error>
+  </clr-input-container>
+  <clr-textarea-container>
+    <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+    <textarea class="clr-col-md-9" clrTextarea [formControl]="repositoryForm.controls.description" type="string"></textarea>
+  </clr-textarea-container>
+  <clr-input-container>
+    <label class="required clr-col-md-3">{{ 'STANDARDPACKAGEMGMT.FORM.IMAGE' | translate }}</label>
+    <clr-control-helper>{{ 'STANDARDPACKAGEMGMT.FORM.IMAGE-HELP' | translate }}</clr-control-helper>
+    <input class="clr-col-md-9" clrInput [formControl]="repositoryForm.controls.image" type="string" required/>
+    <clr-control-error *clrIfError="'required'">{{ 'STANDARDPACKAGEMGMT.FORM.IMAGE-ERROR1' | translate }}</clr-control-error>
+    <clr-control-error *clrIfError="'pattern'">{{ 'STANDARDPACKAGEMGMT.FORM.IMAGE-ERROR2' | translate }}</clr-control-error>
+  </clr-input-container>
+  <clr-toggle-container>
+    <clr-toggle-wrapper>
+      <label class="clr-col-md-9">{{ 'STANDARDPACKAGEMGMT.FORM.DEFAULT' | translate }}</label>
+      <input type="checkbox" clrToggle [formControl]="repositoryForm.controls.default" name="default"/>
+    </clr-toggle-wrapper>
+  </clr-toggle-container>
+</ng-template>

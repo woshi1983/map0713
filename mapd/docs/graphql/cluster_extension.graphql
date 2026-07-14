@@ -1,0 +1,109 @@
+type ClusterExtension {
+  id: ID!
+  name: ClusterExtensionName!
+  endpoints: [URL!]
+  spec: Map
+  state: ClusterExtensionState!
+  status: ClusterExtensionStatus!
+  related(page: QueryPage = {}, filters: [QueryFilter!] = []): Clusters!
+  cluster: Cluster!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type ClusterExtensions {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterExtensionNodes!
+}
+
+extend type Query {
+  """
+  requires `read:cluster` or above.
+  """
+  ClusterExtension(id: ID!): ClusterExtension!
+  """
+  requires `read:cluster` or above.
+
+  Filters:
+
+  - `name`
+
+  - `status`
+
+  - `related`
+
+  - `cluster`
+
+  - `organization`
+  """
+  ClusterExtensions(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterExtensions!
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster` or above.
+  """
+  EnableClusterExtension(input: EnableClusterExtension!): ClusterExtension!
+  """
+  requires `write:cluster` or above.
+  """
+  ModifyClusterExtension(input: ModifyClusterExtension!): ClusterExtension!
+  """
+  requires `write:cluster` or above.
+  """
+  DisableClusterExtension(input: DisableClusterExtension!): ClusterExtension!
+}
+
+type ClusterExtensionNodes {
+  nodes: [ClusterExtension!]
+}
+
+enum ClusterExtensionName {
+  TBS
+  OCTANT
+  CONTOUR
+  ELASTICSEARCH
+  FLUENTBIT
+  GRAFANA
+  PROMETHEUS
+  WEB_TERMINAL
+  CSI_DRIVER_NFS
+}
+
+enum ClusterExtensionState {
+  UNKNOWN
+  ENABLING
+  ENABLED
+  DISABLING
+}
+
+enum ClusterExtensionStatus {
+  PENDING
+  PROVISIONING
+  PROVISIONED
+  FAILED
+}
+
+input EnableClusterExtension {
+  name: ClusterExtensionName!
+  spec: Map
+  """some of the extensions may be able to manage other clusters, and for
+  those do not, this has no effect.
+  """
+  related: [ID!]
+  cluster: ID!
+}
+
+input ModifyClusterExtension {
+  id: ID!
+  spec: Map
+  addRelated: [ID!]
+  removeRelated: [ID!]
+}
+
+input DisableClusterExtension {
+  id: ID!
+}

@@ -1,0 +1,50 @@
+<clr-modal [(clrModalOpen)]="!!event && opened" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ event?.title }}</h3>
+    <div class="modal-body">
+      <p>{{ event?.message }} <b>{{ event?.objectName }}</b> ?</p>
+      <div *ngIf="!!event?.alerts">
+        <div class="alert" [ngClass]="{'alert-warning': alert.type == 1, 'alert-info': alert.type == 2, 'alert-danger': alert.type == 0}" role="alert" *ngFor="let alert of event?.alerts;">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper" [ngSwitch]="alert.type">
+                <ng-template [ngSwitchCase]="0">
+                  <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+                </ng-template>
+                <ng-template [ngSwitchCase]="1">
+                  <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+                </ng-template>
+                <ng-template [ngSwitchCase]="2">
+                  <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+                </ng-template>
+              </div>
+              <span class="alert-text" style="letter-spacing: 2px;white-space: nowrap;">{{alert.message}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="event?.formInputLabel">
+        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+          <clr-input-container>
+            <label class="required">{{ event?.formInputLabel }}</label>
+          </clr-input-container>
+        </div>
+        <form clrForm [formGroup]="deleteConfirmForm">
+          <clr-input-container style="margin-top: .2rem;">
+            <label style="max-width: 0px; display: none"></label>
+            <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{ event?.objectName }}" size="20"/>
+          </clr-input-container>
+        </form>
+      </div>
+    </div>
+    <div class="modal-footer" [ngSwitch]="buttons">
+      <ng-template [ngSwitchCase]="0">
+        <button type="button" class="btn btn-outline" (click)="cancel()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" [disabled]="deleteConfirmForm.invalid || deleteConfirmForm.value.confirm !== event?.objectName" (click)="confirm()">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+      </ng-template>
+      <ng-template [ngSwitchCase]="1">
+        <button type="button" class="btn btn-outline" (click)="close()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="confirm()">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+      </ng-template>
+    </div>
+</clr-modal>
+<router-outlet></router-outlet>

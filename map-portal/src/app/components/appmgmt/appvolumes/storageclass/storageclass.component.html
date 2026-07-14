@@ -1,0 +1,912 @@
+<div *ngIf="authService.isLoggedIn">
+
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPVOLUME.SC.ALL_SC' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateStorageClass()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.SC.CREATE_SC' | translate }}
+      </button>
+      <button [disabled]="!selectedStorageClass" (click)="showSetDefaultStorageClass(selectedStorageClass)" class="btn btn-primary btn-outline">
+          <clr-icon shape="wrench"></clr-icon>
+          <span *ngIf="!checkDefaultSC(selectedStorageClass?.annotations)"> {{ 'APPVOLUME.SC.ACTION.SETDEFAULT' | translate }}</span>
+          <span *ngIf="checkDefaultSC(selectedStorageClass?.annotations)"> {{ 'APPVOLUME.SC.ACTION.UNSETDEFAULT' | translate }}</span>
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+            <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-sc-params' type="button" [disabled]="!selectedStorageClass" (click)="showUpdateStorageClassOptions(selectedStorageClass)" clrDropdownItem>{{ 'APPVOLUME.SC.ACTION.UPDATEPARAMS' | translate }}</button>
+            <button id='edit-sc-anno' type="button" [disabled]="!selectedStorageClass" (click)="showUpdateStorageClassAnnotations(selectedStorageClass)" clrDropdownItem>{{ 'APPVOLUME.SC.ACTION.UPDATEANNOTATION' | translate }}</button>
+            <button id='edit-sc-label' type="button" [disabled]="!selectedStorageClass" (click)="showUpdateStorageClassLabels(selectedStorageClass)" clrDropdownItem>{{ 'APPVOLUME.SC.ACTION.UPDATELABELS' | translate }}</button>
+            <button id='delete-sc' type="button" (click)="showRemoveDialog(selectedStorageClass)" [disabled]="!selectedStorageClass" clrDropdownItem>{{ 'APPVOLUME.SC.ACTION.DELETESC' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="sc" placeholder="{{ 'APPVOLUME.SC.SEARCHSC' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedStorageClass" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'cluster.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'reclaimPolicy'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.POLICY' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'volumeBindingMode'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.MODE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'allowVolumeExpansion'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.ALLOWEXPANSION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'provisioner'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.PROVIDER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'component.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.COMPONENT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'application.name'">
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'APPVOLUME.SC.DATAGRIDFIELD.APP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPVOLUME.SC.DATAGRIDFIELD.NOSC' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let sc of allStorageClass" [clrDgItem]="sc" [clrDgSelectable]="checkCanEditable(sc.labels)">
+      <clr-dg-cell class="datagrid-long-text">{{sc.name}}{{checkDefaultSC(sc.annotations) ? ' (default)' : ''}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{sc.cluster.name}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.reclaimPolicy}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.volumeBindingMode}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.allowVolumeExpansion}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.provisioner}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!sc.component ? sc.component.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!sc.application ? sc.application.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{sc.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20" [clrDgTotalItems]="allStorageClass.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPVOLUME.SC.CSI-CONTROLLER.TITLE' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showEnableCSIController()" class="btn btn-primary btn-outline">
+          <clr-icon shape="play"></clr-icon>
+          {{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE' | translate }}
+      </button>
+      <button [disabled]="!selectedCSIController" (click)="showDisableCSIController()" class="btn btn-primary btn-outline">
+          <clr-icon shape="times-circle"></clr-icon>
+          {{ 'APPVOLUME.SC.CSI-CONTROLLER.DISABLE' | translate }}
+      </button>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refreshCSIController()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refreshCSIController($event)" [clrDgLoading]="csiLoading" [(clrDgSingleSelected)]="selectedCSIController" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.CSI-CONTROLLER.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.CSI-CONTROLLER.DATAGRIDFIELD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.CSI-CONTROLLER.DATAGRIDFIELD.TYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.SC.CSI-CONTROLLER.DATAGRIDFIELD.PROVIDER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPVOLUME.SC.CSI-CONTROLLER.DATAGRIDFIELD.NOCSI' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let csi of allCSIController" [clrDgItem]="csi">
+      <clr-dg-cell class="datagrid-long-text">{{csi.cluster.name}}</clr-dg-cell>
+      <clr-dg-cell class="{{!!csi.status ? csi.status : 'UNKNOWN'}}">{{csi.status}}</clr-dg-cell>
+      <clr-dg-cell>{{csi.name}}</clr-dg-cell>
+      <clr-dg-cell>{{csi.name === 'CSI_DRIVER_NFS' ? 'nfs.csi.k8s.io' : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{csi.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{csi.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #csipagination [clrDgPageSize]="10" [clrDgTotalItems]="csiTotal">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{csipagination.firstItem + 1}} - {{csipagination.lastItem + 1}} / {{csipagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardsc [(clrWizardOpen)]="createSCOpen" (clrWizardOnFinish)="doCreateSCFinish()"
+  (clrWizardOnCancel)="doCreateSCCancel()">
+  <clr-wizard-title>{{ 'APPVOLUME.SC.CREATE_SC' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicSCForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPVOLUME.SC.CREATESC-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.SC.CREATESC-PAGE1.PAGEDESC' | translate }}
+    <br>
+    <form clrForm [formGroup]="basicSCForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME-ERROR3' | translate }} {{commonNamePattern}}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicSCForm.value.name}}{{ 'APPVOLUME.SC.CREATESC-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE1.CLUSTER' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="cluster" required>
+          <option value="{{cluster.id}}" *ngFor="let cluster of clusterList">{{cluster.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE1.TYPE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE1.TYPE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="type" required (change)="initSCParams(basicSCForm.value.type);">
+          <option value="Common">Common{{ 'APPVOLUME.SC.CREATESC-PAGE1.COMMON' | translate }}</option>
+          <option value="NFS">NFS CSI</option>
+          <option value="vsphere-csi">vSphere CSI</option>
+          <option value="ceph-rbd">Ceph RBD</option>
+          <option value="static">Static Provisioner</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.TYPE-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <div class="card-text">
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.LABELS' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.LABELS-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!labelsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of labelsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteSCLable(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addNewSCLabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPVOLUME.SC.CREATESC-PAGE1.ADDLABELS' | translate }}
+              </button>
+            </div>
+        </div>
+      <div class="card-text">
+            <div class="card-text" formArrayName="annotations">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOTATIONS' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOTATIONS-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!annotationsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOKEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOVALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of annotationsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOKEY-HELP' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string"/>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteSCAnnotation(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addNewSCAnnotation()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPVOLUME.SC.CREATESC-PAGE1.ADDANNOTATION' | translate }}
+              </button>
+            </div>
+        </div>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="scParamsForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPVOLUME.SC.CREATESC-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.SC.CREATESC-PAGE2.PAGEDESC' | translate }}
+    <br>
+    <form clrForm [formGroup]="scParamsForm">
+      <div *ngIf="basicSCForm.value.type === 'NFS'">
+        <clr-toggle-container *ngIf="!nfsControllerInstalled">
+          <clr-toggle-wrapper>
+            <label>{{ 'APPVOLUME.SC.CREATESC-PAGE2.INSTALLNFS' | translate }}</label>
+            <input type="checkbox" [checked]="scParamsForm.value.enableCSIController" clrToggle formControlName="enableCSIController" name="enableCSIController"/>
+          </clr-toggle-wrapper>
+        </clr-toggle-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.SERVER-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.SERVER' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="nfsServer" formControlName="nfsServer"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.SERVER-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.PATH-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PATH' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="nfsPath" formControlName="nfsPath" placeholder="/shared_path"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PATH-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.VERSION-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.VERSION' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="nfsServerVersion">
+            <option value="4.1">Version 4.1</option>
+            <option value="3">Version 3</option>
+          </select>
+        </clr-select-container>
+      </div>
+      <clr-input-container *ngIf="basicSCForm.value.type === 'vsphere-csi'">
+        <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.STORAGEPOLICY-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.STORAGEPOLICY' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="vsphereStoragePolicy" formControlName="vsphereStoragePolicy"/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.STORAGEPOLICY-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <div *ngIf="basicSCForm.value.type === 'ceph-rbd'">
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHMONITOR-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHMONITOR' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephMonitors" formControlName="cephMonitors"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHMONITOR-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHADMIN-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHADMIN' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephAdminId" formControlName="cephAdminId"/>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHADMINSECRET-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHADMINSECRET' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephAdminSecretName" formControlName="cephAdminSecretName"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHADMINSECRET-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.ADMINSECRETNS-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.ADMINSECRETNS' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephAdminSecretNamespace" formControlName="cephAdminSecretNamespace"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.ADMINSECRETNS-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHPOOL-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHPOOL' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephPool" formControlName="cephPool"/>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHUSER-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHUSER' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephUserId" formControlName="cephUserId"/>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHUSERSECRET-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHUSERSECRET' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephUserSecretName" formControlName="cephUserSecretName"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.CEPHUSERSECRET-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.SECRETNS-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.SECRETNS' | translate }}</label>
+          <input class="clr-col-md-9" clrInput name="cephUserSecretNamespace" formControlName="cephUserSecretNamespace"/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.SECRETNS-ERROR' | translate }}</clr-control-error>
+        </clr-input-container>
+      </div>
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.PROVIDER-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PROVIDER' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="provisioner" formControlName="provisioner" required [attr.disabled]="basicSCForm.value.type !== 'Common' ? true : null"/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PROVIDER-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <div *ngIf="basicSCForm.value.type !== 'static'">
+        <clr-select-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.POLICY-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.POLICY' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="reclaimPolicy">
+            <option value="Delete">Delete</option>
+            <option value="Retain">Retain</option>
+          </select>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.MODE-HELP' | translate }}</clr-control-helper>
+          <label class="clr-col-md-3">{{ 'APPVOLUME.SC.CREATESC-PAGE2.MODE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="volumeBindingMode">
+            <option value="Immediate">Immediate</option>
+            <option value="WaitForFirstConsumer">WaitForFirstConsumer</option>
+          </select>
+        </clr-select-container>
+        <clr-toggle-container>
+          <clr-toggle-wrapper>
+            <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.ALLOWEXPANSION-HELP' | translate }}</clr-control-helper>
+            <label>{{ 'APPVOLUME.SC.CREATESC-PAGE2.ALLOWEXPANSION' | translate }}</label>
+            <input type="checkbox" [checked]="scParamsForm.value.allowVolumeExpansion" clrToggle formControlName="allowVolumeExpansion" name="allowVolumeExpansion"/>
+          </clr-toggle-wrapper>
+        </clr-toggle-container>
+      </div>
+      <div class="card-text" formArrayName="parameters" *ngIf="basicSCForm.value.type === 'Common'">
+        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+          <clr-input-container>
+            <label style="min-width: 100%;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMS' | translate }}</label>
+            <clr-control-helper style="min-width: 120%;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMS-HELP' | translate }}</clr-control-helper>
+          </clr-input-container>
+        </div>
+        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!parameters.controls?.length" fxHide>
+          <clr-input-container>
+            <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMSKEY' | translate }}</label>
+          </clr-input-container>
+          <clr-input-container>
+            <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMSVALUE' | translate }}</label>
+          </clr-input-container>
+        </div>
+        <div class="section" *ngFor="let each of parameters.controls; let i = index" [formGroupName]="i">
+          <div fxLayout="row" fxLayoutAlign="start start">
+            <clr-input-container>
+              <label style="max-width: 0px; display: none"></label>
+              <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+              autocomplete="off" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMSKEY-HELP' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container style="margin-left: 8px">
+              <label style="max-width: 0px; display: none"></label>
+              <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.PARAMSVALUE-HELP' | translate }}</clr-control-error>
+            </clr-input-container>
+            <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteSCParams(i)" fxLayout="row" fxLayoutAlign="start end">
+              <clr-icon shape="minus-circle"></clr-icon>
+            </button>
+          </div>
+        </div>
+        <br>
+        <button (click)="addNewSCParams()" class="btn btn-sm btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.SC.CREATESC-PAGE2.ADDPARAMS' | translate }}
+        </button>
+       </div>
+       <div class="card-text" formArrayName="mountOptions" *ngIf="basicSCForm.value.type === 'Common'">
+          <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+            <clr-input-container>
+              <label style="min-width: 100%;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONS' | translate }}</label>
+              <clr-control-helper style="min-width: 120%;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONS-HELP' | translate }}</clr-control-helper>
+            </clr-input-container>
+          </div>
+          <div class="section" *ngFor="let each of options.controls; let i = index" [formGroupName]="i">
+            <div fxLayout="row" fxLayoutAlign="start start">
+              <clr-input-container style="width: 50%;">
+                <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONSKEY-HELP' | translate }}</clr-control-helper>
+                <label style="max-width: 0px; display: none"></label>
+                <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                autocomplete="off" required/>
+                <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONSKEY-ERROR' | translate }}</clr-control-error>
+              </clr-input-container>
+              <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteSCOptions(i)" fxLayout="row" fxLayoutAlign="start end">
+                <clr-icon shape="minus-circle"></clr-icon>
+              </button>
+            </div>
+          </div>
+          <br>
+          <button (click)="addNewSCOptions()" class="btn btn-sm btn-outline">
+            <clr-icon shape="plus"></clr-icon>
+            {{ 'APPVOLUME.SC.CREATESC-PAGE2.ADDOPTIONS' | translate }}
+          </button>
+        </div>
+    </form>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'APPVOLUME.SC.CREATESC-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.SC.CREATESC-PAGE3.PAGEDESC' | translate }}
+    <br>
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPVOLUME.SC.CREATESC-PAGE1.PAGETITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.NAME' | translate }}</span>
+                    <span>{{basicSCForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of clusterList">
+                      <span *ngIf="cluster.id === basicSCForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.TYPE' | translate }}</span>
+                    <span>{{basicSCForm.value.type}}</span>
+                  </div>
+                  <div *ngIf="basicSCForm.value.labels.length > 0;">
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.LABELS' | translate }}</span>
+                    </div>
+                    <div style="margin-left: 20px;">
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.KEY' | translate }}</span>
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.VALUE' | translate }}</span>
+                      <div *ngFor="let each of basicSCForm.value.labels;">
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="basicSCForm.value.annotations.length > 0">
+                    <div >
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.ANNOTATION' | translate }}</span>
+                    </div>
+                    <div style="margin-left: 20px;">
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.ANNOKEY' | translate }}</span>
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.ANNOVALUE' | translate }}</span>
+                      <div *ngFor="let each of basicSCForm.value.annotations;">
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPVOLUME.SC.CREATESC-PAGE2.PAGETITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div *ngIf="basicSCForm.value.type === 'NFS'">
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.INSTALLNFS' | translate }}</span>
+                      <span>{{scParamsForm.value.enableCSIController}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.SERVER' | translate }}</span>
+                      <span>{{scParamsForm.value.nfsServer}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.PATH' | translate }}</span>
+                      <span>{{scParamsForm.value.nfsPath}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.VERSION' | translate }}</span>
+                      <span>{{scParamsForm.value.nfsServerVersion}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="basicSCForm.value.type === 'vsphere-csi'">
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.STORAGEPOLICY' | translate }}</span>
+                      <span>{{scParamsForm.value.vsphereStoragePolicy}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="basicSCForm.value.type === 'ceph-rbd'">
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CEPHMONITOR' | translate }}</span>
+                      <span>{{scParamsForm.value.cephMonitors}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CEPHADMIN' | translate }}</span>
+                      <span>{{scParamsForm.value.cephAdminId}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CEPHADMINSECRET' | translate }}</span>
+                      <span>{{scParamsForm.value.cephAdminSecretName}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.ADMINSECRETNS' | translate }}</span>
+                      <span>{{scParamsForm.value.cephAdminSecretNamespace}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CEPHPOOL' | translate }}</span>
+                      <span>{{scParamsForm.value.cephPool}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.CEPHUSER' | translate }}</span>
+                      <span>{{scParamsForm.value.cephUserId}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.USERSECRET' | translate }}</span>
+                      <span>{{scParamsForm.value.cephUserSecretName}}</span>
+                    </div>
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.USERSECRETNS' | translate }}</span>
+                      <span>{{scParamsForm.value.cephUserSecretNamespace}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.PROVIDER' | translate }}</span>
+                    <span>{{scParamsForm.value.provisioner}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.POLICY' | translate }}</span>
+                    <span>{{scParamsForm.value.reclaimPolicy}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.MODE' | translate }}</span>
+                    <span>{{scParamsForm.value.volumeBindingMode}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.ALLOWEXPANSION' | translate }}</span>
+                    <span>{{scParamsForm.value.allowVolumeExpansion}}</span>
+                  </div>
+                  <div *ngIf="scParamsForm.value.parameters.length > 0;">
+                    <div>
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.PARAMS' | translate }}</span>
+                    </div>
+                    <div style="margin-left: 20px;">
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.PARAMSKEY' | translate }}</span>
+                      <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPVOLUME.SC.CREATESC-PAGE3.PARAMSVALUE' | translate }}</span>
+                      <div *ngFor="let each of scParamsForm.value.parameters;">
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                        <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="scParamsForm.value.mountOptions.length > 0">
+                    <div >
+                      <span class="validateTitle">{{ 'APPVOLUME.SC.CREATESC-PAGE3.OPTIONS' | translate }}</span>
+                    </div>
+                    <div style="margin-left: 20px;">
+                      <div *ngFor="let each of scParamsForm.value.mountOptions;">
+                        <span style="display: inline-block; width: 40%; word-wrap: normal"> - {{each.key}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showUpdateSCDefault" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.SC.ACTION.SETDEFAULT' | translate }}</h3>
+  <div class="modal-body">
+      <span class="alert-text">{{ 'APPVOLUME.SC.ACTION.SETDEFAULT-PAGE.COMFIRM' | translate }} <b>{{(checkDefaultSC(selectedStorageClass?.annotations) ? 'APPVOLUME.SC.ACTION.SETDEFAULT-PAGE.CANCEL' : 'APPVOLUME.SC.ACTION.SETDEFAULT-PAGE.SET') | translate }}</b> 默认存储类？</span>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateSCDefault=false;selectedStorageClass = null;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="updateSCDefault();">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateSCOptions" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'APPVOLUME.SC.ACTION.UPDATEPARAMS' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="editSCParamsForm">
+          <div>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.ALLOWEXPANSION-HELP' | translate }}</clr-control-helper>
+                <label>{{ 'APPVOLUME.SC.CREATESC-PAGE2.ALLOWEXPANSION' | translate }}</label>
+                <input type="checkbox" [checked]="editSCParamsForm.value.allowVolumeExpansion" clrToggle formControlName="allowVolumeExpansion" name="allowVolumeExpansion"/>
+              </clr-toggle-wrapper>
+            </clr-toggle-container>
+            <div class="card-text" formArrayName="mountOptions">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container style="width: 50%;">
+                  <label style="min-width: 200px;">{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONS' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of editoptions.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container style="width: 50%;">
+                    <clr-control-helper>{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONSKEY-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE2.OPTIONSKEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditOptions(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addEditOptions()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPVOLUME.SC.CREATESC-PAGE2.ADDOPTIONS' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="doUpdateSCReset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="updateSCOptions()" [disabled]="editSCForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateSCLabels" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'APPVOLUME.SC.ACTION.UPDATELABELS' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="editSCForm">
+          <div>
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container style="width: 50%;">
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of editLabelsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container style="width: 50%;">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditLable(i)" fxLayout="row" fxLayoutAlign="start end" [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addEditLabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPVOLUME.SC.CREATESC-PAGE1.ADDLABELS' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="doUpdateSCReset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="updateSCLables()" [disabled]="editSCForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateSCAnnos" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'APPVOLUME.SC.ACTION.UPDATEANNOTATION' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="editSCForm">
+          <div>
+            <div class="card-text" formArrayName="annotations">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container style="width: 50%;">
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOKEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOVALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of editAnnotationsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container style="width: 50%;">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CREATESC-PAGE1.ANNOKEY-HELP' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string"/>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditAnno(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addEditAnno()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPVOLUME.SC.CREATESC-PAGE1.ADDANNOTATION' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="doUpdateSCReset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="updateSCAnnos()" [disabled]="editSCForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.SC.ACTION.DELETESC' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.SC.ACTION.DELETESC-DESC' | translate }} <b>{{selectedStorageClass?.name}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteSCForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedStorageClass?.name}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteSCForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteSCByName();deleteSCForm.reset()" [disabled]="deleteSCForm.invalid || deleteSCForm.value.confirm !== selectedStorageClass?.name">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showEnableCSI" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="enableCSIControllerForm">
+      <clr-select-container>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE-PAGE.TYPE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="name" required>
+          <option value="CSI_DRIVER_NFS">CSI_DRIVER_NFS</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE-PAGE.TYPE-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE-PAGE.CLUSTER' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="cluster" required>
+          <option value="{{cluster.id}}" *ngFor="let cluster of extensionDisableClusters">{{cluster.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.SC.CSI-CONTROLLER.ENABLE-PAGE.CLUSTER-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doEnableCSIControllerReset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doEnableCSIController();" [disabled]="enableCSIControllerForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEENABLE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showDisableCSI" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.SC.CSI-CONTROLLER.DISABLE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.SC.CSI-CONTROLLER.DISABLE-PAGE.DISABLEALERT' | translate }} <b>{{selectedCSIController?.cluster?.name}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'APPVOLUME.SC.CSI-CONTROLLER.DISABLE-PAGE.DISABLEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteSCForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedCSIController?.cluster?.name}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showDisableCSI=false;deleteSCForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="disableCSIController();deleteSCForm.reset()" [disabled]="deleteSCForm.invalid || deleteSCForm.value.confirm !== selectedCSIController?.cluster?.name">{{ 'SHARED.PAGEACTIONS.PAGEDISABLE' | translate }}</button>
+  </div>
+</clr-modal>

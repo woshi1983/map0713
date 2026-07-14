@@ -1,0 +1,88 @@
+type SourceBuild {
+  name: String!
+  annotations: Map
+  spec: SourceBuildSpec!
+  status: SourceBuildStatus!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  SourceBuild(cluster: ID!, name: String!): SourceBuild!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `image`
+
+  - `cluster`
+
+  - `organization`
+  """
+  SourceBuilds(filters: [QueryFilter!] = []): [SourceBuild!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+
+  Note:
+  
+  This mutation returns a previous build instead of the newly created one due
+  to the mechanism of Kpack. See: https://github.com/pivotal/kpack/issues/84#issuecomment-671979475.
+  """
+  CreateSourceBuild(input: CreateSourceBuild!): SourceBuild!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteSourceBuild(input: DeleteSourceBuild!): SourceBuild!
+}
+
+type SourceBuildSpec {
+  source: SourceBuildSpecSource
+  env: Map
+  distImage: String
+}
+
+type SourceBuildSpecSource {
+  git: SourceBuildSpecSourceGit
+  blob: SourceBuildSpecSourceBlob
+  registry: SourceBuildSpecSourceRegistry
+  subPath: String
+}
+
+type SourceBuildSpecSourceGit {
+  revision: String
+  url: URL
+}
+
+type SourceBuildSpecSourceBlob {
+  url: URL
+}
+
+type SourceBuildSpecSourceRegistry {
+  image: String
+}
+
+type SourceBuildStatus {
+  num: Int
+  status: JobStatus
+  image: String
+}
+
+input CreateSourceBuild {
+  image: String!
+  cluster: ID!
+}
+
+input DeleteSourceBuild {
+  name: String!
+  cluster: ID!
+}

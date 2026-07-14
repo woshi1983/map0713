@@ -1,0 +1,26 @@
+<clr-modal [(clrModalOpen)]="logsModelShow" [clrModalClosable]="false" [clrModalStaticBackdrop]="false" clrModalSize="xl">
+    <h3 class="modal-title">{{ 'NAVHEADER.SYSTEMLOGS' | translate }}</h3>
+    <div class="modal-body" style="margin-bottom: 20px;">
+      <button type="button" class="btn btn-outline btn-sm" (click)="changeLogsSubscription(false)" [disabled]="loading" *ngIf="enable">
+          <clr-icon shape="stop"></clr-icon>
+          <span> {{ 'NAVHEADER.SYSTEMLOGS-PAGE.STOP' | translate }}</span>
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" (click)="changeLogsSubscription(true)" [disabled]="loading" *ngIf="!enable">
+          <clr-icon shape="play"></clr-icon>
+          <span> {{ 'NAVHEADER.SYSTEMLOGS-PAGE.START' | translate }}</span>
+      </button>
+    </div>
+    <div class="modal-body" style="margin-top: 20px;" *ngIf="loading">
+      <clr-spinner style="margin-left: 50%;" [clrMedium]="true">Loading ...</clr-spinner>
+    </div>
+    <div class="modal-body" *ngIf="!loading">
+      <div [innerHTML]="mapdLogs.join('') | language : 'text' | markdown"></div>
+    </div>
+    <div class="modal-footer margin-left-override">
+        <button type="button" class="btn btn-outline" (click)="exportLogs()">
+          <clr-icon shape="download"></clr-icon>
+          {{ 'NAVHEADER.SYSTEMLOGS-PAGE.DOWNLOAD' | translate }}
+        </button>
+        <button type="button" class="btn btn-primary" (click)="close()">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>

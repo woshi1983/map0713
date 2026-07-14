@@ -1,0 +1,84 @@
+type Deployment {
+  name: String!
+  namespace: String!
+  labels: Map
+  spec: DeploymentSpec!
+  status: DeploymentStatus!
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Deployment(cluster: ID!, namespace: String!, name: String!): Deployment!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Deployments(filters: [QueryFilter!] = []): [Deployment!]
+}
+
+type DeploymentSpec {
+  progressDeadlineSeconds: Int
+  replicas: Int
+  revisionHistoryLimit: Int
+  template: PodTemplate!
+  strategy: DeploymentStrategy
+}
+
+type DeploymentStrategy {
+  type: String
+  rollingUpdate: RollingUpdateDeployment
+}
+
+type RollingUpdateDeployment {
+  maxUnavailable: IntOrString
+  maxSurge: IntOrString
+}
+
+type DeploymentStatus {
+  availableReplicas: Int!
+  readyReplicas: Int!
+  replicas: Int!
+  unavailableReplicas: Int!
+  updatedReplicas: Int!
+}
+
+input CreateDeploymentSpec {
+  progressDeadlineSeconds: Int
+  replicas: Int = 1
+  revisionHistoryLimit: Int
+  template: CreatePodTemplate!
+  strategy: CreateDeploymentStrategy
+}
+
+input CreateDeploymentStrategy {
+  type: String = "RollingUpdate"
+  rollingUpdate: CreateRollingUpdateDeployment
+}
+
+input CreateRollingUpdateDeployment {
+  maxUnavailable: IntOrString
+  maxSurge: IntOrString
+}

@@ -1,0 +1,13 @@
+[Unit]
+Description=VMware Harbor Bootstrap Script
+Requires=vmbootstrap-network.service docker.service
+After=vmbootstrap-network.service docker.service network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/vmbootstrap --harbor
+RemainAfterExit=true
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

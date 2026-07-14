@@ -1,0 +1,17 @@
+<div class="main-container">
+  <app-navigator (showDialogModalAction)="openModal($event)"></app-navigator>
+  <div class="login-wrapper">
+    <form class="login" style="min-height: auto">
+        <section class="title">
+            <h3 class="welcome">{{ 'LOGINPAGE.WELCOME' | translate }}</h3>
+            {{ 'LOGINPAGE.TITLE' | translate }}
+        </section>
+        <div class="login-group">
+            <button type="submit" class="btn btn-primary" (click)="backToConsole()">{{ 'LOGINPAGE.LOGBACK' | translate }}</button>
+        </div>
+    </form>
+  </div>
+</div>
+<router-outlet></router-outlet>
+<app-about-dialog></app-about-dialog>
+

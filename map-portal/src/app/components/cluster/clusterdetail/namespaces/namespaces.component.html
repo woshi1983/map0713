@@ -1,0 +1,240 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-info" role="alert" *ngIf="clusterStatus != 'HEALTHY'">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <div class="alert-text">
+          <div>
+            <span style="font-weight: bold">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.NAMESPACEALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateNS()" class="btn btn-primary btn-outline" [disabled]="clusterStatus != 'HEALTHY'">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='edit-label' type="button" [disabled]="!selectedNamespace || clusterStatus != 'HEALTHY'" (click)="showUpdateNsLabels(selectedNamespace)" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.ACTIONS.EDITNAMESPACELABEL' | translate }}</button>
+          <button id='delete-namespace' type="button" [disabled]="!selectedNamespace || clusterStatus != 'HEALTHY'" (click)="showDeleteNamespace()" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.ACTIONS.DELETENAMESPACE' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showNamespaceSearchInput = !showNamespaceSearchInput"></clr-icon>
+        </span>
+        <input type="text" id="namespace" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.SEARCHNAMESPACE' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showNamespaceSearchInput" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="Loading" [(clrDgSingleSelected)]="selectedNamespace" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.NAMESPACEDATAGRIDFEILD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column style="min-width: 40% !important;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.NAMESPACEDATAGRIDFEILD.LABELS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.NAMESPACEDATAGRIDFEILD.EDIT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.NONAMESPACE' | translate }}</clr-dg-placeholder>
+    <clr-dg-row  *clrDgItems="let ns of allNamespace" [clrDgItem]="ns" [clrDgSelectable]="checkNamespace(ns.name)">
+      <clr-dg-cell class="title-bold">{{ns.name}}</clr-dg-cell>
+      <clr-dg-cell style="min-width: 40% !important;">
+        <ng-container *ngIf="!!ns.labels">
+          <span *ngFor="let each of ns.labels | keyvalue" class="label label-light-blue" style="margin-top: 2px;">{{each.key}}{{!!each.value ? ': ' : ''}}{{each.value}}</span>
+        </ng-container>
+      </clr-dg-cell>
+      <clr-dg-cell *ngIf="checkNamespace(ns.name)">{{ 'SHARED.DATAGRID.YES' | translate }}</clr-dg-cell>
+      <clr-dg-cell *ngIf="!checkNamespace(ns.name)">{{ 'SHARED.DATAGRID.NO' | translate }}</clr-dg-cell>
+      <clr-dg-cell>{{ns.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{ns.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allNamespace.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardnewns [(clrWizardOpen)]="nsCreateOpen" (clrWizardOnFinish)="doNamespaceFinish()" (clrWizardOnCancel)="doNamespaceCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicNamespaceForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="basicNamespaceForm">
+          <clr-input-container>
+            <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME' | translate }}</label>
+            <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+            <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+            <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'maxlength'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+            <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+            <clr-control-error *clrIfError="'name'">{{basicNamespaceForm.value.name}}{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+          </clr-input-container>
+          <div>
+            <clr-input-container>
+              <label class="clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-DESC' | translate }}</label>
+            </clr-input-container>
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of nsLabels.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deletenslable(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addnewnslabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.ADD-LABEL' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="nsUpdateOpen" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.ACTIONS.EDITNAMESPACELABEL-TTTLE' | translate }}</h3>
+    <div class="modal-body">
+      <form clrForm [formGroup]="updateNamespaceForm">
+          <div>
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container style="width: 50%;">
+                  <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of updateNsLabels.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container style="width: 50%;">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input class="clr-col-md-12" fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE-HELP' | translate }}</clr-control-helper>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null"/>
+                    <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.LABEL-VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteupdatenslable(i)" fxLayout="row" fxLayoutAlign="start end" [attr.disabled]="disAllowLabels.includes(each.value.key) ? true : null">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addupdatenslabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.CREATENAMESPACE-PAGE.ADD-LABEL' | translate }}
+              </button>
+            </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="nsUpdateOpen=false;this.doNamespaceReset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="updateNamespaceLables(selectedNamespace)" [disabled]="updateNamespaceForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.ACTIONS.DELETENAMESPACE' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACE-PAGE.ACTIONS.DELETENAMESPACE-DESC' | translate }} <b>{{selectedNamespace?.name}}</b> ?</p>
+      <div class="modal-body">
+      </div>
+      <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+        <clr-input-container>
+          <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+        </clr-input-container>
+      </div>
+      <form clrForm [formGroup]="deleteNsForm">
+        <clr-input-container style="margin-top: .2rem;">
+          <label style="max-width: 0px; display: none"></label>
+          <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedNamespace?.name}}" size="20"/>
+        </clr-input-container>
+      </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteNsForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="deleteNamespace(selectedNamespace);deleteNsForm.reset()" [disabled]="deleteNsForm.invalid || deleteNsForm.value.confirm !== selectedNamespace?.name">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

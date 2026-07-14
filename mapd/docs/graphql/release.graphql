@@ -1,0 +1,41 @@
+type Release {
+  id: ID!
+  name: String!
+  num: Int!
+  manifest: [Any!]
+  component: Component!
+  application: Application!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Releases {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ReleaseNodes!
+}
+
+extend type Query {
+  """
+  requires `read:component` or above.
+  """
+  Release(id: ID!): Release!
+  """
+  requires `read:component` or above.
+
+  Filters:
+
+  - `name`
+
+  - `component`
+
+  - `application`
+  """
+  Releases(page: QueryPage = {}, filters: [QueryFilter!] = []): Releases!
+}
+
+type ReleaseNodes {
+  nodes: [Release!]
+}

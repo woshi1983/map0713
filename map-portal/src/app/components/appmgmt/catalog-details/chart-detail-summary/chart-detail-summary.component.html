@@ -1,0 +1,47 @@
+<div class="row">
+    <div class="col-md-12">
+        <p>{{description}}</p>
+    </div>
+</div>
+<div class="row content-wrapper">
+    <div class="col-md-4 summary-container mt-1">
+        <div class="col-md-12 content-group">
+            <div>
+                <label>{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.BASICINFO' | translate }}</label>
+            </div>
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <td class="left">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.HOME' | translate }}</td>
+                        <td class="left text-wrapper">
+                            <a href="{{homepage}}">{{homepage}}</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="left">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.DOWNLOADURL' | translate }}</td>
+                        <td class="left text-wrapper">
+                            <a href="{{download}}">{{download}}</a>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let src of sources; let i = index">
+                        <td class="left" *ngIf="i === 0">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.SOURCEREPO' | translate }}</td>
+                        <td class="left" *ngIf="i !== 0"></td>
+                        <td class="left text-wrapper">
+                            <a href="{{src}}">{{src}}</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="left">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.KEYWORDS' | translate }}</td>
+                        <td class="left text-wrapper">
+                            <span class="label label-info" style="margin-top: 2px;" *ngFor="let words of keywords">{{words}}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-8 md-container pl-1">
+        <div *ngIf="readme" class="md-div" style="padding: 10px;" [innerHTML]="readme | markdown"></div>
+        <div *ngIf="!readme">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW-PAGE.NOREAMDE' | translate }}</div>
+    </div>
+</div>

@@ -1,0 +1,13 @@
+[Unit]
+Description=VMware Base Bootstrap Script
+After=vmtoolsd.service
+Before=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/vmbootstrap --hardware
+RemainAfterExit=true
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,96 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'LOGGING.AUDIT_LOGS' | translate }}</span>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <clr-dropdown class="dropdown">
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger [disabled]="auditLogs.length <= 0">
+              <clr-icon shape="export"></clr-icon>
+              {{ 'LOGGING.EXPORT' | translate }}
+              <clr-icon shape="ellipsis-vertical"></clr-icon>
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button type="button" (click)="exportAuditlogsToCSV()" clrDropdownItem>{{ 'LOGGING.EXPORTCSV' | translate }}</button>
+            <button type="button" (click)="exportAuditlogsToJSON()" clrDropdownItem>{{ 'LOGGING.EXPOTJSON' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form">
+      <div style="height: 1.8rem; line-height: 1.8rem"></div>
+    </div>
+    <div class="clr-form rightPos" style="align-self: center;">
+      <div>
+        <span style="margin-right: 2px;">{{ 'LOGGING.FORETIME' | translate }}</span>
+        <input id="audit" placeholder="{{ 'LOGGING.INPUTTIME' | translate }}" class="clr-input" style="margin-right: 4px;" size ="10" [(ngModel)]="time">
+        <select class="clr-select select-box" id="timeUnit" name="timeUnit" [(ngModel)]="timeUnit" style="margin-right: 4px;">
+          <option value="minutes">{{ 'LOGGING.MINUTE' | translate }}</option>
+          <option value="hours">{{ 'LOGGING.HOUR' | translate }}</option>
+          <option value="days">{{ 'LOGGING.DAY' | translate }}</option>
+          <option value="weeks">{{ 'LOGGING.WEEK' | translate }}</option>
+          <option value="months">{{ 'LOGGING.MONTH' | translate }}</option>
+          <option value="years">{{ 'LOGGING.YEAR' | translate }}</option>
+        </select>
+        <span class="refresh-btn">
+          <button (click)="refresh(pageState)" class="btn btn-primary btn-sm btn-outline">
+            <clr-icon shape="search"></clr-icon>
+            <span> {{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</span>
+          </button>
+
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [clrDgRowSelection]="false">
+    <clr-dg-column [clrDgField]="'userName'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'LOGGING.DATAGRID.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'objectName'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LOGGING.DATAGRID.OBJECT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'objectType'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'LOGGING.DATAGRID.TYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'action'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'LOGGING.DATAGRID.ACTION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'organization.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'LOGGING.DATAGRID.PROJECT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+       {{ 'LOGGING.DATAGRID.TIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'LOGGING.DATAGRID.NOAUDIT' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let audit of auditLogs" [clrDgItem]="audit">
+      <clr-dg-cell>{{audit.userName}}</clr-dg-cell>
+      <clr-dg-cell>{{audit.objectName}}</clr-dg-cell>
+      <clr-dg-cell>{{audit.objectType}}</clr-dg-cell>
+      <clr-dg-cell>{{audit.action}}</clr-dg-cell>
+      <clr-dg-cell>{{!!audit.organization ? audit.organization.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{audit.createdAt | datetimeTransition: 'MM/dd/y HH:mm:ss'}}</clr-dg-cell>
+    </clr-dg-row>
+
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>

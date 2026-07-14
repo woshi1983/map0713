@@ -1,0 +1,144 @@
+type SourceImage {
+  name: String!
+  annotations: Map
+  spec: SourceImageSpec!
+  status: SourceImageStatus!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  SourceImage(cluster: ID!, name: String!): SourceImage!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  SourceImages(filters: [QueryFilter!] = []): [SourceImage!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateSourceImage(input: CreateSourceImage!): SourceImage!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateSourceImage(input: UpdateSourceImage!): SourceImage!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteSourceImage(input: DeleteSourceImage!): SourceImage!
+}
+
+type SourceImageSpec {
+  source: SourceImageSpecSource
+  env: Map
+  distImage: String
+}
+
+type SourceImageSpecSource {
+  git: SourceImageSpecSourceGit
+  blob: SourceImageSpecSourceBlob
+  registry: SourceImageSpecSourceRegistry
+  subPath: String
+}
+
+type SourceImageSpecSourceGit {
+  revision: String
+  url: URL
+}
+
+type SourceImageSpecSourceBlob {
+  url: URL
+}
+
+type SourceImageSpecSourceRegistry {
+  image: String
+}
+
+type SourceImageStatus {
+  ready: Boolean
+}
+
+input CreateSourceImage {
+  name: String!
+  annotations: Map
+  spec: CreateSourceImageSpec!
+  cluster: ID!
+}
+
+input UpdateSourceImage {
+  name: String!
+  annotations: Map
+  spec: UpdateSourceImageSpec
+  cluster: ID!
+}
+
+input DeleteSourceImage {
+  name: String!
+  cluster: ID!
+}
+
+input CreateSourceImageSpec {
+  source: CreateSourceImageSpecSource!
+  env: Map
+  distImage: String!
+}
+
+input CreateSourceImageSpecSource {
+  git: CreateSourceImageSpecSourceGit
+  blob: CreateSourceImageSpecSourceBlob
+  registry: CreateSourceImageSpecSourceRegistry
+  subPath: String
+}
+
+input CreateSourceImageSpecSourceGit {
+  revision: String = "master"
+  url: URL!
+}
+
+input CreateSourceImageSpecSourceBlob {
+  url: URL!
+}
+
+input CreateSourceImageSpecSourceRegistry {
+  image: String!
+}
+
+input UpdateSourceImageSpec {
+  source: UpdateSourceImageSpecSource
+  env: Map
+  distImage: String
+}
+
+input UpdateSourceImageSpecSource {
+  git: UpdateSourceImageSpecSourceGit
+  blob: UpdateSourceImageSpecSourceBlob
+  registry: UpdateSourceImageSpecSourceRegistry
+  subPath: String
+}
+
+input UpdateSourceImageSpecSourceGit {
+  revision: String
+  url: URL
+}
+
+input UpdateSourceImageSpecSourceBlob {
+  url: URL
+}
+
+input UpdateSourceImageSpecSourceRegistry {
+  image: String
+}

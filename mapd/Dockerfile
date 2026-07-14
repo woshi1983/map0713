@@ -1,0 +1,69 @@
+FROM golang:1.20.6 as builder
+
+WORKDIR /usr/src/app
+
+ARG GOPROXY "https://proxy.golang.org,direct"
+
+COPY go.mod go.sum ./
+RUN go mod download -x && go mod verify
+
+COPY . .
+RUN make
+
+
+FROM rockylinux:9.2 as base
+LABEL maintainer="VMware, Inc."
+
+COPY --from=builder /usr/src/app/bin/* /usr/bin/
+
+
+FROM base as prepare
+LABEL maintainer="VMware, Inc."
+
+ENTRYPOINT ["/usr/bin/mapkit"]
+
+
+FROM base as mapd
+LABEL maintainer="VMware, Inc."
+
+COPY scripts/entrypoint.sh /usr/bin/entrypoint.sh
+
+EXPOSE 9800
+
+ENV MAPD_FQDN "localhost"
+ENV MAPD_LISTEN_ON "[::]:9800"
+ENV MAPD_TLS_CERT ""
+ENV MAPD_TLS_KEY ""
+ENV MAPD_IDP_ISSUER "http://localhost:5556/dex"
+ENV MAPD_IDP_CA_CERT ""
+ENV MAPD_IDP_DEX_API "localhost:5557"
+ENV MAPD_IDP_DEX_API_CERT ""
+ENV MAPD_IDP_DEX_API_KEY ""
+ENV MAPD_IDP_DEX_API_INSECURE "false"
+ENV MAPD_LOG_LEVEL "info"
+ENV MAPD_LOG_ROTATE_SIZE_MIB "64"
+ENV MAPD_LOG_FILE ""
+ENV MAPD_DB_HOST "[::1]:3306"
+ENV MAPD_DB_NAME ""
+ENV MAPD_DB_USER ""
+ENV MAPD_DB_PASSWORD ""
+ENV MAPD_DB_CONNS_POOL_SIZE "64"
+ENV MAPD_DB_DEBUG "false"
+ENV MAPD_DAEMON_SHUTDOWN_TIMEOUT "3s"
+ENV MAPD_DAEMON_CLEANUP_TIMEOUT "3s"
+ENV MAPD_AUTH_ADMIN_INITIAL_PASSWORD ""
+ENV MAPD_AUTH_DISABLE_LOCAL_USER "false"
+ENV MAPD_AUTH_ACCESS_TOKEN_TTL "1h"
+ENV MAPD_AUTH_MAX_REQUESTS_PER_IP "1000"
+ENV MAPD_AUTH_MAX_REQUESTS_DURATION "1h"
+ENV MAPD_CLUSTER_IMAGE_PROJECT "map"
+ENV MAPD_CLUSTER_INITIATOR_IMAGE "cluster-initiator"
+ENV MAPD_EMBEDDED_BUILDER_IMAGE "kaniko-builder"
+ENV MAPD_EMBEDDED_BUILD_HISTORY_PRESERVED "10"
+ENV MAPD_HTTP_CLIENT_CA_CERT ""
+ENV MAPD_HTTP_CLIENT_TIMEOUT "10s"
+ENV MAPD_CONDUCTOR_SYNCER_INTERVAL "10s"
+
+RUN yum install -y ca-certificates && yum clean all
+
+ENTRYPOINT ["/usr/bin/entrypoint.sh"]

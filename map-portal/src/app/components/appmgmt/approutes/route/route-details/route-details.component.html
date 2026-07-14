@@ -1,0 +1,18 @@
+<clr-modal [(clrModalOpen)]="open" [clrModalClosable]="false">
+  <h3 class="modal-title">{{route?.name}} {{ 'APPROUTE.ROUTE-DETAILS.TITLE' | translate }}</h3>
+  <div class="modal-body" *ngIf="data.length > 0">
+    <div echarts (chartInit)="routeStatusChartInit($event)" [options]="chartOption" class="div-inline"></div>
+    <div style="margin-top: -40px;">
+      <h5>{{ 'APPROUTE.ROUTE-DETAILS.INSTANCESTATUS' | translate }}</h5>
+      <div *ngIf="!!route.backends">
+        <ul *ngFor="let each of route.backends">
+          <li *ngIf="!!each?.instance">{{each.name}} ({{each.instance?.release.name}}-{{each.instance?.release.num}} - {{each.instance?.cluster.name}}/{{each.instance?.namespace}}): ({{each.instance?.status?.state}})</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-primary" (click)="close.emit('closed');">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+

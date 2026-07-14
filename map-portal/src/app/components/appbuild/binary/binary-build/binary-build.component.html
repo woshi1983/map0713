@@ -1,0 +1,198 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!image || loading">Loading ...</clr-spinner>
+  <div *ngIf="!!image && !loading">
+    <br>
+    <div class="clr-row" style="margin-left: 0px">
+      <div class="clr-form" [fxHide]="!canWriteResources">
+        <button (click)="startBuild()" class="btn btn-primary btn-sm btn-outline">
+          <clr-icon shape="play"></clr-icon>
+            {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.STARTBUILD' | translate }}
+        </button>
+      </div>
+      <div class="clr-form rightPos">
+        <div>
+          <span class="refresh-btn">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+    <clr-spinner [clrMedium]="true" style="margin-left: 50%;margin-top: 10%;" *ngIf="loading">Loading ...</clr-spinner>
+    <div *ngIf="noHistory && !loading">
+      <div class="clr-row" fxLayout="none" style="margin-right: 0px; margin-left: 0px;">
+       <div class="card">
+          <div class="clr-col-12 clr-col-sm-12">
+            <div class="card-block">
+              <div class="progress top progress-fade">
+                <progress value="100" max="100"></progress>
+              </div>
+              <div class="clr-row">
+                <div class="clr-col-sm-3">
+                    <clr-icon class="is-purple" shape="ci-cd" style="width: 32px; height: 32px" role="none"></clr-icon>
+                    <span class="execution-card-name">
+                        #0
+                    </span>
+                  <div>
+                    <div  class="clr-col-sm-12 filter-text-container" style="margin-top: 18px">
+                      <span  class="valuefield" title="message">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.NOBUILD' | translate }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="clr-col-sm-9">
+                  <div class="clr-row">
+                    <div class="clr-col-sm-10">
+                      <div class="clr-row">
+                        <div class="clr-col-sm-3">
+                          <div class="label label-gray">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.UNKOWN' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-9">
+                          <div class="status-bar-container">
+                            <span>{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.STAGE' | translate }}</span>
+                            <clr-tooltip class="tooltip status-bar-container">
+                            <div>
+                              <clr-icon class="unkowned is-solid no-hover" shape="exclamation-circle" style="height: 12px; width: 12px"></clr-icon>
+                            </div>
+                            </clr-tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-divider"></div>
+                  <div class="clr-row">
+                    <div  class="card-text clr-col-sm-10">
+                      <div  class="clip-text" title="time">
+                        <clr-icon  shape="clock" role="none"></clr-icon>
+                        {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.UNSTART' | translate }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+       </div>
+    </div>
+    </div>
+    <div *ngIf="!noHistory || !loading">
+      <div class="clr-row" *ngFor="let build of allBuilds" fxLayout="none" style="margin-right: 0px; margin-left: 0px;">
+       <div class="card">
+          <div class="clr-col-12 clr-col-sm-12">
+            <div class="card-block">
+              <div class="progress top success" *ngIf="build.status.status === 'SUCCESS'">
+                <progress value="100" max="100"></progress>
+              </div>
+              <div class="progress top danger" *ngIf="build.status.status === 'FAILURE'">
+                <progress value="100" max="100"></progress>
+              </div>
+              <div class="progress top progress-meter" *ngIf="build.status.status === 'RUNNING'">
+                <progress value="100" max="100"></progress>
+              </div>
+              <div class="progress top progress-fade" *ngIf="build.status.status != 'RUNNING' && build.status.status != 'FAILURE' && build.status.status != 'SUCCESS'">
+                <progress value="100" max="100"></progress>
+              </div>
+              <div class="clr-row">
+                <div class="clr-col-sm-3">
+                    <clr-icon class="is-purple" shape="ci-cd" style="width: 32px; height: 32px" role="none"></clr-icon>
+                    <span class="execution-card-name">
+                        #{{build.status.num}} {{build.name}}
+                    </span>
+                  <div>
+                    <div  class="clr-col-sm-12 filter-text-container" style="margin-top: 18px">
+                      <span  class="valuefield" title="message"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="clr-col-sm-9">
+                  <div class="clr-row">
+                    <div class="clr-col-sm-9">
+                      <div class="clr-row">
+                        <div class="clr-col-sm-3" *ngIf="build.status.status === 'FAILURE'">
+                          <div class="label label-danger">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.FAILED' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-3" *ngIf="build.status.status === 'SUCCESS'">
+                          <div class="label label-success">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.SUCCESS' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-3" *ngIf="build.status.status === 'RUNNING'">
+                          <div class="label label-info">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.RUNNING' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-3" *ngIf="build.status.status === 'PENDING'">
+                          <div class="label label-light-blue">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.PENDING' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-3" *ngIf="build.status.status === 'UNKNOWN'">
+                          <div class="label label-gray">{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.UNKOWN' | translate }}</div>
+                        </div>
+                        <div class="clr-col-sm-9">
+                          <div class="status-bar-container">
+                            <span>{{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.STAGE' | translate }}</span>
+                            <clr-tooltip class="tooltip status-bar-container">
+                              <div class="loop" *ngIf="build.status.status === 'RUNNING'">
+                                <progress class="custom-progress"></progress>
+                              </div>
+                                <div *ngIf="build.status.status === 'SUCCESS'">
+                                <clr-icon class="completed is-solid no-hover" shape="check-circle" style="height: 16px; width: 16px"></clr-icon>
+                              </div>
+                              <div *ngIf="build.status.status === 'FAILURE'">
+                                <clr-icon class="failed is-solid no-hover" shape="times-circle" style="height: 12px; width: 12px"></clr-icon>
+                              </div>
+                              <div *ngIf="build.status.status === 'PENDING'">
+                                <clr-icon class="pending is-solid no-hover" shape="dot-circle" style="height: 12px; width: 12px"></clr-icon>
+                              </div>
+                              <div *ngIf="build.status.status === 'UNKNOWN'">
+                                <clr-icon class="unkowned is-solid no-hover" shape="exclamation-circle" style="height: 12px; width: 12px"></clr-icon>
+                              </div>
+                            </clr-tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="clr-col-sm-3">
+                      <div class="clr-row">
+                        <button class="btn btn-sm btn-outline" (click)="showBuildLogging(build.name)">
+                          {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.LOGS' | translate }}
+                        </button>
+                        <button class="btn btn-sm btn-outline" (click)="showDeleteBuild(build.name)" [fxHide]="!canWriteResources">
+                          {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.DELETE' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-divider"></div>
+                  <div class="clr-row">
+                    <div  class="card-text clr-col-sm-10">
+                      <div  class="clip-text" title="time">
+                        <clr-icon  shape="clock" role="none"></clr-icon>
+                        {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.TIME' | translate }}
+                        <span  class="text-muted ng-star-inserted">
+                          <span href="#">{{ build.lastModified | datetimeTransition }}</span>
+                        </span>
+                      </div>
+                      <div  class="clip-text" title="input">
+                        <clr-icon  shape="import" role="none"></clr-icon>
+                        {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.INPUT' | translate }}
+                        <span  class="text-muted ng-star-inserted">
+                          <span href="#">{{ build.spec.url }}</span>
+                        </span>
+                      </div>
+                      <div  class="clip-text" title="output">
+                        <clr-icon  shape="layers" role="none"></clr-icon>
+                        {{ 'BUILD.BINARYIMAGE-DETAILS.BUILD-DETAILS.BUILDJOB-PAGE.OUTPUT' | translate }}
+                        <span  class="text-muted ng-star-inserted">{{build.status.image}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+       </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteBinaryBuild($event)"></app-delete-object>
+
+<app-build-logging [showLogs]="showBuildLogs" [clusterId]="image.cluster.id" [namespace]="'vmware-system-map'" [controller]="'binary_build'" [issuer]="logsContainer" (close)="showBuildLogs = false"></app-build-logging>
+
+<router-outlet></router-outlet>

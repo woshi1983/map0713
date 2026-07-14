@@ -1,0 +1,82 @@
+body{
+  backgroutnd-color: gray;
+}
+.nav-divider {
+    display: inline-block;
+    width: 2px;
+    height: 30px;
+    background-color: gray;
+    position: relative;
+    top: 10px;
+    left: 5px;
+    right: 5px;
+    opacity: 0.3;
+    content: '';
+}
+
+.refresh-btn {
+    cursor: pointer;
+}
+.refresh-btn:hover {
+    color: #007CBB;
+}
+.rightPos {
+  margin: 0 2rem 0 auto;
+  z-index: 100;
+}
+.card-divider {
+  margin-left: -.75rem;
+  margin-right: -.75rem;
+  width: auto;
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+  display: block;
+  border-bottom: 1px solid #eee;
+}
+.center-header {
+  text-align: center;
+  color: #007CBB;
+  font-size: 15px;
+}
+.center-title {
+  text-align: center;
+  align-items: center;
+  align-self: center;
+}
+.div-inline {
+  float: left;
+  width: 45%;
+  height: 400px;
+}
+.div-hoder {
+  float: left;
+  width: 8%;
+  height: 400px;
+}
+.card-no-shadow {
+  border-style: hidden;
+  box-shadow: unset;
+}
+.HEALTHY{
+  font-weight: bold;
+  color: #60b515;
+  stroke: #fff;
+}
+.UNHEALTHY{
+  font-weight: bold;
+  color: #c21d00;
+  stroke: #fff;
+}
+canvas{
+  width: 180px !important;
+  height: 160px !important;
+}
+
+.clusterstatus{
+  width: 49%;
+  margin-left: 2%;
+}
+
+.clusterheight{
+  height: 340px;
+}

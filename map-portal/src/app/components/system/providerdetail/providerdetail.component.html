@@ -1,0 +1,544 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!provider || loading">Loading ...</clr-spinner>
+  <div *ngIf="!!provider && !loading">
+    <div>
+      <clr-icon shape="undo"></clr-icon>
+      <a (click)="backToProvider()" class="backStyle">{{ 'PROVIDERDETAIL.BACK' | translate }}</a>
+    </div>
+    <h2>
+      <div>
+        <span class="ml-05"> {{ providerName }}</span>
+      </div>
+    </h2>
+
+    <div class="clr-row">
+      <div style="margin-left: 1rem">
+        <div style="line-height: 48px">
+          <span>{{provider.description ? provider.description : 'PROVIDERMGMT.ACTION.VIEWPROVIDER-PAGE.NODESC' | translate}}</span>
+        </div>
+      </div>
+      <div style="margin: 0 3% 0 auto">
+        <div class="rightPos">
+          <button class="refresh-btn btn btn-link" style="margin-right: -20px;outline: none;">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </button>
+          <div class="nav-divider"></div>
+          &nbsp;
+          <div class="clr-form" style="margin-left: 5px;">
+            <clr-dropdown class="dropdown">
+              <button class="btn-sm btn btn-outline custom-dropdown-toggle" clrDropdownTrigger>
+                <clr-icon shape="bars"></clr-icon>
+                {{ 'SHARED.MOREACTIONS' | translate }}
+              </button>
+              <clr-dropdown-menu *clrIfOpen>
+                <button id='edit-provider' type="button" [disabled]="!provider" (click)="showEditProvider()" clrDropdownItem><span style="font-size: 12px;">{{ 'PROVIDERMGMT.ACTION.EDITPROVIDER' | translate }}</span></button>
+                <button id='delete-provider' type="button" [disabled]="!provider" (click)="showDeleteProvider()" clrDropdownItem><span style="font-size: 12px;">{{ 'PROVIDERMGMT.ACTION.DELETEPROVIDER' | translate }}</span></button>
+              </clr-dropdown-menu>
+            </clr-dropdown>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+        <clr-tabs id="provider-details" class="tabs">
+          <clr-tab>
+              <button clrTabLink id="namespace-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'PROVIDERDETAIL.TABS.NAMESPACE' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.namespaceActive">
+                <clr-tab-content id="namespace-content" *clrIfActive>
+                    <app-supervisor-namespace [providerId]="providerId"></app-supervisor-namespace>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="cert-link"  routerLinkActive="active" type="button" style="outline: none;">{{ 'PROVIDERDETAIL.TABS.CAMGMT' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.certActive">
+                <clr-tab-content id="cert-content" *clrIfActive>
+                  <app-catrust [providerId]="providerId"></app-catrust>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+        </clr-tabs>
+    </div>
+
+  </div>
+
+</div>
+
+<clr-wizard #wizardeditprovider [(clrWizardOpen)]="editProviderOpen" (clrWizardOnFinish)="doEditProviderFinish()" (clrWizardOnCancel)="doEditProviderCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'PROVIDERMGMT.ACTION.EDITPROVIDER' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editProviderForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editProviderForm.invalid">
+        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'PROVIDERMGMT.ACTION.EDITPROVIDERDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editProviderForm">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required disabled/>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{editProviderForm.value.name}}{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="type" required disabled>
+                <option value="TKGS">vSphere with Tanzu(TKGS)</option>
+                <option value="TKGM">Tanzu Kubernetes Grid(TKGM)</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-combobox-container>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.REGISTRY-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3 required">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.REGISTRY' | translate }}</label>
+              <clr-combobox class="clr-col-md-9" clrMulti="true" formControlName="registry" name="registry" required>
+                <ng-container *clrOptionSelected="let selected">
+                  <clr-icon shape="bundle" role="img"></clr-icon> {{selected.name}}
+                </ng-container>
+                <clr-options>
+                  <clr-option *clrOptionItems="let registry of registryList; field:'name'" [clrValue]="registry">
+                    <clr-icon shape="bundle" role="img"></clr-icon> {{registry.name}}
+                  </clr-option>
+                </clr-options>
+              </clr-combobox>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.REGISTRY-ERROR' | translate }}</clr-control-error>
+            </clr-combobox-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.DEFAULT-REGISTRY-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.DEFAULT-REGISTRY' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="defaultRegistry" required>
+                <option value="{{regsitry.id}}" *ngFor="let regsitry of getSelectedRegistry();">{{regsitry.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.DEFAULT-REGISTRY-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-9">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.ATTACHLB' | translate }}</label>
+                <input type="checkbox" clrToggle [checked]="editProviderForm.value.enableGlobalLB" formControlName="enableGlobalLB" (change)="setEditGLBVaildtor(editProviderForm.value.enableGlobalLB)"/>
+              </clr-toggle-wrapper>
+            </clr-toggle-container>
+            <clr-select-container *ngIf="editProviderForm.value.enableGlobalLB">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.LB' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.LB-HELP' | translate }}</clr-control-helper>
+              <select class="clr-col-md-9" clrSelect formControlName="loadBalancerId">
+                <option value="{{lb.id}}" *ngFor="let lb of lbList">{{lb.name}}</option>
+              </select>
+            </clr-select-container>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editTanzuKubernetesClusterParam.invalid" *ngIf="editProviderForm.value.type === 'TKGS'">
+        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.ADDTKGSPROVIDERALERT' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'PROVIDERMGMT.ACTION.TKGSEDITPAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editTanzuKubernetesClusterParam">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.ADDRESS' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.ADDRESS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1:6443" (change)="this.checkProviderConnect = false; this.showConnectAlert = false;"/>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.ADDRESS=ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.ADDRESS=ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container *ngIf="!editTanzuKubernetesClusterParam.value.skipTLS">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.CACERT' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.CACERT-HELP' | translate }}</clr-control-helper>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+              </textarea>
+            </clr-textarea-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-9">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.SKIPTLS' | translate }}</label>
+                <input type="checkbox" clrToggle [checked]="editTanzuKubernetesClusterParam.value.skipTLS" formControlName="skipTLS" name="skipTLS"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.SKIPTLS-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.AUTHUSER' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.AUTHUSER-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="authUser" formControlName="username" type="string" required (change)="this.checkProviderConnect = false; this.showConnectAlert = false;" placeholder="administrator@vsphere.local"/>
+              <clr-control-error>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.AUTHUSER-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-password-container>
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.AUTHPASS' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.AUTHPASS-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrPassword name="authPassword" formControlName="password" type="string" (change)="this.checkProviderConnect = false; this.showConnectAlert = false;"/>
+            </clr-password-container>
+            <button [disabled]="!editTanzuKubernetesClusterParam.value.password" (click)="checkUpdateTKGSProviderAuth()" class="btn-sm btn btn-outline">
+               <clr-icon shape="connect"></clr-icon>
+               {{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.CONNECTTEST' | translate }}
+            </button>
+            <div class="alert" [ngClass]="{'alert-success': checkConnectOk, 'alert-danger': !checkConnectOk}" role="alert" *ngIf="showConnectAlert">
+              <div class="alert-items">
+               <div class="alert-item static">
+                 <div class="alert-icon-wrapper">
+                    <clr-icon *ngIf="checkConnectOk" class="alert-icon" shape="check-circle"></clr-icon>
+                    <clr-icon *ngIf="!checkConnectOk" class="alert-icon" shape="error-standard"></clr-icon>
+                 </div>
+                   <span class="alert-text" *ngIf="checkConnectOk">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.SUCCESS' | translate }}</span>
+                   <span class="alert-text" *ngIf="!checkConnectOk">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.FAILED' | translate }}</span>
+               </div>
+              </div>
+            </div>
+            <clr-select-container>
+              <clr-control-helper *ngIf="!selectedNsUnexist">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.NS-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.NS' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="namespace" required>
+                <option value="{{namespace.name}}" *ngFor="let namespace of getAllNsList()">{{namespace.name}}</option>
+              </select>
+              <clr-control-helper style="color: #c21d00" *ngIf="selectedNsUnexist">{{ 'PROVIDERMGMT.ACTION.NONSERROR' | translate }}</clr-control-helper>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.NS-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+        </form>
+
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="editTkgmKubernetesClusterParam.invalid || unallowKeyExist" *ngIf="editProviderForm.value.type === 'TKGM'">
+        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.ADDTKGMPROVIDERALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.ADDTKGMPROVIDERALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        {{ 'PROVIDERMGMT.ACTION.TKGMPAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editTkgmKubernetesClusterParam">
+          <div class="card-text">
+            <clr-textarea-container>
+              <label class="clr-col-md-6">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.KUBECONFIG' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.KUBECONFIG-HELP' | translate }}</clr-control-helper>
+              <textarea class="clr-col-md-12" clrTextarea formControlName="kubeConfig" type="string" style="width: 100%; height: 200px;">
+              </textarea>
+            </clr-textarea-container>
+            <button [disabled]="!editTkgmKubernetesClusterParam.value.kubeConfig" (click)="checkUpdateTKGMProviderAuth(editTkgmKubernetesClusterParam.value.kubeConfig)" class="btn-sm btn btn-outline">
+               <clr-icon shape="connect"></clr-icon>
+               {{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.CONNECTTEST' | translate }}
+            </button>
+            <button (click)="showAddEditFileData()" class="btn btn-sm btn-outline">
+              <clr-icon shape="plus"></clr-icon>
+              {{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.READ-FILE' | translate }}
+            </button>
+            <div class="alert" [ngClass]="{'alert-success': checkConnectOk, 'alert-danger': !checkConnectOk}" role="alert" *ngIf="showConnectAlert">
+              <div class="alert-items">
+               <div class="alert-item static">
+                 <div class="alert-icon-wrapper">
+                    <clr-icon *ngIf="checkConnectOk" class="alert-icon" shape="check-circle"></clr-icon>
+                    <clr-icon *ngIf="!checkConnectOk" class="alert-icon" shape="error-standard"></clr-icon>
+                 </div>
+                   <span class="alert-text" *ngIf="checkConnectOk">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.SUCCESS' | translate }}</span>
+                   <span class="alert-text" *ngIf="!checkConnectOk">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.FAILED' | translate }}</span>
+               </div>
+              </div>
+            </div>
+            <clr-select-container *ngIf="editTkgmKubernetesClusterParam.value.namespace !== 'CreateNew'">
+              <clr-control-helper *ngIf="!selectedNsUnexist">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS-HELP1' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3 required">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="namespace" name="namespace" required (change)="changeEditFormVaild($event)">
+                <option value="{{namespace.name}}" *ngFor="let namespace of getAllNsList();">{{namespace.name}}</option>
+                <option value="CreateNew">Create New</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS-ERROR1' | translate }}</clr-control-error>
+              <clr-control-helper style="color: #c21d00" *ngIf="selectedNsUnexist">{{ 'PROVIDERMGMT.ACTION.NONSERROR' | translate }}</clr-control-helper>
+            </clr-select-container>
+            <clr-input-container *ngIf="editTkgmKubernetesClusterParam.value.namespace === 'CreateNew'">
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS-HELP2' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3 required">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS' | translate }}</label>
+              <input class="clr-col-md-9" clrInput  formControlName="newNamespace" name="newNamespace" type="string"/>
+              <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NS-ERROR2' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVISEG' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVISEG-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="aviDataSeGroup" type="string" placeholder="tenant01-segroup"/>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVIDATANETT' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVIDATANETT-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="aviDataNetworkName" type="string" placeholder="tenant01-dataNetwok"/>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVIDATANETTCIDR' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVIDATANETTCIDR-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="aviDataNetworkCIDR" type="string" placeholder="192.168.1.0/24"/>
+              <clr-control-error *clrIfError="'pattern'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.AVIDATANETTCIDR-ERROR' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NETWORK' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.NETWORK-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="vsphereNetwork" type="string" placeholder="VM Network"/>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.RESOURCEPOOL' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.RESOURCEPOOL-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="resourcePool" type="string" placeholder="/DC_NAME/host/CLUSTER_NAME/Resources"/>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.VMFOLDER' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.VMFOLDER-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="vmFolder" type="string" placeholder="/DC_NAME/vm/tkgm"/>
+            </clr-input-container>
+            <clr-input-container style="width: 100%;">
+              <label class="clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.DATASTORE' | translate }}</label>
+              <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.DATASTORE-HELP' | translate }}</clr-control-helper>
+              <input fxFlex="1 1 auto" class="clr-col-md-9" clrInput  formControlName="datastore" type="string" placeholder="/DC_NAME/datastore/Datastore"/>
+            </clr-input-container>
+          </div>
+          <div class="card-text">
+              <div class="card-text" formArrayName="defaultEnv">
+                <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                  <clr-input-container>
+                    <label style="min-width: 100%;">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.PARAMS' | translate }}</label>
+                    <clr-control-helper style="min-width: 120%;">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.PARAMS-DESC' | translate }}</clr-control-helper>
+                  </clr-input-container>
+                </div>
+                <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!editEnvList.controls?.length" fxHide>
+                  <clr-input-container>
+                    <label style="min-width: 96px;">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.KEY' | translate }}</label>
+                  </clr-input-container>
+                  <clr-input-container>
+                    <label style="min-width: 96px;">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.VALUE' | translate }}</label>
+                  </clr-input-container>
+                </div>
+                <div class="section" *ngFor="let each of editEnvList.controls; let i = index" [formGroupName]="i">
+                  <div fxLayout="row" fxLayoutAlign="start start">
+                    <clr-input-container>
+                      <label style="max-width: 0px; display: none"></label>
+                      <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                      autocomplete="off" required/>
+                      <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.KEY-HELP' | translate }}</clr-control-error>
+                      <clr-control-helper *ngIf="checkKeyVaild(each.value.key)" style="color: #c21d00">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.PARAM-ERROR1' | translate }}{{each.value.key}}{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.PARAM-ERROR2' | translate }}</clr-control-helper>
+                    </clr-input-container>
+                    <clr-input-container style="margin-left: 8px">
+                      <label style="max-width: 0px; display: none"></label>
+                      <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+                      <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.VALUE-HELP' | translate }}</clr-control-error>
+                    </clr-input-container>
+                    <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditClusterEnv(i)" fxLayout="row" fxLayoutAlign="start end">
+                      <clr-icon shape="minus-circle"></clr-icon>
+                    </button>
+                  </div>
+                </div>
+                <br>
+                <button (click)="addNewEditClusterEnv()" class="btn btn-sm btn-outline">
+                  <clr-icon shape="plus"></clr-icon>
+                  {{ 'PROVIDERMGMT.ADDPROVIDER-TKGM-PAGE.ADDPARAMS' | translate }}
+                </button>
+              </div>
+          </div>
+        </form>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASICTITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.NAME' | translate }}</span>
+                    <span>{{editProviderForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.DESC' | translate }}</span>
+                    <span>{{editProviderForm.value.description}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.TYPE' | translate }}</span>
+                    <span>{{editProviderForm.value.type}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.REGISTRY' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of editProviderForm.value.registry;let i = index;">
+                      <span *ngIf="i === 0">{{registry.name}}</span>
+                      <span *ngIf="i !== 0">, {{registry.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.DEFAULT-REGISTRY' | translate }}</span>
+                    <div style="display: inline" *ngFor="let registry of editProviderForm.value.registry">
+                      <span *ngIf="registry.id === editProviderForm.value.defaultRegistry">{{registry.name}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="editProviderForm.value.enableGlobalLB">
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.LB' | translate }}</span>
+                    <div style="display: inline" *ngFor="let lb of lbList">
+                      <span *ngIf="lb.id === editProviderForm.value.loadBalancerId">{{lb.name}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row" *ngIf="editProviderForm.value.type === 'TKGS'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGSTITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGS-PAGE.ADDRESS' | translate }}</span>
+                    <span>{{editTanzuKubernetesClusterParam.value.endpoint}}</span>
+                  </div>
+                  <div *ngIf="!editTanzuKubernetesClusterParam.value.skipTLS">
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGS-PAGE.CACERT' | translate }}</span>
+                    <span>{{editTanzuKubernetesClusterParam.value.caCert}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGS-PAGE.SKIP' | translate }}</span>
+                    <span>{{editTanzuKubernetesClusterParam.value.skipTLS}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGS-PAGE.USERNAME' | translate }}</span>
+                    <span>{{editTanzuKubernetesClusterParam.value.username}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGS-PAGE.NS' | translate }}</span>
+                    <span>{{editTanzuKubernetesClusterParam.value.namespace}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row" *ngIf="editProviderForm.value.type === 'TKGM'">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGMTITLE' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div *ngIf="!!editTkgmKubernetesClusterParam.value.kubeConfig">
+                    <span class="validateTitle2">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.KUBECONFIG' | translate }}</span>
+                    <div class="row value-container">
+                      <div class="col-xs-8">
+                          <div class="line-numbers" [innerHTML]="editTkgmKubernetesClusterParam.value.kubeConfig | language : 'yaml' | markdown"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.NS' | translate }}</span>
+                    <span>{{editTkgmKubernetesClusterParam.value.namespace === 'CreateNew' ? editTkgmKubernetesClusterParam.value.newNamespace : editTkgmKubernetesClusterParam.value.namespace}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.AVISEG' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.aviDataSeGroup ? editTkgmKubernetesClusterParam.value.aviDataSeGroup : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.AVIDATANET' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.aviDataNetworkName ? editTkgmKubernetesClusterParam.value.aviDataNetworkName : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.AVIDATANETCIDR' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.aviDataNetworkCIDR ? editTkgmKubernetesClusterParam.value.aviDataNetworkCIDR : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.NETWORK' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.vsphereNetwork ? editTkgmKubernetesClusterParam.value.vsphereNetwork : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.RESOURCEPOOL' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.resourcePool ? editTkgmKubernetesClusterParam.value.resourcePool : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.VMFOLDER' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.vmFolder ? editTkgmKubernetesClusterParam.value.vmFolder : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.DATASTORE' | translate }}</span>
+                    <span>{{!!editTkgmKubernetesClusterParam.value.datastore ? editTkgmKubernetesClusterParam.value.datastore : 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.USEMGMT' | translate}}</span>
+                  </div>
+                  <div *ngIf="editTkgmKubernetesClusterParam.value.defaultEnv[0]">
+                    <br>
+                    <span class="validateTitle2">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.PARAMS' | translate }}</span>
+                  </div>
+                  <div *ngIf="editTkgmKubernetesClusterParam.value.defaultEnv[0]">
+                    <span style="min-width: 55%;display: inline-block;width: 40%;font-weight: bold">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.KEY' | translate }}</span>
+                    <span style="min-width: 44%;display: inline-block;width: 40%;font-weight: bold">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.TKGM-PAGE.VALUE' | translate }}</span>
+                    <div *ngFor="let each of editTkgmKubernetesClusterParam.value.defaultEnv;">
+                      <span style="min-width: 55%;display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                      <span style="min-width: 44%;display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteProvider($event)"></app-delete-object>
+
+<clr-modal [(clrModalOpen)]="showAddEditFile" [clrModalClosable]="false">
+  <h3 class="modal-title">{{'SHARED.SELECTFILE.PAGETILTE' | translate}}</h3>
+  <div class="modal-body">
+    <p>{{ 'PROVIDERMGMT.ACTION.SELECTFILEDESC' | translate }}</p>
+      <div class="btn-group">
+        <button type="button" class="btn btn-primary btn-outline" (click)="fileEditUpload.click()">
+          <span>{{'SHARED.SELECTFILE.BROWER' | translate}}</span>
+        <input type="file" #fileEditUpload id="fileEditUpload" name="fileEditUpload" (change)="getEditFileName()" style="display:none"/>
+        </button>
+      </div>
+      <label>{{editFilename ? editFilename : 'SHARED.SELECTFILE.NOFILE' | translate }}</label>
+    <br>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="fileEditUpload.value = null;cancelAddEditFile();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="addEditFileToData();" [disabled]="!fileEditUpload.value">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

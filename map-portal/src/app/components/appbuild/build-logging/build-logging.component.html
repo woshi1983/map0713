@@ -1,0 +1,16 @@
+<clr-modal [(clrModalOpen)]="showLogs" [clrModalClosable]="false" clrModalSize="xl">
+    <h3 class="modal-title">{{issuer}} {{ 'LOGGING.BUILD_LOGS' | translate }}</h3>
+    <div class="modal-body" *ngIf="loading">
+      <clr-spinner style="margin-left: 50%;" [clrMedium]="true">Loading ...</clr-spinner>
+    </div>
+    <div class="modal-body">
+      <p *ngIf="!loading && !loggingMessage" style="margin-left: 45%;">
+        <clr-icon shape="warning-standard" role="none" size="16" style="width: 16px; height: 16px; color: #c9a30d"></clr-icon>
+        <b style="font-size: 16px;">{{ 'LOGGING.BUILD_NOLOG' | translate }}</b>
+      </p>
+      <div *ngIf="!loading && !!loggingMessage" class="line-numbers" [innerHTML]="loggingMessage | language : 'text' | markdown"></div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="close.emit('closed');loggingMessage = '';">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>

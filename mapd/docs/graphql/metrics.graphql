@@ -1,0 +1,11 @@
+type Metrics {
+  activeUsers: Int!
+  localUsersDisabled: Boolean!
+}
+
+extend type Query {
+  """
+  only global admin can view metrics.
+  """
+  Metrics: Metrics!
+}

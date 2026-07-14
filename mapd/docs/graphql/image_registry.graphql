@@ -1,0 +1,160 @@
+type ImageRegistry {
+  id: ID!
+  name: String!
+  description: String!
+  endpoint: URL!
+  caCert: String!
+  tlsCertChain: [X509Certificate!]
+  authUser: String!
+  type: ImageRegistryType!
+  projects: [String!]
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type ImageRegistries {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ImageRegistryNodes!
+}
+
+extend type Query {
+  """
+  requires `read:image_registry` or above.
+  """
+  ImageRegistry(id: ID!): ImageRegistry!
+  """
+  requires `read:image_registry` or above.
+
+  Filters:
+
+  - `name`
+
+  - `pushable`
+
+  - `organization`
+  """
+  ImageRegistries(page: QueryPage = {}, filters: [QueryFilter!] = []): ImageRegistries!
+  """
+  requires `read:image_registry` or above.
+
+  Filters:
+
+  - `name`
+  """
+  ImageRepos(imageRegistry: ID!, project: String!, filters: [QueryFilter!] = []): [ImageRepo!]
+  """
+  requires `read:image_registry` or above.
+
+  Filters:
+
+  - `name`
+  """
+  ChartRepos(imageRegistry: ID!, project: String!, filters: [QueryFilter!] = []): [ChartRepo!]
+  """
+  requires `read:image_registry` or above.
+  """
+  ChartDetails(imageRegistry: ID!, project: String!, name: String!, version: String!): ChartDetails!
+}
+
+extend type Mutation {
+  """
+  requires `write:image_registry` or above.
+  """
+  CreateImageRegistry(input: CreateImageRegistry!): ImageRegistry!
+  """
+  requires `write:image_registry` or above.
+  """
+  UpdateImageRegistry(input: UpdateImageRegistry!): ImageRegistry!
+  """
+  requires `modify:image_registry` or above.
+  """
+  DeleteImageRegistry(input: DeleteImageRegistry!): ImageRegistry!
+}
+
+type ImageRegistryNodes {
+  nodes: [ImageRegistry!]
+}
+
+enum ImageRegistryType {
+  UNKNOWN
+  HARBOR
+}
+
+type ImageRepo {
+  name: String!
+  tags: [String!]
+  project: String!
+  imageRegistry: ImageRegistry!
+}
+
+type ChartRepo {
+  name: String!
+  latestVersion: String!
+  totalVersions: Int!
+  avatar: URL
+  deprecated: Boolean!
+  homepage: URL
+  versions: [ChartVersion!]
+  project: String!
+  imageRegistry: ImageRegistry!
+}
+
+type ChartVersion {
+  _repo: String!
+  _project: String!
+  _imageRegistry: ID!
+  version: String!
+  details: ChartDetails
+}
+
+type ChartDetails {
+  name: String!
+  description: String!
+  version: String!
+  avatar: URL
+  sources: [URL!]
+  homepage: URL
+  download: URL
+  keywords: [String!]
+  dependencies: [ChartDetailsDependency!]
+  files: Map!
+  values: Any
+}
+
+type ChartDetailsDependency {
+  name: String!
+  repository: URL
+  version: String
+}
+
+input CreateImageRegistry {
+  name: String!
+  description: String
+  endpoint: URL!
+  caCert: String
+  authUser: String
+  authPassword: String
+  type: ImageRegistryType = HARBOR
+  organization: ID!
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateImageRegistry {
+  id: ID!
+  name: String
+  description: String
+  endpoint: URL
+  caCert: String
+  authUser: String
+  authPassword: String
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input DeleteImageRegistry {
+  id: ID!
+}

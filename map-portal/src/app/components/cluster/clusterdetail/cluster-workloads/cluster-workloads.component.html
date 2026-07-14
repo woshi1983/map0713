@@ -1,0 +1,61 @@
+<div *ngIf="authService.isLoggedIn">
+
+  <div class="clr-row" style="margin-left: 0px;">
+    <div>
+      <form clrForm [formGroup]="selectWorkloadTypeForm">
+        <clr-select-container>
+          <label class="clr-col-md-5" style="text-align: center;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS-PAGE.WORKLOADTYPE' | translate }}</label>
+          <select class="clr-col-md-7" clrSelect formControlName="type" required (change)="refresh()">
+            <option value="Deployments">Deployments</option>
+            <option value="Jobs">Jobs</option>
+          </select>
+        </clr-select-container>
+      </form>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS-PAGE.DATAGRIDFEILD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS-PAGE.DATAGRIDFEILD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'namespace'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS-PAGE.DATAGRIDFEILD.NAMESPACE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS-PAGE.DATAGRIDFEILD.NOWORKLOAD' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let workload of allWorkloads" [clrDgItem]="workload">
+      <clr-dg-cell class="title-bold">{{workload.name}}</clr-dg-cell>
+      <clr-dg-cell *ngIf="selectWorkloadTypeForm.value.type === 'Deployments'">{{workload.status.readyReplicas}}/{{workload.status.replicas}}</clr-dg-cell>
+      <clr-dg-cell *ngIf="selectWorkloadTypeForm.value.type === 'Jobs'">{{workload.status}}</clr-dg-cell>
+      <clr-dg-cell>{{workload.namespace}}</clr-dg-cell>
+      <clr-dg-cell>{{workload.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{workload.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allWorkloads.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+</div>

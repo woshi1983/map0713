@@ -1,0 +1,88 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!componentId">Loading ...</clr-spinner>
+  <div *ngIf="!!componentId">
+    <div class="clr-row" style="margin-left: 0px">
+      <div class="clr-form rightPos">
+        <div>
+          <span class="refresh-btn">
+            <clr-icon shape="search" (click)="showSearchInput = !showSearchInput"></clr-icon>
+          </span>
+          <input type="text" id="release" placeholder="{{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.SEARCHCOMPONETN' | translate }}" class="clr-input" size ="20" [hidden]="!showSearchInput">
+          <div class="nav-divider"></div>
+          &nbsp;
+          <span class="refresh-btn">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading">
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.DATAGRIDFIELD.NAME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.MANIFESTS-PAGE.MANIFESTS' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+
+      <clr-dg-placeholder>{{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.DATAGRIDFIELD.NOINSTALLPLAN' | translate }}</clr-dg-placeholder>
+      <clr-dg-row  *ngFor="let release of allReleases" [clrDgItem]="release">
+        <clr-dg-cell>{{release.name}}-{{release.num}}</clr-dg-cell>
+        <clr-dg-cell><a href="javascript:void(0)" class="nav-link" (click)="showReleaseManifests(release.id)">{{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.DATAGRIDFIELD.SHOW' | translate }}</a></clr-dg-cell>
+        <clr-dg-cell>{{release.createdAt | datetimeTransition}}</clr-dg-cell>
+        <clr-dg-cell>{{release.lastModified | datetimeTransition}}</clr-dg-cell>
+      </clr-dg-row>
+      <clr-dg-footer>
+        <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+          <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+          {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+        </clr-dg-pagination>
+      </clr-dg-footer>
+    </clr-datagrid>
+  </div>
+</div>
+
+<clr-modal [(clrModalOpen)]="showManifestModel" [clrModalClosable]="false" clrModalSize="lg">
+  <h3 class="modal-title">{{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.MANIFESTS-PAGE.MANIFESTS' | translate }}</h3>
+  <div class="modal-body" style="margin-bottom: 5px;">
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.MANIFESTS-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body" style="margin-top: 20px;" *ngIf="manifestLoading">
+      <clr-spinner style="margin-left: 50%;" [clrMedium]="true">Loading ...</clr-spinner>
+    </div>
+  <div class="modal-body" *ngIf="!manifestLoading">
+        <div class="line-numbers" *ngIf="!!manifestString" [innerHTML]="manifestString | language : 'yaml' | markdown"></div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="exportManifests()" [disabled]="!manifestString">
+          <clr-icon shape="download"></clr-icon>
+          {{ 'APPCOMPONENTDETAILS.INSTALLPLAN-PAGE.MANIFESTS-PAGE.DOWNLOAD' | translate }}
+        </button>
+        <button type="button" class="btn btn-outline" (click)="showManifestModel=false">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

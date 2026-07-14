@@ -1,0 +1,17 @@
+.pre code {
+	background-color: #000000 !important; /* base3 */
+}
+
+:not(pre) > code[class*="language-text"],
+pre[class*="language-text"] {
+	background-color: #fdf6e3 !important; /* base3 */
+}
+
+.pre code {
+	color: #d0d0d0 !important; /* base00 */
+}
+
+
+pre{
+	background-color: #000000 !important; /* base3 */
+}

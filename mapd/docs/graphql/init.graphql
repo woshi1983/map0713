@@ -1,0 +1,137 @@
+# GraphQL API schema definitions.
+#
+# Reference:
+# https://gqlgen.com/getting-started/
+
+type Query {
+  Version: SoftwareVersion!
+  Ping: Pong!
+}
+
+type Mutation {
+  Ping: Pong!
+}
+
+type Subscription {
+  Ping: Pong!
+  """
+  only global admin can view logs.
+  """
+  ConsoleLog: String!
+}
+
+type Pong {
+  pong: Time!
+}
+
+type Validation {
+  ok: Boolean!
+  error: String
+}
+
+type PageInfo {
+  number: Int!
+  limit: Int!
+  offset: Int!
+  count: Int!
+  hasNextPage: Boolean!
+}
+
+type FilterInfo {
+  key: String!
+  value: [String!]!
+}
+
+type SoftwareVersion {
+  version: Version!
+  revision: String!
+}
+
+type X509Certificate {
+  raw: String!
+  sig: Base64String!
+  sigAlg: String!
+  ver: Int!
+  sn: String!
+  iss: String!
+  sub: String!
+  notBefore: Time!
+  notAfter: Time!
+  keyUsage: String!
+  extensions: [X509CertificateExtension!]
+  basicConstraintsValid: Boolean!
+  isCA: Boolean!
+  dnsNames: [String!]
+}
+
+type X509CertificateExtension {
+  id: String!
+  value: Base64String!
+}
+
+input QueryFilter {
+  key: String!
+  value: [String!]
+}
+
+input QueryPage {
+  number: Int = 0
+  limit: Int = 10
+}
+
+"""Any is a generic type. It can be a Int, a String, or even an object.
+"""
+scalar Any
+"""Base64String is a Base64-encoded string. Generally it is used for binary
+data.
+"""
+scalar Base64String
+"""CIDR is a string of network CIDR, which is in RFC4632-mentioned layout.
+"""
+scalar CIDR
+"""Duration is a string of duration, which is in ISO8601-mentioned layout.
+"""
+scalar Duration
+"""IntOrString is a special type which could be an integer or a string.
+"""
+scalar IntOrString
+"""IP is a string of IPv4 or IPv6 address.
+"""
+scalar IP
+"""Map is a set of key-value pair, but both key and value are restricted to String.
+
+For example:
+
+```
+{
+  key1: "value1"
+  key2: "value2"
+}
+```
+"""
+scalar Map
+"""NullableMap is quite like Map, but its value can be null.
+
+For example:
+
+```
+{
+  key1: "value1"
+  key2: ""
+  key3: null
+}
+```
+"""
+scalar NullableMap
+"""Time is a string of time, which is in ISO8601-mentioned layout.
+"""
+scalar Time
+"""URL is a string of URL, which is in RFC1738-mentioned layout.
+"""
+scalar URL
+"""Upload is a blob that is uploaded from form data.
+"""
+scalar Upload
+"""Version is a string of semantic version (known as: semver).
+"""
+scalar Version

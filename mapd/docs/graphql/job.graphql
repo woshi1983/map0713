@@ -1,0 +1,65 @@
+type Job {
+  name: String!
+  namespace: String!
+  annotations: Map
+  labels: Map
+  spec: JobSpec!
+  status: JobStatus!
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Job(cluster: ID!, namespace: String!, name: String!): Job!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `binaryimage`
+
+  - `binarybuild`
+
+  - `dockerfileimage`
+
+  - `dockerfilebuild`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Jobs(filters: [QueryFilter!] = []): [Job!]
+}
+
+type JobSpec {
+  activeDeadlineSeconds: Int
+  backoffLimit: Int
+  completions: Int
+  parallelism: Int
+  template: PodTemplate
+}
+
+enum JobStatus {
+  UNKNOWN
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILURE
+}

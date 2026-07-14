@@ -1,0 +1,113 @@
+type BackupStorageLocation {
+  name: String!
+  labels: Map
+  spec: BackupStorageLocationSpec!
+  status: BackupStorageLocationStatus!
+  backups(filters: [QueryFilter!] = []): [Backup!]
+  restores(filters: [QueryFilter!] = []): [Restore!]
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  BackupStorageLocation(cluster: ID!, name: String!): BackupStorageLocation!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  BackupStorageLocations(filters: [QueryFilter!] = []): [BackupStorageLocation!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateBackupStorageLocation(input: CreateBackupStorageLocation!): BackupStorageLocation!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteBackupStorageLocation(input: DeleteBackupStorageLocation!): BackupStorageLocation!
+}
+
+type BackupStorageLocationSpec {
+  provider: String!
+  config: BackupStorageLocationSpecConfig!
+  objectStorage: BackupStorageLocationSpecObjectStorage
+  accessMode: BackupStorageLocationAccessMode!
+}
+
+type BackupStorageLocationSpecConfig {
+  region: String
+  s3ForcePathStyle: Boolean
+  s3Url: URL
+}
+
+type BackupStorageLocationSpecObjectStorage {
+  bucket: String!
+  prefix: String
+  """caCert is a raw PEM-encoded root CA certificate.
+  """
+  caCert: String
+}
+
+enum BackupStorageLocationStatus {
+  UNKNOWN
+  AVAILABLE
+  UNAVAILABLE
+}
+
+enum BackupStorageLocationAccessMode {
+  READ_ONLY
+  READ_WRITE
+}
+
+input CreateBackupStorageLocation {
+  name: String!
+  spec: CreateBackupStorageLocationSpec!
+  cluster: ID!
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input DeleteBackupStorageLocation {
+  name: String!
+  cluster: ID!
+}
+
+input CreateBackupStorageLocationSpec {
+  provider: String!
+  config: CreateBackupStorageLocationSpecConfig!
+  objectStorage: CreateBackupStorageLocationSpecObjectStorage
+  accessMode: BackupStorageLocationAccessMode!
+  profile: CreateBackupStorageLocationSpecProfile!
+}
+
+input CreateBackupStorageLocationSpecConfig {
+  region: String
+  s3ForcePathStyle: Boolean
+  s3Url: URL
+}
+
+input CreateBackupStorageLocationSpecObjectStorage {
+  bucket: String
+  prefix: String
+  """caCert is a raw PEM-encoded root CA certificate.
+  """
+  caCert: String
+}
+
+input CreateBackupStorageLocationSpecProfile {
+  awsAccessKeyID: String
+  awsSecretAccessKey: String
+}

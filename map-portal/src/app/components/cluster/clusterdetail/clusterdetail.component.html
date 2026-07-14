@@ -1,0 +1,784 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!cluster || loading">Loading ...</clr-spinner>
+  <div *ngIf="!!cluster && !loading">
+    <div>
+      <clr-icon shape="undo"></clr-icon>
+      <a (click)="backToManagement()" class="backStyle">{{ 'CLUSTERDETAILS.BACK' | translate }}</a>
+    </div>
+    <h2>
+      <div>
+        <span class="ml-05"> {{ clusterName }}</span>
+      </div>
+    </h2>
+
+    <div class="clr-row">
+      <div style="margin-left: 1rem">
+        <div style="line-height: 48px">
+          <span>{{cluster.description ? cluster.description : 'CLUSTERDETAILS.NODESC'| translate}}</span>
+        </div>
+      </div>
+      <div style="margin: 0 4% 0 auto">
+        <div class="rightPos">
+          <button class="refresh-btn btn btn-link" style="margin-right: -20px;outline: none;">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </button>
+          <div class="nav-divider" [fxHide]="!canWriteResources"></div>
+          &nbsp;
+          <button class="btn btn-link" style="outline: none;" [disabled]="cluster.status !== 'HEALTHY' || !octantLink" (click)="openOctantLink()" [fxHide]="!canWriteResources">
+            <clr-icon shape="link"></clr-icon>
+            {{ 'CLUSTERDETAILS.ACCESS-OCTANT' | translate }}
+          </button>
+          <div class="nav-divider" [fxHide]="!canWriteResources"></div>
+          &nbsp;
+          <div class="clr-form" style="margin-left: 5px;" [fxHide]="!canWriteResources">
+            <clr-dropdown class="dropdown">
+              <button class="btn-sm btn btn-outline custom-dropdown-toggle" clrDropdownTrigger>
+                <clr-icon shape="connect"></clr-icon>
+                {{ 'CLUSTERDETAILS.ACCESS-CLUSTER' | translate }}
+              </button>
+              <clr-dropdown-menu *clrIfOpen>
+                <button id='web-terminal' style="outline: none;" type="button" (click)="showTerminalHelp()" clrDropdownItem >
+                  <clr-icon shape="terminal"></clr-icon>
+                  <span style="font-size: 12px;">{{ 'CLUSTERDETAILS.OPENTERMINAL' | translate }}</span>
+                </button>
+                <button id='download-kubeconfig' style="outline: none;" type="button" (click)="downloadKubeconfig()" clrDropdownItem [disabled]="!cluster.kubeConfig">
+                  <clr-icon shape="download"></clr-icon>
+                  <span style="font-size: 12px;">{{ 'CLUSTERDETAILS.DOWNLOADKUBECONFIG' | translate }}</span>
+                </button>
+                <button id='download-sshkey' style="outline: none;" type="button" (click)="downloadSSHKey()" clrDropdownItem [disabled]="!cluster.sshPrivateKey">
+                  <clr-icon shape="download"></clr-icon>
+                  <span style="font-size: 12px;">{{ 'CLUSTERDETAILS.DOWNLOADSSHKEY' | translate }}</span>
+                </button>
+              </clr-dropdown-menu>
+            </clr-dropdown>
+          </div>
+          <div class="nav-divider" [fxHide]="!canWrite"></div>
+          &nbsp;
+          <div class="clr-form" style="margin-left: 5px;" [fxHide]="!canWrite">
+            <clr-dropdown class="dropdown">
+              <button class="btn-sm btn btn-outline custom-dropdown-toggle" clrDropdownTrigger>
+                <clr-icon shape="bars"></clr-icon>
+                {{ 'SHARED.MOREACTIONS' | translate }}
+              </button>
+              <clr-dropdown-menu *clrIfOpen>
+                <button id='reinit' type="button" [disabled]="cluster.status !== 'INITIALIZING' || cluster.state !== 'FAILED'" (click)="doReinitCluster()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.REINIT' | translate }}</span></button>
+                <button id='modify-desc' type="button" (click)="showUpdateClusterDesc()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</span></button>
+                <button id='scale-vmclass' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</span></button>
+                <button id='scale-node' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</span></button>
+                <button id='scale-master' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</span></button>
+                <button id='delete-cluster' type="button" (click)="showDeleteClusterDialog()" clrDropdownItem [fxHide]="cluster?.type === 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</span></button>
+                <button id='remove-cluster' type="button" (click)="showRemoveClusterDialog()"  clrDropdownItem [fxHide]="cluster?.type !== 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</span></button>
+                <button id='force-delete-cluster' type="button" (click)="showForceRemoveDialog()" clrDropdownItem [fxHide]="!canForceDelete || cluster?.type === 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</span></button>
+              </clr-dropdown-menu>
+            </clr-dropdown>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-warning" role="alert" *ngIf="showNewCLusterVersionAlert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERDETAILS.UPGRADE-ALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-warning" role="alert" *ngIf="showUnableGetResourceAlert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERDETAILS.UNABLE-GETRESOURCE-ALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="clr-row" fxLayout="none">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TITLE' | translate }}
+              </div>
+              <div class="card-text" fxLayout="flex">
+                <div class="clr-col-md-2" style="text-align: center">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.HEALTHY' | translate }}</b></h4>
+                  <div style="margin-top: 5px">
+                    <clr-icon shape="success-standard" class="info-card-icon HEALTHY" *ngIf="cluster.status === 'HEALTHY'"></clr-icon>
+                    <clr-icon shape="error-standard" class="info-card-icon MAINTENANCE" *ngIf="cluster.status != 'HEALTHY' && cluster.status != 'UNHEALTHY'"></clr-icon>
+                    <clr-icon shape="times-circle" class="info-card-icon UNHEALTHY" *ngIf="cluster.status === 'UNHEALTHY'"></clr-icon>
+                  </div>
+                  <!---
+                  <div style="margin-top: 10px; margin-bottom: 10px">
+                    <button (click)="showClusterCause()" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="cluster.status != 'UNHEALTHY'">
+                      <clr-icon shape="exclamation-triangle" [ngClass]="{ 'redIcon' : cluster.status === 'UNHEALTHY'}"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.UNHEALTHYCAUSE' | translate }}
+                    </button>
+                  </div>
+                  --->
+                </div>
+                <div class="clr-col-md-2" style="text-align: center">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.STATE' | translate }}</b></h4>
+                  <div style="margin-top: 5px">
+                    <p><b>{{cluster.state}}</b></p>
+                  </div>
+                </div>
+                <div class="clr-col-md-2" style="text-align: center">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VERSION' | translate }}</b></h4>
+                  <div style="margin-top: 5px">
+                    <p><b>{{cluster.version}}</b></p>
+                  </div>
+                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="cluster.type === 'PROVISIONED'">
+                    <button (click)="showClusterUpdate()" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="cluster.status != 'HEALTHY' || !allowUpdateClusterVersion || !canWrite">
+                      <clr-icon shape="circle-arrow"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPGRADE' | translate }}
+                    </button>
+                  </div>
+                </div>
+                <div class="clr-col-md-2" style="text-align: center" *featureToggle="featureGates.appBuild">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.ENABLETBS' | translate }}</b></h4>
+                  <div style="margin-top: 5px" *ngIf="!!tbsExtension">
+                    <p *ngIf="tbsExtension.state === 'ENABLED'">
+                      <clr-icon class="is-solid" shape="success-standard" role="none" size="16" style="width: 16px; height: 16px; color: #60b515"></clr-icon>
+                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLED' | translate }}</b>
+                    </p>
+                    <p *ngIf="tbsExtension.state != 'ENABLED'">
+                       <clr-spinner [clrInline]="true" *ngIf="tbsExtension.state === 'ENABLING'|| tbsExtension.state === 'DISABLING'">Loading ...</clr-spinner>
+                       <b *ngIf="tbsExtension.state === 'ENABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLING' | translate }}<span class="UNHEALTHY" *ngIf="tbsExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
+                       <b *ngIf="tbsExtension.state === 'DISABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLING' | translate }}<span class="UNHEALTHY" *ngIf="tbsExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
+                       <clr-icon shape="error-standard" role="none" size="16" style="width: 16px; height: 16px; color: #0072a3" *ngIf="tbsExtension.state === 'UNKNOWN'"></clr-icon>
+                       <b *ngIf="tbsExtension.state === 'UNKNOWN'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.UNKNOWN' | translate }}</b>
+                    </p>
+                  </div>
+                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!!tbsExtension">
+                    <button (click)="showUpdateExtensionStatus('TBS',false)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="tbsExtension.status != 'PROVISIONED' && tbsExtension.status != 'FAILED' || cluster.status != 'HEALTHY' || !canWrite">
+                      <clr-icon shape="times-circle"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE' | translate }}
+                    </button>
+                  </div>
+                  <div style="margin-top: 5px" *ngIf="!tbsExtension">
+                    <p>
+                      <clr-icon class="is-solid" shape="warning-standard" role="none" size="16" style="width: 16px; height: 16px; color: #c9a30d"></clr-icon>
+                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLED' | translate }}</b>
+                    </p>
+                  </div>
+                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!tbsExtension">
+                    <button (click)="showUpdateExtensionStatus('TBS',true)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="cluster.status != 'HEALTHY' || !canWrite">
+                      <clr-icon shape="play"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' | translate }}
+                    </button>
+                  </div>
+                </div>
+                <div class="clr-col-md-2" style="text-align: center">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.ENABLEINGRESS' | translate }}</b></h4>
+                  <div style="margin-top: 5px" *ngIf="!!contourExtension">
+                    <p *ngIf="contourExtension.state === 'ENABLED'">
+                      <clr-icon class="is-solid" shape="success-standard" role="none" size="16" style="width: 16px; height: 16px; color: #60b515"></clr-icon>
+                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLED' | translate }}</b>
+                    </p>
+                    <p *ngIf="contourExtension.state != 'ENABLED'">
+                       <clr-spinner [clrInline]="true" *ngIf="contourExtension.state === 'ENABLING'|| contourExtension.state === 'DISABLING'">Loading ...</clr-spinner>
+                       <b *ngIf="contourExtension.state === 'ENABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLING' | translate }}<span class="UNHEALTHY" *ngIf="contourExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
+                       <b *ngIf="contourExtension.state === 'DISABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLING' | translate }}<span class="UNHEALTHY" *ngIf="contourExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
+                       <clr-icon shape="error-standard" role="none" size="16" style="width: 16px; height: 16px; color: #0072a3" *ngIf="contourExtension.state === 'UNKNOWN'"></clr-icon>
+                       <b *ngIf="contourExtension.state === 'UNKNOWN'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.UNKNOWN' | translate }}</b>
+                    </p>
+                  </div>
+                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!!contourExtension">
+                    <button (click)="showContourInfo()" class="btn-sm btn btn-primary btn-outline custom-align" style="margin: 0px;" *ngIf="contourExtension.state === 'ENABLED'">
+                      <clr-icon shape="eye"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS' | translate }}
+                    </button>
+
+                    <button (click)="showUpdateExtensionStatus('CONTOUR',false)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="contourExtension.status != 'PROVISIONED' && contourExtension.status != 'FAILED' || cluster.status != 'HEALTHY' || !canWrite">
+                      <clr-icon shape="times-circle"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE' | translate }}
+                    </button>
+                  </div>
+                  <div style="margin-top: 5px" *ngIf="!contourExtension">
+                    <p>
+                      <clr-icon class="is-solid" shape="warning-standard" role="none" size="16" style="width: 16px; height: 16px; color: #c9a30d"></clr-icon>
+                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLED' | translate }}</b>
+                    </p>
+                  </div>
+                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!contourExtension">
+                    <button (click)="showUpdateExtensionStatus('CONTOUR',true)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="cluster.status != 'HEALTHY' || !canWrite">
+                      <clr-icon shape="play"></clr-icon>
+                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' | translate }}
+                    </button>
+                  </div>
+                </div>
+                <div class="clr-col-md-2" style="text-align: center">
+                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.CLASS' | translate }}</b></h4>
+                  <div style="margin-top: 5px;">
+                    <p><b>{{cluster.type}}</b></p>
+                    <span><b>( {{cluster.class}} )</b></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <div>
+        <clr-tabs id="cluster-details" class="tabs">
+          <clr-tab>
+              <button clrTabLink id="summary-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.summaryActive">
+                <clr-tab-content id="summary-content" *clrIfActive>
+                    <app-cluster-summary [cluster]="cluster"></app-cluster-summary>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="compute-link"  routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPUTE' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.computeActive">
+                <clr-tab-content id="compute-content" *clrIfActive>
+                  <app-cluster-compute [clusterId]="clusterId"></app-cluster-compute>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="namespaces-link"  routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.NAMESPACES' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.namespaceActive">
+                <clr-tab-content id="namespaces-content" *clrIfActive>
+                  <app-cluster-namespaces [clusterId]="clusterId" [clusterStatus]="cluster.status"></app-cluster-namespaces>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab *featureToggle="featureGates.appMgmt">
+              <button clrTabLink id="instances-link"  routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.instanceActive">
+                <clr-tab-content id="instances-content" *clrIfActive>
+                  <app-app-instances [clusterId]="clusterId"></app-app-instances>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="cluster-workloads-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.WORKLOADS' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.workloadActive">
+                <clr-tab-content id="cluster-workloads-content" *clrIfActive>
+                  <app-cluster-workloads [clusterId]="clusterId"></app-cluster-workloads>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="backups-restores-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.backupActive">
+                <clr-tab-content id="backups-restores-content" *clrIfActive>
+                  <app-cluster-backups [clusterId]="clusterId"></app-cluster-backups>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+          <clr-tab>
+              <button clrTabLink id="data-protection-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATA-PROTECTION' | translate }}</button>
+              <ng-template [(clrIfActive)]="tabLinkStatusList.locationActive">
+                <clr-tab-content id="data-protection-content" *clrIfActive>
+                  <app-cluster-data-protection [clusterId]="clusterId" [clusterStatus]="cluster.status"></app-cluster-data-protection>
+                </clr-tab-content>
+              </ng-template>
+          </clr-tab>
+        </clr-tabs>
+    </div>
+  </div>
+</div>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGSVMclassDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGSClusterVMClassForm">
+        <clr-select-container>
+          <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="masterVMClass" required (change)="updateTKGSVMclassChanged=true;">
+            <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="workerVMClass" required (change)="updateTKGSVMclassChanged=true;">
+            <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-ERROR' | translate }}</clr-control-error>
+        </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGSVMclassDialog=false;updateTKGSClusterVMClassForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterVMClass();updateTKGSClusterVMClassForm.reset()" [disabled]="updateTKGSClusterVMClassForm.invalid || !updateTKGSVMclassChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGMVMclassDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERSMGMT.ACTIONS.TKGM-NODETYPE-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGMClusterVMClassForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterCPU" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterRAM" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterDisk" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerCPU" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerRAM" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerDisk" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGMVMclassDialog=false;updateTKGMClusterVMClassForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterVMClass();updateTKGMClusterVMClassForm.reset()" [disabled]="updateTKGMClusterVMClassForm.invalid || !updateTKGMVMclassChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateWorkerDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGSClusterWorkerForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input clrInput  formControlName="workerCount" type="number" #stepInupt required size="20" (change)="updateWorkerChanged=true;"/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'min'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'max'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR3' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateWorkerDialog=false;updateTKGSClusterWorkerForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterWorker();updateTKGSClusterWorkerForm.reset()" [disabled]="updateTKGSClusterWorkerForm.invalid || !updateWorkerChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGSMasterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-warning alert-sm" role="alert" *ngIf="!allowUpdateClusterMaster">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="warning-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="allowUpdateClusterMaster">
+      <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.PAGEDESC' | translate }}</span>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGSMasterDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterMaster();" [disabled]="!allowUpdateClusterMaster">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGMMasterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.TKGMPAGEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGMClusterMasterForm">
+      <clr-select-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <select class="clr-col-md-9" clrSelect formControlName="masterCount" required type="number" (change)="updateWorkerChanged=true;">
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.MASTERCOUNT-ERROR1' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGMMasterDialog=false;updateTKGMClusterMasterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterMaster();updateTKGMClusterMasterForm.reset()" [disabled]="updateTKGMClusterMasterForm.invalid || !updateWorkerChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateClusterDescDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateClusterDescForm">
+      <clr-textarea-container>
+        <label class="clr-col-md-2">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-10" clrTextarea formControlName="description" type="string" style="width: 150%;height: 100px;"></textarea>
+      </clr-textarea-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateClusterDescDialog=false;updateClusterDescForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterDescription();updateTKGSClusterWorkerForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="deleteClusterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{clusterName}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{clusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="deleteClusterDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteClusterById(clusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== clusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeClusterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{clusterName}}</b> ?</p>
+    <div class="alert alert-info" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{clusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeClusterDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="removeClusterById(clusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== clusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="forceDeleteDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{clusterName}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEALERT1' | translate }}</span>
+        </div>
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{clusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="forceDeleteDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="forceDeleteClusterById(clusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== clusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showClusterUpdateDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPGRADE-PAGE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-warning" role="alert" *ngIf="showNoAdjacentVersion">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPGRADE-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <form clrForm [formGroup]="updateClusterVersionForm">
+      <clr-select-container style="margin-top: .2rem;">
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPGRADE-PAGE.SELECTUPGRADEDVERSION' | translate }}</label>
+        <select class="clr-col-md-6" clrSelect formControlName="version" required>
+          <option value="{{version}}" *ngFor="let version of allowUpdateVersionList">{{version}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPGRADE-PAGE.SELECTUPGRADEDVERSION-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showClusterUpdateDialog=false;updateClusterVersionForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterVersion(clusterId, updateClusterVersionForm.value.version);updateClusterVersionForm.reset()" [disabled]="updateClusterVersionForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="!!showUpdateExtensionDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{(showUpdateExtensionDialog === 'TBS' ? 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGETITLE1' : 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGETITLE2') | translate }}</h3>
+  <div class="modal-body">
+      <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC1' | translate }} <b>{{(changeExtensionStatus ? 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' : 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE') | translate }}</b> {{(showUpdateExtensionDialog === 'TBS' ? 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC2' : 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC3') | translate }}</span>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateExtensionDialog=null;changeExtensionStatus=null;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="updateExtensionStatus();">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showTerminal" [clrModalClosable]="false" clrModalSize="lg">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.TERMINAL-NOTE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-danger" role="alert" *ngIf="!terminalExtension">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <div class="alert-text">
+            <b> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.NOTENABLED' | translate }}</b>
+          </div>
+          <div class="alert-actions">
+            <a href="javascript:void(0)" class="alert-action" (click)="updateTerminalExtension(true)" [class.disabled]="!!cluster && cluster.status != 'HEALTHY' || !canWrite">{{ 'CLUSTERDETAILS.TERMINAL-NOTE.ENABLED' | translate }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-danger" role="alert" *ngIf="!!terminalExtension && terminalExtension.state != 'ENABLED'">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <div class="alert-text">
+            <clr-spinner [clrInline]="true" *ngIf="terminalExtension?.state === 'ENABLING'|| terminalExtension?.state === 'DISABLING'">Loading ...</clr-spinner>
+            <b *ngIf="terminalExtension?.state === 'ENABLING'"> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.ENABLING' | translate }}<span class="UNHEALTHY" *ngIf="terminalExtension?.status === 'FAILED'"> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.FAILED' | translate }} </span></b>
+            <b *ngIf="terminalExtension?.state === 'DISABLING'"> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.DISABLING' | translate }}<span class="UNHEALTHY" *ngIf="terminalExtension?.status === 'FAILED'"> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.FAILED' | translate }} </span></b>
+            <clr-icon shape="error-standard" role="none" size="16" style="width: 16px; height: 16px; color: #0072a3" *ngIf="terminalExtension?.state === 'UNKNOWN'"></clr-icon>
+            <b *ngIf="terminalExtension?.state === 'UNKNOWN'"> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.UNKNOWN' | translate }}</b>
+          </div>
+          <div class="alert-actions">
+            <a href="javascript:void(0)" class="alert-action" (click)="updateTerminalExtension(false)" [class.disabled]="!!cluster && cluster.status != 'HEALTHY' || !canWrite" *ngIf="terminalExtension.status === 'FAILED'">{{ 'CLUSTERDETAILS.TERMINAL-NOTE.DISABLED' | translate }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-block">
+        <div class="card-text">
+          <div>
+            <div>
+              <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.DESC1' | translate }} <b>Kubectl / Helm</b> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.DESC2' | translate }} <b>SSH</b> {{ 'CLUSTERDETAILS.TERMINAL-NOTE.DESC3' | translate }}</span>
+            </div>
+            <div>
+              <span><b>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.NOTES' | translate }}</b></span>
+            </div>
+            <ul>
+              <li>
+                <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.NOTES1' | translate }}</span>
+              </li>
+              <li>
+                <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.NOTES2' | translate }}</span>
+              </li>
+              <li>
+                <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.NOTES3' | translate }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="card-text">
+          <h4 style="margin-top: 0px;margin-bottom: 10px;"><b>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.KUBECTL' | translate }}</b></h4>
+          <div>
+            <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.KUBECTL-NOTES1' | translate }} <a href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands" target="_blank">{{ 'CLUSTERDETAILS.TERMINAL-NOTE.KUBECTL-NOTES2' | translate }}</a>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.KUBECTL-NOTES3' | translate }}</span>
+          </div>
+          <ul>
+            <li>
+              <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.VIEWNODE' | translate }}</span>
+            </li>
+          </ul>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold">$ kubectl get nodes -o wide</span>
+          </p>
+          <ul>
+            <li>
+              <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.VIEWPOD' | translate }}</span>
+            </li>
+          </ul>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold">$ kubectl get pods -A</span>
+          </p>
+          <ul>
+            <li>
+              <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.VIEWNS' | translate }}</span>
+            </li>
+          </ul>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold">$ kubectl get ns 或 kubens</span>
+          </p>
+          <ul>
+            <li>
+              <span>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.CHANGENS' | translate }}</span>
+            </li>
+          </ul>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold">$ kubens [NAMESPACE]</span>
+          </p>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold">$ kubectl get pods,services,deployments</span>
+          </p>
+        </div>
+        <div class="card-text">
+          <h4 style="margin-top: 0px;margin-bottom: 10px;"><b>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.SSH' | translate }}</b></h4>
+          <div>
+            <span><b>{{ 'CLUSTERDETAILS.TERMINAL-NOTE.SSH-NOTES' | translate }}</b></span>
+          </div>
+          <p style="background-color:#595959; font-size:9pt; margin:0pt; text-indent: 4pt;">
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold" *ngIf="!!cluster && cluster.class === 'TKGM'">$ ssh capv@[CLUSTER_NODE_IP]</span>
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold" *ngIf="!!cluster && cluster.class === 'TKGS'">$ ssh vmware-system-user@[CLUSTER_NODE_IP]</span>
+            <span style="color:#ffffff; font-family:'Courier New'; font-size:9pt; font-weight:bold" *ngIf="!!cluster && cluster.class === 'UNKNOWN'">$ ssh [USER]@[CLUSTER_NODE_IP]</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showTerminal=false;terminalExtension=null;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    <button type="button" class="btn btn-outline" (click)="openTerminalURL();showTerminal=false;" [disabled]="!!terminalExtension && terminalExtension.state != 'ENABLED' || !terminalExtension?.endpoints || !canWrite">{{ 'SHARED.PAGEACTIONS.PAGEOPEN' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="contourInfo" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body">
+    <div>
+      <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.DOMAIN' | translate }}</b>
+      <div *ngIf="!!contourIpList" style="margin-left: 10px;">
+        <ul>
+          <div *ngFor="let ip of contourIpList">
+          <li><b style="color: #0072a3">{{ip}}</b></li>
+        </div>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.PORT' | translate }}</b>
+      <div *ngIf="!!contourPortList" style="margin-left: 10px;">
+        <ul>
+          <div *ngFor="let port of contourPortList">
+          <li><b style="color: #0072a3">{{port}}</b></li>
+        </div>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.INGRESSCLASS' | translate }}</b>
+      <b style="color: #0072a3">contour</b>
+    </div>
+    <div style="margin-top: 10px;">
+      <div>
+        <span>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.EXAMPLE' | translate }}</span>
+      </div>
+      <div class="row value-container">
+          <div class="col-xs-8">
+              <div class="line-numbers" [innerHTML]="ingressExample | language : 'yaml' | markdown"></div>
+          </div>
+      </div>
+      <div>
+        <span>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.DNS' | translate }} ingress.example.com -> {{!!contourIpList ? contourIpList[0] : null}}</span>
+      </div>
+      <div>
+        <span>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.ACCESS' | translate }} {{!!contourPortList[0] ? contourPortList[0].split(': ')[0] : 'http'}}://ingress.example.com{{!!contourPortList[0] ? ((contourPortList[0].split(': ')[1] != '80' && contourPortList[0].split(': ')[1] != '443') ? ':' + contourPortList[0].split(': ')[1] : '') : ':80'}}</span>
+      </div>
+    </div>
+    <div style="margin-top: 20px;">
+      <span>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.VIEWINGRESS-PAGE.MOREINFO' | translate }}</span>
+      <span><a href="https://projectcontour.io" target="_blank" class="nav-link">https://projectcontour.io</a></span>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="contourInfo=false;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

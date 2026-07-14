@@ -1,0 +1,851 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPROUTE.INGRESS.ALL-INGRESSES' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateIngress()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPROUTE.INGRESS.CREATEINGRESS' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-ingress' type="button" (click)="showUpdateIngress(selectedIngress)" [disabled]="!selectedIngress"
+              clrDropdownItem>{{ 'APPROUTE.INGRESS.ACTION.UPDATEINGRESS' | translate }}</button>
+            <button id='delete-ingress' type="button" (click)="showDeleteIngress(selectedIngress)" [disabled]="!selectedIngress"
+              clrDropdownItem>{{ 'APPROUTE.INGRESS.ACTION.DELETEINGRESS' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="ingressname" placeholder="{{ 'APPROUTE.INGRESS.SEARCHINGRESS' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedIngress" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column style="min-width: 250px;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.RULES' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'spec.ingressClass'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        IngressClass
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'cluster.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'namespace'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.NS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'component.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.COMPONENT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'application.name'">
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'APPROUTE.INGRESS.DATAGRIDFIELD.APP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPROUTE.INGRESS.DATAGRIDFIELD.NOINGRESS' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let ing of ingresses" [clrDgItem]="ing" [clrDgSelectable]="checkCanEditable(ing.labels)">
+      <clr-dg-cell class="datagrid-long-text">{{ing.name}}</clr-dg-cell>
+      <clr-dg-cell style="min-width: 250px;">
+        <div *ngFor="let rule of ing.spec.rules">
+          <div *ngFor="let path of rule.http.paths" style="margin-bottom: 2px;">
+            <a href="{{checkTLSHostExist(rule.host, ing.spec.tls) ? 'https://' : 'http://'}}{{rule.host}}{{path.path === '/' ? '' : path.path}}" target="_blank">{{checkTLSHostExist(rule.host, ing.spec.tls) ? 'https://' : 'http://'}}{{rule.host}}{{path.path === '/' ? '' : path.path}}</a>
+            <span><b> -> </b></span>
+            <span>{{path.backend.service.name}}:{{path.backend.service.port.number}}</span>
+          </div>
+        </div>
+      </clr-dg-cell>
+      <clr-dg-cell *ngIf="!!ing.status.ingress">{{ing.spec.ingressClass}} ({{ing.status.ingress[0].ip}})</clr-dg-cell>
+      <clr-dg-cell *ngIf="!ing.status.ingress">{{ing.spec.ingressClass}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{ing.cluster.name}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{ing.namespace}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!ing.component ? ing.component.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!ing.application ? ing.application.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{ing.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{ing.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="ingresses.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardingress [(clrWizardOpen)]="createIngressOpen" (clrWizardOnFinish)="doIngressFinish()"
+  (clrWizardOnCancel)="doIngressCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPROUTE.INGRESS.CREATEINGRESS' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicIngressForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicIngressForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.PAGEDESC' | translate }}
+    <div class="alert alert-warning alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="warning-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form clrForm [formGroup]="basicIngressForm">
+      <div class="card-text">
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME' | translate }}</label>
+          <input clrInput name="name" formControlName="name" type="string" required />
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'maxlength'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR3' | translate }} {{commonNamePattern}}{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'name'">{{basicIngressForm.value.name}}{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="cluster" name="cluster" (change)="refreshNsInCluster($event);">
+            <option [value]="cluster.id" *ngFor="let cluster of clusterList">{{cluster.name}}</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper *ngIf="!showNoNonDefaultNamespaceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="namespace" name="namespace" (change)="refreshServicesInNamespace($event);">
+            <option [value]="ns.name" *ngFor="let ns of namespaceList">{{ns.name}}</option>
+          </select>
+          <clr-control-helper style="color: #c21d00" *ngIf="showNoNonDefaultNamespaceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-ERROR2' | translate }}</clr-control-helper>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper *ngIf="!showNoIngressClassAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-HELP' | translate }}</clr-control-helper>
+          <label class="required">IngressClass</label>
+          <select class="clr-col-md-9" clrSelect formControlName="ingressClass">
+            <option [value]="ingclass.name" *ngFor="let ingclass of ingressClassList">{{ingclass.name}}</option>
+          </select>
+          <clr-control-helper style="color: #c21d00" *ngIf="showNoIngressClassAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-ERROR2' | translate }}</clr-control-helper>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+      </div>
+      <div class="card-text">
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.LABELS' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.LABELS-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!labelsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of labelsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteIngressLable(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addNewIngressLabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ADDLABELS' | translate }}
+              </button>
+            </div>
+        </div>
+      <div class="card-text">
+            <div class="card-text" formArrayName="annotations">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOTATION' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOTATION-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!annotationsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOKEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOVALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of annotationsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOKEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string"/>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteIngressAnnotation(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addNewIngressAnnotation()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ADDANNO' | translate }}
+              </button>
+            </div>
+        </div>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="addRuleForm.invalid || ruleList.controls.length <= 0 || allPathList.length <= 0">
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PAGETITLE' | translate }}</ng-template>
+    <span>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PAGEDESC' | translate }}</span>
+    <form clrForm [formGroup]="addRuleForm">
+      <div formArrayName="rules">
+        <div *ngFor="let rule of ruleList.controls; let i = index" [formGroupName]="i">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h3 class="card-title">
+                    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.RULES' | translate }} {{i + 1}}
+                    <button class="btn btn-link btn-icon" (click)="deleteRule(i)">
+                      <clr-icon shape="window-close"></clr-icon>
+                    </button>
+                  </h3>
+                  <div class="card-text">
+                    <div class="clr-row" style="margin-left: 0px;">
+                      <clr-input-container style="max-width: 50%;width: 50%;">
+                        <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-HELP' | translate }}</clr-control-helper>
+                        <label class="required clr-col-md-3">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN' | translate }}</label>
+                        <input class="clr-col-md-9" fxFlex="1 1 auto" clrInput name="host" formControlName="host" type="string" required/>
+                        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-ERROR1' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-ERROR2' | translate }} {{hostsPattern}}</clr-control-error>
+                      </clr-input-container>
+                      <clr-toggle-container style="margin-left: 10px;">
+                        <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ENABLEHTTPS' | translate }}</clr-control-helper>
+                        <clr-toggle-wrapper>
+                          <label class="clr-col-md-12">HTTPS</label>
+                          <input type="checkbox" clrToggle formControlName="enableHttps" name="enableHttps" [checked]="rule.value.enableHttps" (change)="setHttpsSecretVaildtor(i, rule.value.enableHttps)"/>
+                        </clr-toggle-wrapper>
+                      </clr-toggle-container>
+                    </div>
+                    <clr-select-container *ngIf="rule.value.enableHttps" style="max-width: 50%;width: 50%;">
+                      <clr-control-helper *ngIf="!showNoTLSSecretAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="secretName">
+                        <option [value]="secret.name" *ngFor="let secret of secretList">{{secret.name}}</option>
+                      </select>
+                      <clr-control-helper style="color: #c21d00" *ngIf="showNoTLSSecretAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-ERROR1' | translate }}</clr-control-helper>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-ERROR2' | translate }}</clr-control-error>
+                    </clr-select-container>
+                  </div>
+                  <div class="card-text" formArrayName="paths">
+                    <clr-input-container>
+                        <label class="required clr-col-md-12">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATHMAPPING' | translate }}</label>
+                    </clr-input-container>
+                    <table class="table" style="border-style: hidden;margin-top: 0px;">
+                      <tbody *ngFor="let each of allPathList[i].controls; let j = index" [formGroupName]="j">
+                        <tr>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATHTYPE' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="pathType" required>
+                                <option value="Prefix">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PREFIX' | translate }}</option>
+                                <option value="Exact">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.EXACT' | translate }}</option>
+                              </select>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-input-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATH' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <input clrInput  formControlName="path" name="path" type="string"/>
+                            </clr-input-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper *ngIf="!showNoServiceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SVC' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="service" required>
+                                <option value="{{service.name}}" *ngFor="let service of serviceList;">{{service.name}}</option>
+                              </select>
+                              <clr-control-helper style="color: #c21d00" *ngIf="showNoServiceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SVC-ERROR2' | translate }}</clr-control-helper>
+                              <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SVC-ERROR1' | translate }}</clr-control-error>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PORT' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="port" name="port" required>
+                                <option value="{{port.port}}" *ngFor="let port of getPortInService(each.value.service);">{{port.port}}</option>
+                              </select>
+                              <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PORT-ERROR1' | translate }}</clr-control-error>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <button class="btn btn-link btn-icon" (click)="deletePath(i, j)" fxLayout="row" fxLayoutAlign="start end">
+                              <clr-icon shape="minus-circle"></clr-icon>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <br>
+                    <button (click)="addNewPath(i)" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ADDPATHMAPPING' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <br>
+    <button class="btn btn-outline" (click)="addRule()">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ADDRULE' | translate }}</button>
+
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.BASICINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.NAME' | translate }}</span>
+                    <span>{{basicIngressForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of clusterList">
+                      <span *ngIf="cluster.id === basicIngressForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.NAMESPACE' | translate }}</span>
+                    <span>{{basicIngressForm.value.namespace}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">IngressClass：</span>
+                    <span>{{basicIngressForm.value.ingressClass}}</span>
+                  </div>
+                  <div *ngIf="basicIngressForm.value.labels[0]">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.LABELS' | translate }}</span>
+                  </div>
+                  <div *ngIf="basicIngressForm.value.labels[0]" style="margin-left: 20px;">
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.KEY' | translate }}</span>
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.VALUE' | translate }}</span>
+                    <div *ngFor="let each of basicIngressForm.value.labels;">
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="basicIngressForm.value.annotations[0]">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNO' | translate }}</span>
+                  </div>
+                  <div *ngIf="basicIngressForm.value.annotations[0]" style="margin-left: 20px;">
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNOKEY' | translate }}</span>
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNOVALUE' | translate }}</span>
+                    <div *ngFor="let each of basicIngressForm.value.annotations;">
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.RULES' | translate }}
+              </div>
+              <div class="card-block" *ngFor="let rule of ruleList.controls; let i = index">
+                <div>
+                  <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.RULES' | translate }} {{i + 1}}：</span>
+                </div>
+                <div class="card-text" style="margin-left: 20px;">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.DOMAIN' | translate }}</span>
+                    <span>{{rule.value.host}}</span>
+                  </div>
+                  <div *ngIf="rule.value.enableHttps">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.SECRET' | translate }}</span>
+                    <span>{{rule.value.secretName}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PATHMAPPING' | translate }}</span>
+                  </div>
+                  <div style="margin-left: 20px;">
+                    <div *ngFor="let each of allPathList[i].controls; let j = index">
+                      <span style="display: inline-block; width: 15%; word-wrap: normal">{{(each.value.pathType === 'Prefix' ? 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PREFIX' : 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.EXTAC') | translate }}</span>
+                      <span style="display: inline-block; width: 35%; word-wrap: normal">{{each.value.path}}</span>
+                      <span style="display: inline-block; width: 25%; word-wrap: normal">{{each.value.service}}</span>
+                      <span style="display: inline-block; width: 25%; word-wrap: normal">{{each.value.port}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardeditingress [(clrWizardOpen)]="updateIngressOpen" (clrWizardOnFinish)="doUpdateIngressFinish()"
+  (clrWizardOnCancel)="doUpdateIngressCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPROUTE.INGRESS.ACTION.UPDATEINGRESS' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editIngressForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="editIngressForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.PAGEDESC' | translate }}
+
+    <form clrForm [formGroup]="editIngressForm">
+      <div class="card-text">
+        <clr-input-container>
+          <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME' | translate }}</label>
+          <input clrInput name="name" formControlName="name" type="string" required disabled/>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'maxlength'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR3' | translate }} {{commonNamePattern}}{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+          <clr-control-error *clrIfError="'name'">{{basicIngressForm.value.name}}{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+        </clr-input-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="cluster" name="cluster" (change)="refreshNsInCluster($event);" disabled>
+            <option [value]="cluster.id" *ngFor="let cluster of clusterList">{{cluster.name}}</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper *ngIf="!showNoNonDefaultNamespaceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-HELP' | translate }}</clr-control-helper>
+          <label class="required">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="namespace" name="namespace" (change)="refreshServicesInNamespace($event);" disabled>
+            <option [value]="ns.name" *ngFor="let ns of namespaceList">{{ns.name}}</option>
+          </select>
+          <clr-control-helper style="color: #c21d00" *ngIf="showNoNonDefaultNamespaceAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-ERROR2' | translate }}</clr-control-helper>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.NAMESPACE-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper *ngIf="!showUpdateNoIngressClass">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-HELP' | translate }}</clr-control-helper>
+          <label class="required">IngressClass</label>
+          <select class="clr-col-md-9" clrSelect formControlName="ingressClass">
+            <option [value]="ingclass.name" *ngFor="let ingclass of ingressClassList">{{ingclass.name}}</option>
+          </select>
+          <clr-control-helper style="color: #c21d00" *ngIf="showUpdateNoIngressClass">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-ERROR2' | translate }}</clr-control-helper>
+          <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.INGRESSCLASS-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+      </div>
+      <div class="card-text">
+            <div class="card-text" formArrayName="labels">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.LABELS' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.LABELS-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!editLabelsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.KEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.VALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of editLabelsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.KEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.VALUE-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditIngressLable(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addEditNewIngressLabel()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ADDLABELS' | translate }}
+              </button>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="card-text" formArrayName="annotations">
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                <clr-input-container>
+                  <label style="min-width: 100%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOTATION' | translate }}</label>
+                  <clr-control-helper style="min-width: 120%;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOTATION-HELP' | translate }}</clr-control-helper>
+                </clr-input-container>
+              </div>
+              <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!editAnnotationsList.controls?.length" fxHide>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOKEY' | translate }}</label>
+                </clr-input-container>
+                <clr-input-container>
+                  <label style="min-width: 96px;">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOVALUE' | translate }}</label>
+                </clr-input-container>
+              </div>
+              <div class="section" *ngFor="let each of editAnnotationsList.controls; let i = index" [formGroupName]="i">
+                <div fxLayout="row" fxLayoutAlign="start start">
+                  <clr-input-container>
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="key" formControlName="key" type="string" size="20"
+                    autocomplete="off" required/>
+                    <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ANNOKEY-ERROR' | translate }}</clr-control-error>
+                  </clr-input-container>
+                  <clr-input-container style="margin-left: 8px">
+                    <label style="max-width: 0px; display: none"></label>
+                    <input fxFlex="1 1 auto" clrInput name="value" formControlName="value" type="string"/>
+                  </clr-input-container>
+                  <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteEditIngressAnnotation(i)" fxLayout="row" fxLayoutAlign="start end">
+                    <clr-icon shape="minus-circle"></clr-icon>
+                  </button>
+                </div>
+              </div>
+              <br>
+              <button (click)="addEditNewIngressAnnotation()" class="btn btn-sm btn-outline">
+                <clr-icon shape="plus"></clr-icon>
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE1.ADDANNO' | translate }}
+              </button>
+            </div>
+        </div>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="editAddRuleForm.invalid || editRuleList.controls.length <= 0 || editAllPathList.length <= 0">
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PAGETITLE' | translate }}</ng-template>
+    <span>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PAGEDESC' | translate }}</span>
+    <form clrForm [formGroup]="editAddRuleForm">
+      <div formArrayName="rules">
+        <div *ngFor="let rule of editRuleList.controls; let i = index" [formGroupName]="i">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h3 class="card-title">
+                    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.RULES' | translate }} {{i + 1}}
+                    <button class="btn btn-link btn-icon" (click)="deleteEditRule(i)">
+                      <clr-icon shape="window-close"></clr-icon>
+                    </button>
+                  </h3>
+                  <div class="card-text">
+                    <div class="clr-row" style="margin-left: 0px;">
+                      <clr-input-container style="max-width: 50%;width: 50%;">
+                        <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-HELP' | translate }}</clr-control-helper>
+                        <label class="required clr-col-md-3">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN' | translate }}</label>
+                        <input class="clr-col-md-9" fxFlex="1 1 auto" clrInput name="host" formControlName="host" type="string" required/>
+                        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-ERROR1' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.DOMAIN-ERROR2' | translate }} {{hostsPattern}}</clr-control-error>
+                      </clr-input-container>
+                      <clr-toggle-container style="margin-left: 10px;">
+                        <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ENABLEHTTPS' | translate }}</clr-control-helper>
+                        <clr-toggle-wrapper>
+                          <label class="clr-col-md-12">HTTPS</label>
+                          <input type="checkbox" clrToggle formControlName="enableHttps" name="enableHttps" [checked]="rule.value.enableHttps" (change)="setEditHttpsSecretVaildtor(i, rule.value.enableHttps)"/>
+                        </clr-toggle-wrapper>
+                      </clr-toggle-container>
+                    </div>
+                    <clr-select-container *ngIf="rule.value.enableHttps" style="max-width: 50%;width: 50%;">
+                      <clr-control-helper *ngIf="!showNoTLSSecretAlert || !checkSecretExist(rule.value.secretName)">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-HELP' | translate }}</clr-control-helper>
+                      <label class="required clr-col-md-3">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="secretName">
+                        <option [value]="secret.name" *ngFor="let secret of secretList">{{secret.name}}</option>
+                      </select>
+                      <clr-control-helper style="color: #c21d00" *ngIf="checkSecretExist(rule.value.secretName)">{{ 'APPROUTE.INGRESS.ACTION.UPDATEINGRESS-PAGE.NOSECRET' | translate }}</clr-control-helper>
+                      <clr-control-helper style="color: #c21d00" *ngIf="showNoTLSSecretAlert">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-ERROR1' | translate }}</clr-control-helper>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SECRET-ERROR2' | translate }}</clr-control-error>
+                    </clr-select-container>
+                  </div>
+                  <div class="card-text" formArrayName="paths">
+                    <clr-input-container>
+                        <label class="required clr-col-md-12">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATHMAPPING' | translate }}</label>
+                    </clr-input-container>
+                    <table class="table" style="border-style: hidden;margin-top: 0px;">
+                      <tbody *ngFor="let each of editAllPathList[i].controls; let j = index" [formGroupName]="j">
+                        <tr>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATHTYPE' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="pathType" required>
+                                <option value="Prefix">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PREFIX' | translate }}</option>
+                                <option value="Exact">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.EXACT' | translate }}</option>
+                              </select>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-input-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PATH' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <input clrInput  formControlName="path" name="path" type="string"/>
+                            </clr-input-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper *ngIf="!checkServiceExist(each.value.service)">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SVC' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="service" required>
+                                <option value="{{service.name}}" *ngFor="let service of serviceList;">{{service.name}}</option>
+                              </select>
+                              <clr-control-helper style="color: #c21d00" *ngIf="checkServiceExist(each.value.service)">{{ 'APPROUTE.INGRESS.ACTION.UPDATEINGRESS-PAGE.NOSVC' | translate }}</clr-control-helper>
+                              <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.SVC-ERROR1' | translate }}</clr-control-error>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <clr-select-container>
+                              <clr-control-helper>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PORT' | translate }}</clr-control-helper>
+                              <label style="max-width: 0px; display: none"></label>
+                              <select clrSelect formControlName="port" name="port" required>
+                                <option value="{{port.port}}" *ngFor="let port of getPortInService(each.value.service);">{{port.port}}</option>
+                              </select>
+                              <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.PORT-ERROR1' | translate }}</clr-control-error>
+                            </clr-select-container>
+                          </td>
+                          <td style="padding: 0.25rem 0.2rem 0.25rem;">
+                            <button class="btn btn-link btn-icon" (click)="deleteEditPath(i, j)" fxLayout="row" fxLayoutAlign="start end">
+                              <clr-icon shape="minus-circle"></clr-icon>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <br>
+                    <button (click)="addEditNewPath(i)" class="btn btn-sm btn-outline">
+                      <clr-icon shape="plus"></clr-icon>
+                      {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ADDPATHMAPPING' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <br>
+    <button class="btn btn-outline" (click)="addEditRule()">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE2.ADDRULE' | translate }}</button>
+
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.BASICINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.NAME' | translate }}</span>
+                    <span>{{editIngressForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of clusterList">
+                      <span *ngIf="cluster.id === editIngressForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.NAMESPACE' | translate }}</span>
+                    <span>{{editIngressForm.value.namespace}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">IngressClass：</span>
+                    <span>{{editIngressForm.value.ingressClass}}</span>
+                  </div>
+                  <div *ngIf="editIngressForm.value.labels[0]">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.LABELS' | translate }}</span>
+                  </div>
+                  <div *ngIf="editIngressForm.value.labels[0]" style="margin-left: 20px;">
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.KEY' | translate }}</span>
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.VALUE' | translate }}</span>
+                    <div *ngFor="let each of editIngressForm.value.labels;">
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="editIngressForm.value.annotations[0]">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNO' | translate }}</span>
+                  </div>
+                  <div *ngIf="editIngressForm.value.annotations[0]" style="margin-left: 20px;">
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNOKEY' | translate }}</span>
+                    <span style="display: inline-block;width: 40%;font-weight: bold">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.ANNOVALUE' | translate }}</span>
+                    <div *ngFor="let each of editIngressForm.value.annotations;">
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.key}}</span>
+                      <span style="display: inline-block; width: 40%; word-wrap: normal">{{each.value}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.RULES' | translate }}
+              </div>
+              <div class="card-block" *ngFor="let rule of editRuleList.controls; let i = index">
+                <div>
+                  <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.RULES' | translate }} {{i + 1}}：</span>
+                </div>
+                <div class="card-text" style="margin-left: 20px;">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.DOMAIN' | translate }}</span>
+                    <span>{{rule.value.host}}</span>
+                  </div>
+                  <div *ngIf="rule.value.enableHttps">
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.SECRET' | translate }}</span>
+                    <span>{{rule.value.secretName}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PATHMAPPING' | translate }}</span>
+                  </div>
+                  <div style="margin-left: 20px;">
+                    <div *ngFor="let each of editAllPathList[i].controls; let j = index">
+                      <span style="display: inline-block; width: 15%; word-wrap: normal">{{(each.value.pathType === 'Prefix' ? 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.PREFIX' : 'APPROUTE.INGRESS.CREATEINGRESS-PAGE3.EXTAC') | translate}}</span>
+                      <span style="display: inline-block; width: 35%; word-wrap: normal">{{each.value.path}}</span>
+                      <span style="display: inline-block; width: 25%; word-wrap: normal">{{each.value.service}}</span>
+                      <span style="display: inline-block; width: 25%; word-wrap: normal">{{each.value.port}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPROUTE.INGRESS.ACTION.DELETEINGRESS' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPROUTE.INGRESS.ACTION.DELETEINGRESS-DESC' | translate }} <b>{{selectedIngressName}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteIngressForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedIngressName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteIngressForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteIngressByName(selectedIngress);deleteIngressForm.reset()" [disabled]="deleteIngressForm.invalid || deleteIngressForm.value.confirm !== selectedIngressName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+

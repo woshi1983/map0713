@@ -1,0 +1,538 @@
+type Cluster {
+  id: ID!
+  name: String!
+  description: String!
+  type: ClusterType!
+  class: ClusterClass!
+  endpoint: URL
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  tlsCertChain: [X509Certificate!]
+  version: Version
+  status: ClusterStatus!
+  state: ClusterState!
+  spec: ClusterSpec
+  kubeConfig: String
+  sshPrivateKey: String
+  namespaces(filters: [QueryFilter!] = []): [Namespace!]
+  extensions(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterExtensions!
+  imageRegistries(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterImageRegistries!
+  loadBalancer: LoadBalancer
+  provider: ClusterProvider
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Clusters {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterNodes!
+}
+
+extend type Query {
+  """
+  requires `read:cluster` or above.
+  """
+  Cluster(id: ID!): Cluster!
+  """
+  requires `read:cluster` or above.
+
+  Filters:
+
+  - `name`
+
+  - `type`
+
+  - `class`
+
+  - `status`
+
+  - `state`
+
+  - `related`: the ID of extension that is related to.
+
+  - `notRelated`: the ID of extension that is not related to.
+
+  - `relatedName`: the name of extension that is related to.
+
+  - `noRelatedName`: the name of extension that is not related to.
+
+  - `extension`: the name of extension that is enabled on current cluster.
+
+  - `noExtension`: the name of extension that is disabled on current cluster.
+
+  - `imageRegistry`
+
+  - `loadBalancer`
+
+  - `organization`
+  """
+  Clusters(page: QueryPage = {}, filters: [QueryFilter!] = []): Clusters!
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster` or above.
+  """
+  CreateCluster(input: CreateCluster!): Cluster!
+  """
+  requires `write:cluster` or above.
+  """
+  AttachCluster(input: AttachCluster!): Cluster!
+  """
+  requires `write:cluster` or above.
+  """
+  UpdateCluster(input: UpdateCluster!): Cluster!
+  """
+  requires `modify:cluster` or above.
+  """
+  DeleteCluster(input: DeleteCluster!): Cluster!
+}
+
+type ClusterNodes {
+  nodes: [Cluster!]
+}
+
+enum ClusterType {
+  ATTACHED
+  PROVISIONED
+}
+
+enum ClusterClass {
+  UNKNOWN
+  TKGS
+  TKGM
+  TKG2S
+  TKG2M
+}
+
+union ClusterSpec = TKGSClusterSpec | TKGMClusterSpec | TKG2SClusterSpec | TKG2MClusterSpec
+
+type TKGSClusterSpec {
+  namespace: String!
+  cni: String!
+  podCIDR: CIDR
+  svcCIDR: CIDR
+  svcDomain: String!
+  defStorage: String!
+  ctlPlaneClass: String!
+  ctlPlaneCount: Int!
+  ctlPlaneStorage: String!
+  ctlPlaneStorageCapGi: Int!
+  dataPlaneClass: String!
+  dataPlaneCount: Int!
+  dataPlaneStorage: String!
+  dataPlaneStorageCapGi: Int!
+}
+
+type TKGMClusterSpec {
+  namespace: String!
+  cni: String!
+  podCIDR: CIDR
+  svcCIDR: CIDR
+  ctlPlaneCount: Int!
+  ctlPlaneCPUs: Int!
+  ctlPlaneMemMi: Int!
+  ctlPlaneStorageCapGi: Int!
+  dataPlaneCount: Int!
+  dataPlaneCPUs: Int!
+  dataPlaneMemMi: Int!
+  dataPlaneStorageCapGi: Int!
+  """env contains a full set of environment variables that were used for
+  provisioning a TKGm workload cluster.
+  """
+  env: Map
+}
+
+type TKG2SClusterSpec {
+  namespace: String!
+  osName: String!
+  cni: String!
+  clusterCIDR: CIDR
+  serviceCIDR: CIDR
+  storageClass: String!
+  ctlPlaneReplicas: Int!
+  ctlPlaneVmClass: String!
+  ctlPlaneEtcdVolumeSizeGi: Int!
+  workerNodePool0Replicas: Int!
+  workerNodePool0Zone: String!
+  workerNodePool1Replicas: Int!
+  workerNodePool1Zone: String!
+  workerNodePool2Replicas: Int!
+  workerNodePool2Zone: String!
+  workerVmClass: String!
+  workerContainerdVolumeSizeGi: Int!
+}
+
+type TKG2MClusterSpec {
+  namespace: String!
+  osName: String!
+  cni: String!
+  clusterCIDR: CIDR
+  serviceCIDR: CIDR
+  ctlPlaneReplicas: Int!
+  ctlPlaneNumCpus: Int!
+  ctlPlaneMemMiB: Int!
+  ctlPlaneDiskGiB: Int!
+  workerNodePool0Replicas: Int!
+  workerNodePool0Zone: String!
+  workerNodePool1Replicas: Int!
+  workerNodePool1Zone: String!
+  workerNodePool2Replicas: Int!
+  workerNodePool2Zone: String!
+  workerNumCpus: Int!
+  workerMemMiB: Int!
+  workerDiskGiB: Int!
+  """these indicate the default values of the cluster.
+  """
+  vsphereNetwork: String!
+  vsphereResourcePool: String!
+  vsphereFolder: String!
+  vsphereDatastore: String!
+  aviServiceEngineGroup: String!
+  aviDataNetwork: String!
+  aviDataNetworkCidr: String!
+}
+
+type ClusterImageRegistries {
+  _cluster: ID!
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterImageRegistryNodes!
+}
+
+type ClusterImageRegistryNodes {
+  nodes: [ClusterImageRegistry!]
+}
+
+type ClusterImageRegistry {
+  _id: ID!
+  imageRegistry: ImageRegistry!
+  default: Boolean!
+}
+
+enum ClusterStatus {
+  PENDING
+  INITIALIZING
+  HEALTHY
+  UNHEALTHY
+  MAINTENANCE
+}
+
+enum ClusterState {
+  UNKNOWN
+  CREATING
+  RUNNING
+  UPDATING
+  FAILED
+  DELETING
+}
+
+input CreateCluster {
+  name: String!
+  description: String
+  version: Version!
+  spec: CreateClusterSpec!
+  extensions: [AddClusterExtension!]
+  provider: ID!
+}
+
+input AttachCluster {
+  name: String!
+  description: String
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authToken: String!
+  spec: AttachClusterSpec
+  extensions: [AddClusterExtension!]
+  imageRegistries: [AddClusterImageRegistry!]
+  """attached clusters without loadBalancer will automatically use NodePort for
+  extension services by default.
+  """
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input AddClusterImageRegistry {
+  id: ID!
+  default: Boolean
+}
+
+input UpdateCluster {
+  id: ID!
+  description: String
+  """Only allowed on PROVISIONED cluster.
+  """
+  version: Version
+  """Only allowed on PROVISIONED cluster.
+  """
+  spec: UpdateClusterSpec
+  maintenance: Boolean
+  recover: Boolean
+}
+
+input DeleteCluster {
+  id: ID!
+  """when specified as true, will only delete the cluster from the database.
+
+  Only global admins are allowed to perform this action.
+
+  Should be only used when network is disconnected with the provider, and
+  the cluster has been manually removed from the provider.
+
+  This should not be specified if the cluster is still in use.
+  """
+  force: Boolean = false
+}
+
+input CreateClusterSpec {
+  tkgs: CreateTKGSClusterSpec
+  tkgm: CreateTKGMClusterSpec
+  tkg2s: CreateTKG2SClusterSpec
+  tkg2m: CreateTKG2MClusterSpec
+}
+
+input CreateTKGSClusterSpec {
+  namespace: String
+  cni: String = "antrea"
+  podCIDR: CIDR = "172.23.0.0/16"
+  svcCIDR: CIDR = "172.22.0.0/16"
+  svcDomain: String = "cluster.local"
+  """defStorage is the storage class that will be used by default.
+  """
+  defStorage: String!
+  """ctlPlaneClass is the VM class of control plane node.
+  """
+  ctlPlaneClass: String!
+  """ctlPlaneCount is the replicas of control plane node.
+  """
+  ctlPlaneCount: Int = 3
+  """ctlPlaneStorage is the storage class of control plane node.
+  """
+  ctlPlaneStorage: String!
+  """ctlPlaneStorageCapGi determines size (GiB) of the etcd volume.
+  """
+  ctlPlaneStorageCapGi: Int = 8
+  """dataPlaneClass is the VM class of data plane node.
+  """
+  dataPlaneClass: String!
+  """dataPlaneCount is the replicas of data plane node.
+  """
+  dataPlaneCount: Int = 3
+  """dataPlaneStorage is the storage class of data plane node.
+  """
+  dataPlaneStorage: String!
+  """dataPlaneStorageCapGi determines size (GiB) of the containerd volume.
+  """
+  dataPlaneStorageCapGi: Int = 64
+}
+
+input CreateTKGMClusterSpec {
+  """different from TKGS, if the namespace does not exist, it will be
+  automatically created. It defaults to ID of the organization.
+  """
+  namespace: String
+  cni: String = "antrea"
+  podCIDR: CIDR = "172.23.0.0/16"
+  svcCIDR: CIDR = "172.22.0.0/16"
+  ctlPlaneCount: Int = 0
+  ctlPlaneCPUs: Int = 0
+  ctlPlaneMemMi: Int = 0
+  ctlPlaneStorageCapGi: Int = 0
+  dataPlaneCount: Int = 0
+  dataPlaneCPUs: Int = 0
+  dataPlaneMemMi: Int = 0
+  dataPlaneStorageCapGi: Int = 0
+  """raw PEM-formated ASN.1 DER block of RSA private key. If not specified, a
+  4096-bit RSA private key will be automatically generated.
+  """
+  sshPrivateKey: String
+  env: Map
+}
+
+input CreateTKG2SClusterSpec {
+  namespace: String
+  """available values:
+  - photon
+  - ubuntu
+  """
+  osName: String = "photon"
+  """available values:
+  - antrea
+  - calico
+  - antrea_nsx_pod_routing
+  """
+  cni: String = "antrea"
+  clusterCIDR: CIDR = "172.23.0.0/16"
+  serviceCIDR: CIDR = "172.22.0.0/16"
+  """storageClass is the storage class that will be used by default.
+  """
+  storageClass: String!
+  """ctlPlaneReplicas is the replicas of control plane node.
+  """
+  ctlPlaneReplicas: Int = 3
+  """ctlPlaneVmClass is the storage class that will be used by default.
+  """
+  ctlPlaneVmClass: String!
+  """ctlPlaneEtcdVolumeSizeGi determines size (GiB) of the etcd volume.
+  """
+  ctlPlaneEtcdVolumeSizeGi: Int = 8
+  """workerNodePool0Replicas is the replicas of worker node pool 0.
+  """
+  workerNodePool0Replicas: Int = 3
+  """workerNodePool0Zone is the vSphere zone for worker node pool 0.
+  """
+  workerNodePool0Zone: String
+  """workerNodePool1Replicas is the replicas of worker node pool 1.
+  """
+  workerNodePool1Replicas: Int
+  """workerNodePool1Zone is the vSphere zone for worker node pool 1.
+  """
+  workerNodePool1Zone: String
+  """workerNodePool2Replicas is the replicas of worker node pool 2.
+  """
+  workerNodePool2Replicas: Int
+  """workerNodePool2Zone is the vSphere zone for worker node pool 2.
+  """
+  workerNodePool2Zone: String
+  """workerVmClass is the VM class of worker node.
+  """
+  workerVmClass: String!
+  """workerContainerdVolumeSizeGi determines size (GiB) of the containerd volume.
+  """
+  workerContainerdVolumeSizeGi: Int = 64
+}
+
+input CreateTKG2MClusterSpec {
+  namespace: String
+  """available values:
+  - photon
+  - ubuntu
+  """
+  osName: String = "photon"
+  """available values:
+  - antrea
+  - calico
+  """
+  cni: String = "antrea"
+  clusterCIDR: CIDR = "172.23.0.0/16"
+  serviceCIDR: CIDR = "172.22.0.0/16"
+  """ctlPlaneReplicas is the replicas of control plane node.
+  """
+  ctlPlaneReplicas: Int = 3
+  ctlPlaneNumCpus: Int
+  ctlPlaneMemMiB: Int
+  ctlPlaneDiskGiB: Int
+  """workerNodePool0Replicas is the replicas of worker node pool 0.
+  """
+  workerNodePool0Replicas: Int = 3
+  """workerNodePool0Zone is the vSphere zone for worker node pool 0.
+  """
+  workerNodePool0Zone: String
+  """workerNodePool1Replicas is the replicas of worker node pool 1.
+  """
+  workerNodePool1Replicas: Int
+  """workerNodePool1Zone is the vSphere zone for worker node pool 1.
+  """
+  workerNodePool1Zone: String
+  """workerNodePool2Replicas is the replicas of worker node pool 2.
+  """
+  workerNodePool2Replicas: Int
+  """workerNodePool2Zone is the vSphere zone for worker node pool 2.
+  """
+  workerNodePool2Zone: String
+  workerNumCpus: Int
+  workerMemMiB: Int
+  workerDiskGiB: Int
+  """raw PEM-formated ASN.1 DER block of RSA private key. If not specified, a
+  4096-bit RSA private key will be automatically generated.
+  """
+  sshPrivateKey: String
+  vsphereNetwork: String
+  vsphereResourcePool: String
+  vsphereFolder: String
+  vsphereDatastore: String
+  aviServiceEngineGroup: String
+  aviDataNetwork: String
+  aviDataNetworkCidr: String
+}
+
+input AttachClusterSpec {
+  """certificates of root CA that will be only used for configuring TBS.
+
+  These certificates will not be injected to the certificate pool on the hosts.
+  """
+  rootCAs: [String!]
+}
+
+input UpdateClusterSpec {
+  tkgs: UpdateTKGSClusterSpec
+  tkgm: UpdateTKGMClusterSpec
+  tkg2s: UpdateTKG2SClusterSpec
+  tkg2m: UpdateTKG2MClusterSpec
+}
+
+input UpdateTKGSClusterSpec {
+  ctlPlaneClass: String
+  ctlPlaneCount: Int
+  dataPlaneClass: String
+  dataPlaneCount: Int
+}
+
+"""UpdateTKGMClusterSpec will attempt to upgrade the cluster version to
+current version of its management cluster when its value is empty or unchanged.
+
+Non-empty value will lead to cluster scale. And null value will do nothing.
+"""
+input UpdateTKGMClusterSpec {
+  ctlPlaneCount: Int
+  ctlPlaneCPUs: Int
+  ctlPlaneMemMi: Int
+  ctlPlaneStorageCapGi: Int
+  dataPlaneCount: Int
+  dataPlaneCPUs: Int
+  dataPlaneMemMi: Int
+  dataPlaneStorageCapGi: Int
+}
+
+input UpdateTKG2SClusterSpec {
+  ctlPlaneReplicas: Int
+  ctlPlaneVmClass: String
+  workerNodePool0Replicas: Int
+  workerNodePool0Zone: String
+  workerNodePool1Replicas: Int
+  workerNodePool1Zone: String
+  workerNodePool2Replicas: Int
+  workerNodePool2Zone: String
+  workerVmClass: String
+}
+
+input UpdateTKG2MClusterSpec {
+  ctlPlaneReplicas: Int
+  ctlPlaneNumCpus: Int
+  ctlPlaneMemMiB: Int
+  ctlPlaneDiskGiB: Int
+  workerNodePool0Replicas: Int
+  workerNodePool0Zone: String
+  workerNodePool1Replicas: Int
+  workerNodePool1Zone: String
+  workerNodePool2Replicas: Int
+  workerNodePool2Zone: String
+  workerNumCpus: Int
+  workerMemMiB: Int
+  workerDiskGiB: Int
+}
+
+input AddClusterExtension {
+  name: ClusterExtensionName!
+  spec: Map
+  """some of the extensions may be able to manage other clusters, and for
+  those do not, this has no effect.
+  """
+  related: [ID!]
+}

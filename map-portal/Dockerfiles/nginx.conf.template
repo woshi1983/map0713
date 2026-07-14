@@ -1,0 +1,89 @@
+server {
+    listen       80;
+    listen       443 ssl;
+    server_name  demo.example.org;
+
+    ssl                 ${ENABLE_SSL};
+    ssl_certificate     ${TLS_CERT_PATH};
+    ssl_certificate_key ${TLS_KEY_PATH};
+
+    include /etc/nginx/mime.types;
+
+    #charset koi8-r;
+    #access_log  /var/log/nginx/host.access.log  main;
+    access_log off;
+
+    gzip on;
+    gzip_comp_level  2;
+    gzip_types text/plain text/css application/json application/javascript image/png application/xml;
+    gzip_proxied no-cache no-store private expired auth;
+    gzip_buffers 16 8k;
+    gzip_min_length 1024;
+    gzip_disable "MSIE [1-6]\.";
+
+    proxy_buffer_size          128k;
+    proxy_buffers              4 256k;
+    proxy_busy_buffers_size    256k;
+
+    location = / {
+        return 301 /portal;
+    }
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html;
+        try_files $uri $uri/ /portal/index.html;
+    }
+
+    location ^~ /api/ {
+        rewrite  ^/js/?(.*)$ /$1 break;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass ${MAP_API_ENDPOINT};
+    }
+
+    location ^~ /devtool/ {
+        rewrite  ^/js/?(.*)$ /$1 break;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass ${MAP_API_ENDPOINT};
+    }
+
+    location ^~ /dex/ {
+        rewrite  ^/js/?(.*)$ /$1 break;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass ${DEX_IDP_ENDPOINT};
+    }
+
+    location ^~ /stream/ {
+        rewrite  ^/stream/(.*)$ /api/graphql break;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass ${MAP_API_ENDPOINT};
+    }
+
+    location ~* /assets/monaco-editor/.* {
+        root   /usr/share/nginx/html/portal;
+    }
+
+    #error_page  404              /404.html;
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

@@ -1,0 +1,35 @@
+type IngressClass {
+  name: String!
+  labels: Map
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  IngressClass(cluster: ID!, name: String!): IngressClass!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `cluster`
+
+  - `organization`
+  """
+  IngressClasses(filters: [QueryFilter!] = []): [IngressClass!]
+}

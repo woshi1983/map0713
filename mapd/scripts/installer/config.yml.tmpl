@@ -1,0 +1,65 @@
+# Configuration file of MAP
+
+# The IP address or hostname to access admin UI and registry service.
+# DO NOT use localhost or 127.0.0.1, because MAP needs to be accessed by external clients.
+hostname: map.mydomain.com
+
+# http related config
+http:
+  # The port for HTTP, default is 80. This port will redirect to https port.
+  port: 80
+  # Global HTTP request timeout (in secs). This will be used as the maximum
+  # waiting time for all HTTP requests sent by MAP.
+  client_timeout: 10s
+
+# https related config
+https:
+  # The port for HTTPS, default is 443.
+  port: 443
+  # The path of cert and key files for nginx
+  certificate: /your/certificate/path
+  private_key: /your/private/key/path
+  ca_certificate: /your/rootca/certificate/path
+
+# The initial password of MAP admin (admin@tanzu.local).
+map_admin_password: 1VMware!
+
+# Whether local managed users should be disabled. Do not set this to true on first
+# launch, otherwise you will not be able to login.
+map_disable_local_user: false
+
+# If it is allowed to authorize with token that is issued to other IDP clients.
+# The server could be vulnerable when this is enabled. This is a client-side
+# mechanism that will not affect the Dex server's behaviour.
+enable_cross_client_token_sharing: false
+
+# Timezone of the running containers. For example: Asia/Shanghai.
+timezone: UTC
+
+# MAP DB configuration
+database:
+  # The password for the root user of MAP DB. Change this before any production use.
+  password: root123
+  # The maximum number of connections in the idle connection pool.
+  max_idle_conns: 8
+  # The maximum number of open connections to the database.
+  max_open_conns: 64
+
+# The default data volume
+data_volume: /data
+
+# Logging configuration
+log:
+  # The logging level.
+  level: info
+  # Log files are rotated log_rotate_count times before being removed. If count is 0, old versions are removed rather than rotated.
+  rotate_count: 5
+  # Log files are rotated only if they grow bigger than log_rotate_size bytes. If size is followed by k, the size is assumed to be in kilobytes.
+  # If the M is used, the size is in megabytes, and if G is used, the size is in gigabytes. So size 100, size 100k, size 100M and size 100G
+  # are all valid.
+  rotate_size: 256M
+  # The directory on your host that store log.
+  location: /var/log/map
+
+#This attribute is for migrator to detect the version of the .cfg file, DO NOT MODIFY!
+_version: 0.11.1

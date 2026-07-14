@@ -1,0 +1,36 @@
+<div *ngIf="opened">
+    <div class="modal">
+        <div class="modal-dialog" role="dialog" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">{{ 'NAVHEADER.USERINFO' | translate }}</h3>
+                </div>
+                <div class="modal-body">
+                    <form clrForm [formGroup]="editUserForm">
+                      <clr-input-container>
+                        <label class="required clr-col-md-3">{{ 'USERMGMT.NEWUSER-PAGE1.NAME' | translate }}</label>
+                        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required disabled/>
+                      </clr-input-container>
+                      <clr-input-container>
+                        <clr-control-helper>{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-HELP' | translate }}</clr-control-helper>
+                        <label class="required clr-col-md-3">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME' | translate }}</label>
+                        <input class="clr-col-md-9" clrInput name="displayName" formControlName="displayName" type="string" required [attr.disabled]="!!user && !user?.managed ? true : null"/>
+                        <clr-control-error *clrIfError="'required'">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-ERROR1' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'maxlength'">{{ 'USERMGMT.NEWUSER-PAGE1.DISPLAYNAME-ERROR2' | translate }}</clr-control-error>
+                      </clr-input-container>
+                    </form>
+                </div>
+                <div class="modal-footer" *ngIf="!!user && user?.managed">
+                  <button type="button" class="btn btn-outline" (click)="cancel();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+                  <button type="button" class="btn btn-primary"
+                    (click)="doUpdateUserInfo();" [disabled]="editUserForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+                </div>
+                <div class="modal-footer" *ngIf="!!user && !user?.managed">
+                  <button type="button" class="btn btn-outline" (click)="cancel();">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop" aria-hidden="true"></div>
+</div>
+

@@ -1,0 +1,6 @@
+image,library/mariadb:10.6.7
+image,${IMAGE_REGISTRY}/${IMAGE_REPO}/dex:v2.32.0
+image,${IMAGE_REGISTRY}/${IMAGE_REPO}/rsyslog:8.2106.0
+image,${IMAGE_REGISTRY}/${IMAGE_REPO}/map-console:${VERSION}
+image,${IMAGE_REGISTRY}/${IMAGE_REPO}/map-prepare:${VERSION}
+image,${IMAGE_REGISTRY}/${IMAGE_REPO}/mapd:${VERSION}

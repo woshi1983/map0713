@@ -1,0 +1,153 @@
+<div *ngIf="authService.isLoggedIn">
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <button (click)="showAddCa()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA' | translate }}
+      </button>
+    </div>
+    <div class="clr-form">
+      <button (click)="removeDialog=true;" [disabled]="selectedCas.length === 0" class="btn btn-primary btn-outline">
+        <clr-icon shape="trash"></clr-icon>
+          {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DELETECA' | translate }}
+      </button>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSelected)]="selectedCas" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'status'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DATAGRIDFIELD.CONTEXT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DATAGRIDFIELD.NOCERT' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let ca of allCaTrust" [clrDgItem]="ca">
+      <clr-dg-cell>{{ca.name}}</clr-dg-cell>
+      <clr-dg-cell><a href="javascript:void(0)" class="nav-link" (click)="showCaCert(ca.cert)">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DATAGRIDFIELD.SHOW' | translate }}</a></clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allCaTrust.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+</div>
+
+<clr-wizard #wizardCaTrust [(clrWizardOpen)]="addCaTrustOpen" (clrWizardOnFinish)="doAddCaTrustFinish()" (clrWizardOnCancel)="doAddCaTrustCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="trustCAFrom.invalid">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA' | translate }}</ng-template>
+      <div class="alert alert-danger alert-sm" role="alert">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+            </div>
+            <span class="alert-text" style="font-size: 12px">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.PAGEALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.PAGEINFO' | translate }}</span>
+      </div>
+
+
+      <form clrForm [formGroup]="trustCAFrom">
+        <div formArrayName="trustCA">
+          <div *ngFor="let caInfo of caList.controls; let i = index" [formGroupName]="i">
+            <div class="clr-row">
+              <div class="clr-col-lg-12 clr-col-12">
+                <div class="card">
+                  <div class="card-block">
+                    <h3 class="card-title">
+                      {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CAINFO1' | translate }} {{i + 1}} {{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CAINFO2' | translate }}
+                      <button class="btn btn-link btn-icon" (click)="deleteCA(i)">
+                        <clr-icon shape="window-close"></clr-icon>
+                      </button>
+                    </h3>
+                    <div class="card-text">
+                      <clr-input-container>
+                        <clr-control-helper>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+                        <label class="required clr-col-md-3">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME' | translate }}</label>
+                        <input class="clr-col-md-9" clrInput name="caName" formControlName="caName" type="string" required/>
+                        <clr-control-error *clrIfError="'required'">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'pattern'">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME-ERROR2' | translate }} {{restricNamePattern}} {{ 'SUPERVISORDETAL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME-ERROR3' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'name'">{{caInfo.value.caName}}{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+                      </clr-input-container>
+                      <clr-textarea-container>
+                        <clr-control-helper>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CA-HELP' | translate }}</clr-control-helper>
+                        <label class="required clr-col-md-3">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CA' | translate }}</label>
+                        <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----">
+                        </textarea>
+                        <clr-control-error *clrIfError="'required'">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CA-ERROR1' | translate }}</clr-control-error>
+                        <clr-control-error *clrIfError="'CAFormat'">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA-PAGE.CA-ERROR2' | translate }}</clr-control-error>
+                      </clr-textarea-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+      <br>
+      <button class="btn btn-outline" (click)="addCA()">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.ADDCA' | translate }}</button>
+    </clr-wizard-page>
+</clr-wizard>
+
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DELETE-PAGE.PAGETITLE' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DELETE-PAGE.PAGEDESC' | translate }}</p>
+      <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+        <clr-input-container>
+          <label class="required">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DELETE-PAGE.DELETEDESC' | translate }}</label>
+        </clr-input-container>
+      </div>
+      <form clrForm [formGroup]="deleteCaForm">
+        <clr-input-container style="margin-top: .2rem;">
+          <label style="max-width: 0px; display: none"></label>
+          <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="Delete" size="20"/>
+        </clr-input-container>
+      </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteCaForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="deleteCaByName();deleteCaForm.reset()" [disabled]="deleteCaForm.invalid || deleteCaForm.value.confirm !== 'Delete'">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="caCertDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'PROVIDERDETAIL.TABS.CAMGMT-PAGE.DATAGRIDFIELD.CONTEXT' | translate }}</h3>
+    <div class="modal-body">
+        <p class="wordwrap">{{caCert}}</p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="caCertDialog=false">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+

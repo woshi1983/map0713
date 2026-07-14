@@ -1,0 +1,122 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!orgQuota || loading">Loading ...</clr-spinner>
+  <div *ngIf="!!orgQuota && !loading">
+    <br>
+    <div class="clr-row" style="margin-left: 0px;">
+      <div class="clr-form rightPos">
+        <div>
+          <span class="refresh-btn">
+            <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="clr-row">
+      <div class="clr-col-sm-12">
+         <div class="card">
+            <div class="card-block">
+               <div class="clr-row">
+                  <div class="clr-col-md clr-col-sm-12 clr-col-xs-12 capacity-entity01">
+                     <div>
+                       <div class="capacity-entity-content">
+                         <h4 class="capacity-entity-label">
+                            CPU
+                         </h4>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.cpu.total === 0">
+                           <h3 class="capacity-entity-free" style="margin-top: 20px;">
+                               {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.NOLIMIT' | translate }}
+                           </h3>
+                           <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="0" max="100"></progress>
+                               </div>
+                            </div>
+                         </div>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.cpu.total > 0">
+                            <h3 class="capacity-entity-free">
+                               {{orgQuota.cpu?.free}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.CPUREMAIN' | translate }}
+                            </h3>
+                            <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="{{orgQuota.cpu?.percent}}" max="100"></progress>
+                               </div>
+                            </div>
+                            <div>
+                               {{orgQuota.cpu?.used}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.CPUUSED' | translate }} | {{orgQuota.cpu.total}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.CPUTOTAL' | translate }}
+                            </div>
+                         </div>
+                        </div>
+                      </div>
+                  </div>
+                  <div class="clr-col-md clr-col-sm-12 clr-col-xs-12 capacity-entity01">
+                     <div>
+                       <div class="capacity-entity-content">
+                         <h4 class="capacity-entity-label">
+                            {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEM' | translate }}
+                         </h4>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.memory.total === 0">
+                           <h3 class="capacity-entity-free" style="margin-top: 20px;">
+                               {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.NOLIMIT' | translate }}
+                           </h3>
+                           <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="0" max="100"></progress>
+                               </div>
+                            </div>
+                         </div>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.memory.total > 0">
+                            <h3 class="capacity-entity-free">
+                               {{orgQuota.memory?.free}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMREMAIN' | translate }}
+                            </h3>
+                            <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="{{orgQuota.memory?.percent}}" max="100"></progress>
+                               </div>
+                            </div>
+                            <div class="capacity-entity-used">
+                               {{orgQuota.memory?.used}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMUSED' | translate }} | {{orgQuota.memory.total}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMTOTAL' | translate }}
+                            </div>
+                         </div>
+                        </div>
+                      </div>
+                  </div>
+                  <div class="clr-col-md clr-col-sm-12 clr-col-xs-12 capacity-entity02">
+                     <div>
+                       <div class="capacity-entity-content">
+                         <h4 class="capacity-entity-label">
+                            {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.STORAGE' | translate }}
+                         </h4>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.storage.total === 0">
+                           <h3 class="capacity-entity-free" style="margin-top: 20px;">
+                               {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.NOLIMIT' | translate }}
+                           </h3>
+                           <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="0" max="100"></progress>
+                               </div>
+                            </div>
+                         </div>
+                         <div class="capacity-entity-metrics-content" *ngIf="orgQuota.storage.total > 0">
+                            <h3 class="capacity-entity-free">
+                               {{orgQuota.storage?.free}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMREMAIN' | translate }}
+                            </h3>
+                            <div class="progress-block" style="width: 60%;">
+                               <div class="progress">
+                                  <progress class="progress-meter" value="{{orgQuota.storage?.percent}}" max="100"></progress>
+                               </div>
+                            </div>
+                            <div class="capacity-entity-used">
+                               {{orgQuota.storage?.used}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMUSED' | translate }} | {{orgQuota.storage.total}} {{ 'ORGMGMTDETAILS.TABS.QUOTA-PAGE.MEMTOTAL' | translate }}
+                            </div>
+                         </div>
+                       </div>
+                      </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+    </div>
+  </div>
+</div>

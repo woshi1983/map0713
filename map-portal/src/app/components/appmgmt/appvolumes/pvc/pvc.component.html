@@ -1,0 +1,328 @@
+<div *ngIf="authService.isLoggedIn">
+
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPVOLUME.PVC.ALL_PVC' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreatePVC()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPVOLUME.PVC.CREATE_PVC' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+            <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-pvc' type="button" [disabled]="!selectedPVC" (click)="showUpdatePvcVolume(selectedPVC)" clrDropdownItem>{{ 'APPVOLUME.PVC.ACTION.SCALEPVC' | translate }}</button>
+            <button id='delete-pvc' type="button" (click)="showRemoveDialog(selectedPVC)" [disabled]="!selectedPVC" clrDropdownItem>{{ 'APPVOLUME.PVC.ACTION.DELETEPVC' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="pvc" placeholder="{{ 'APPVOLUME.PVC.SEARCHPVC' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedPVC" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'status'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'spec.storageClass'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.SC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'spec.accessModes'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.ACCESSMODE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.SIZE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'cluster.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.CLUSTER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'namespace'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.NAMESPACE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'component.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.COMPONENT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'application.name'">
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'APPVOLUME.PVC.DATAGRIDFIELD.APP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPVOLUME.PVC.DATAGRIDFIELD.NOPVC' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let pvc of allPVCs" [clrDgItem]="pvc" [clrDgSelectable]="checkCanEditable(pvc.labels)">
+      <clr-dg-cell class="datagrid-long-text">{{pvc.name}}</clr-dg-cell>
+      <clr-dg-cell class="{{!!pvc.status ? pvc.status : 'UNKNOWN'}}">{{!!pvc.status ? pvc.status : 'UNKNOWN'}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{pvc.spec.storageClass}}</clr-dg-cell>
+      <clr-dg-cell>{{pvc.spec.accessModes}}</clr-dg-cell>
+      <clr-dg-cell>{{pvc.spec.resources.requests.storage}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{pvc.cluster.name}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{pvc.namespace}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!pvc.component ? pvc.component.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{!!pvc.application ? pvc.application.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{pvc.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{pvc.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20" [clrDgTotalItems]="allPVCs.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+</div>
+
+<clr-wizard #wizardpvc [(clrWizardOpen)]="createPVCOpen" (clrWizardOnFinish)="doCreatePVCFinish()"
+  (clrWizardOnCancel)="doCreatePVCCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'APPVOLUME.PVC.CREATE_PVC' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicPVCForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicPVCForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicPVCForm.value.name}}{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.CLUSTER-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.CLUSTER' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="cluster" required (change)="getAllNamespaces($event)">
+          <option value="{{cluster.id}}" *ngFor="let cluster of clusterList">{{cluster.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.CLUSTER-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper *ngIf="!showNoNonDefaultNamespaceAlert">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAMESPACE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAMESPACE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="namespace" required>
+          <option value="{{ns.name}}" *ngFor="let ns of namespaceList">{{ns.name}}</option>
+        </select>
+        <clr-control-helper style="color: #c21d00" *ngIf="showNoNonDefaultNamespaceAlert">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAMESPACE-ERROR2' | translate }}</clr-control-helper>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.NAMESPACE-ERROR1' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SC-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SC' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="storageClass" required>
+          <option value="{{sc.name}}" *ngFor="let sc of allStorageClass">{{sc.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SC-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.MODE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.MODE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="accessMode" required>
+          <option value="ReadWriteOnce">ReadWriteOnce</option>
+          <option value="ReadOnlyMany">ReadOnlyMany</option>
+          <option value="ReadWriteMany">ReadWriteMany</option>
+          <option value="ReadWriteOncePod">ReadWriteOncePod</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.MODE-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SIZE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SIZE' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="request" formControlName="request" type="number" placeholder="10" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SIZE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.LIMIT-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.LIMIT' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="limit" formControlName="limit" type="number" placeholder="10"/>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.VOLUMEMODE-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.VOLUMEMODE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="volumeMode">
+          <option value="Filesystem">Filesystem</option>
+          <option value="Block">Block</option>
+        </select>
+      </clr-select-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+
+  <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.PAGEDESC' | translate }}
+        <br>
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.PVCINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.NAME' | translate }}</span>
+                    <span>{{basicPVCForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.CLUSTER' | translate }}</span>
+                    <div style="display: inline" *ngFor="let cluster of clusterList">
+                      <span *ngIf="cluster.id === basicPVCForm.value.cluster">{{cluster.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.NAMESPACE' | translate }}</span>
+                    <span>{{basicPVCForm.value.namespace}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.SC' | translate }}</span>
+                    <span>{{basicPVCForm.value.storageClass}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.MODE' | translate }}</span>
+                    <span>{{basicPVCForm.value.accessMode}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.SIZE' | translate }}</span>
+                    <span>{{basicPVCForm.value.request}}</span>
+                  </div>
+                  <div *ngIf="!!basicPVCForm.value.limit">
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.LIMIT' | translate }}</span>
+                    <span>{{basicPVCForm.value.limit}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE2.VOLUMEMODE' | translate }}</span>
+                    <span>{{basicPVCForm.value.volumeMode}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+  </clr-wizard-page>
+
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showUpdatePvc" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.PVC.ACTION.SCALEPVC' | translate }} {{selectedPVCName}}</h3>
+  <div class="modal-body" *ngIf="!allowVolumeExpansion">
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPVOLUME.PVC.ACTION.SCALEPVC-PAGE.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-body" *ngIf="allowVolumeExpansion">
+    <div class="alert alert-warning" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPVOLUME.PVC.ACTION.SCALEPVC-PAGE.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <form clrForm [formGroup]="updatePVCForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPVOLUME.PVC.ACTION.SCALEPVC-PAGE.REQUEST-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3 required">{{ 'APPVOLUME.PVC.ACTION.SCALEPVC-PAGE.REQUEST' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="request" #stepInput type="number" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPVOLUME.PVC.CREATEPVC-PAGE1.SIZE-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="doUpdatePvcVolumeReset();showUpdatePvc = false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" *ngIf="allowVolumeExpansion"
+      (click)="doUpdatePvcVolume(selectedPVC)" [disabled]="updatePVCForm.invalid || currentVolumeSize >= updatePVCForm.value.request">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPVOLUME.PVC.ACTION.DELETEPVC' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPVOLUME.PVC.ACTION.DELETEPVC-DESC' | translate }} <b>{{selectedPVCName}}</b> ?</p>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deletePVCForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedPVCName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeDialog=false;deletePVCForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deletePVCByName(selectedPVC);deletePVCForm.reset()" [disabled]="deletePVCForm.invalid || deletePVCForm.value.confirm !== selectedPVCName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>

@@ -1,0 +1,72 @@
+type RoleBinding {
+  id: ID!
+  user: User!
+  role: Role!
+  organization: Organization!
+}
+
+type RoleBindings {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: RoleBindingNodes!
+}
+
+extend type Query {
+  """
+  requires `read:organization` or above.
+  """
+  RoleBinding(id: ID!): RoleBinding!
+  """
+  requires `read:organization` or above.
+
+  Filters:
+
+  - `user`
+
+  - `role`
+
+  - `organization`
+  """
+  RoleBindings(page: QueryPage = {}, filters: [QueryFilter!] = []): RoleBindings!
+}
+
+extend type Mutation {
+  """
+  requires `write:organization` or above.
+  """
+  CreateRoleBinding(input: CreateRoleBinding!): RoleBinding!
+  """
+  requires `write:organization` or above.
+  """
+  UpdateRoleBinding(input: UpdateRoleBinding!): RoleBinding!
+  """
+  requires `write:organization` or above.
+  """
+  DeleteRoleBinding(input: DeleteRoleBinding!): RoleBinding!
+}
+
+type RoleBindingNodes {
+  nodes: [RoleBinding!]
+}
+
+enum Role {
+  GUEST
+  USER
+  ADMIN
+}
+
+input CreateRoleBinding {
+  user: ID!
+  role: Role!
+  organization: ID!
+}
+
+input UpdateRoleBinding {
+  id: ID!
+  role: Role!
+}
+
+input DeleteRoleBinding {
+  id: ID!
+}

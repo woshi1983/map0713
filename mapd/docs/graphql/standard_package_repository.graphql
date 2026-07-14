@@ -1,0 +1,81 @@
+type StandardPackageRepository {
+  id: ID!
+  name: String!
+  description: String!
+  image: String!
+  default: Boolean!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type StandardPackageRepositories {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: StandardPackageRepositoryNodes!
+}
+
+type StandardPackageRepositoryNodes {
+  nodes: [StandardPackageRepository!]
+}
+
+extend type Query {
+  """
+  requires `read:cluster_provider` or above.
+  """
+  StandardPackageRepository(id: ID!): StandardPackageRepository!
+  """
+  requires `read:cluster_provider` or above.
+
+  Filters:
+
+  - `name`
+
+  - `default`
+  """
+  StandardPackageRepositories(page: QueryPage = {}, filters: [QueryFilter!] = []): StandardPackageRepositories!
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_provider` or above.
+  """
+  CreateStandardPackageRepository(input: CreateStandardPackageRepository!): StandardPackageRepository!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  UpdateStandardPackageRepository(input: UpdateStandardPackageRepository!): StandardPackageRepository!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  SetDefaultStandardPackageRepository(input: SetDefaultStandardPackageRepository!): StandardPackageRepository!
+  """
+  requires `modify:cluster_provider` or above.
+  """
+  DeleteStandardPackageRepository(input: DeleteStandardPackageRepository!): StandardPackageRepository!
+}
+
+input CreateStandardPackageRepository {
+  name: String!
+  description: String
+  image: String!
+  default: Boolean
+  dryrun: Boolean
+}
+
+input UpdateStandardPackageRepository {
+  id: ID!
+  name: String
+  description: String
+  image: String
+  default: Boolean
+  dryrun: Boolean
+}
+
+input SetDefaultStandardPackageRepository {
+  id: ID!
+}
+
+input DeleteStandardPackageRepository {
+  id: ID!
+}

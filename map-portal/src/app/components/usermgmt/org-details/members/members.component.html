@@ -1,0 +1,219 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-info" role="alert" *ngIf="showAlertMessage">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <div class="alert-text">
+          <div>
+            <span style="font-weight: bold">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.PAGEALERT' | translate }}</span>
+          </div>
+        </div>
+        <div class="alert-actions">
+          <a href="javascript:void(0)" class="alert-action" (click)="disableAlertMessageShow()">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.NOSHOW' | translate }}</a>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="showAlertMessage = false;">
+      <clr-icon aria-hidden="true" shape="close"></clr-icon>
+  </button>
+  </div>
+
+  <div class="clr-row" style="margin-left: 0px;">
+    <div class="clr-form" [fxHide]="canWrite">
+      <button (click)="showAddMember()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="canWrite">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='edit-member' type="button" [disabled]="!selected" (click)="showUpdateMembers()" clrDropdownItem>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.EDITMEMBER' | translate }}</button>
+          <button id='delete-member' type="button" [disabled]="!selected" (click)="showDeleteMembers(selected)" clrDropdownItem>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.DELETEMEMBER' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearchInput = !this.showSearchInput;"></clr-icon>
+        </span>
+        <input type="text" id="rolebinding" placeholder="{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.SEARCH' | translate }}" class="clr-input" size="20" [(ngModel)]="searchName" [hidden]="!showSearchInput" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selected" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.DATAGRIDFIELD.ROLE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.DATAGRIDFIELD.TYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.DATAGRIDFIELD.NOROLEBINDING' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let rolebinding of rolebindingList" [clrDgItem]="rolebinding">
+      <clr-dg-cell>{{rolebinding.user.name}}</clr-dg-cell>
+      <clr-dg-cell>{{rolebinding.role}}</clr-dg-cell>
+      <clr-dg-cell>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.DATAGRIDFIELD.USER' | translate }}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-modal [(clrModalOpen)]="addMemberModelOpen" [clrModalStaticBackdrop]="true" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGETITLE' | translate }}</h3>
+    <div class="modal-body">
+        <label>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEDESC' | translate }}</label>
+        <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+          <cds-icon shape="info-circle" size="md"></cds-icon>
+          <span class="tooltip-content">
+            {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-TITLE' | translate }}
+            <ul>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-ADMIN' | translate }}</li>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-USER' | translate }}</li>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-GUEST' | translate }}</li>
+            </ul>
+          </span>
+        </a>
+        <form class="clr-form clr-form-horizontal" [formGroup]="basicMemberForm">
+          <clr-combobox-container>
+            <label class="clr-col-md-2 required">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.USER' | translate }}</label>
+            <clr-combobox formControlName="userName" name="userName" required>
+              <clr-options>
+                <clr-option *clrOptionItems="let user of usersList; field:'name'" [clrValue]="user">
+                  <clr-icon shape="user" role="img"></clr-icon> {{user.name}}
+                </clr-option>
+              </clr-options>
+            </clr-combobox>
+            <clr-control-helper *ngIf="checkUserNameVaild()" style="color: #c21d00">{{alertMessage | translate }}</clr-control-helper>
+            <clr-control-error *clrIfError="'required'">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.USER-ERROR1' | translate }}</clr-control-error>
+          </clr-combobox-container>
+          <clr-radio-container>
+            <label class="clr-col-md-2 required">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE' | translate }}</label>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="org_admin" required value="ADMIN" formControlName="role"/>
+              <label for="org_admin">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-ADMIN' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="org_user" required value="USER" formControlName="role"/>
+              <label for="org_user">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-USER' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="org_guest" required value="GUEST" formControlName="role"/>
+              <label for="org_guest">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-GUEST' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-control-error *clrIfError="'required'">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-ERROR' | translate }}</clr-control-error>
+          </clr-radio-container>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="doAddMemberCancel()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" [disabled]="basicMemberForm.invalid || !isMemberValid()" (click)="doAddMemberFinsh()">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="editMemberModelOpen" [clrModalStaticBackdrop]="true" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.EDITPAGE-TITLE' | translate }}</h3>
+    <div class="modal-body">
+        <label>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.EDITPAGE-DESC' | translate }}</label>
+        <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-md tooltip-bottom-right">
+          <cds-icon shape="info-circle" size="md"></cds-icon>
+          <span class="tooltip-content">
+            {{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-TITLE' | translate }}
+            <ul>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-ADMIN' | translate }}</li>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-USER' | translate }}</li>
+              <li>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.PAGEALERT-GUEST' | translate }}</li>
+            </ul>
+          </span>
+        </a>
+        <form class="clr-form clr-form-horizontal" [formGroup]="editMemberForm">
+          <clr-input-container>
+            <label class="clr-col-md-2 required">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.USER' | translate }}</label>
+            <input clrInput formControlName="userName" type="string" required disabled/>
+          </clr-input-container>
+          <clr-radio-container>
+            <label class="clr-col-md-2 required">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE' | translate }}</label>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="edit_org_admin" required value="ADMIN" formControlName="role"/>
+              <label>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-ADMIN' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="edit_org_user" required value="USER" formControlName="role"/>
+              <label>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-USER' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-radio-wrapper>
+              <input type="radio" clrRadio name="role" id="edit_org_guest" required value="GUEST" formControlName="role"/>
+              <label>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-GUEST' | translate }}</label>
+            </clr-radio-wrapper>
+            <clr-control-error *clrIfError="'required'">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ADDMEMBER-PAGE.ROLE-ERROR' | translate }}</clr-control-error>
+          </clr-radio-container>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="doUpdateMemberCancel()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" [disabled]="editMemberForm.invalid" (click)="doUpdateMemberFinsh()">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.DELETEMEMBER' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.DELETEMEMBER-DESC' | translate }} <b>{{selectedName}}</b> ?</p>
+      <div class="alert alert-danger" role="alert" *ngIf="authService.loginUserName === selectedName">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+            </div>
+            <span class="alert-text">{{ 'ORGMGMTDETAILS.TABS.MEMBER-PAGE.ACTION.DELETEMEMBER-ALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteRolebindingForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedName}}" size="20"/>
+      </clr-input-container>
+    </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="removeDialog = false;deleteRolebindingForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+      <button type="button" class="btn btn-primary" (click)="deleteMemberById(selected.id);deleteRolebindingForm.reset();" [disabled]="deleteRolebindingForm.invalid || deleteRolebindingForm.value.confirm !== selectedName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>
+
+

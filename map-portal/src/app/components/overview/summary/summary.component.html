@@ -1,0 +1,581 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="clr-row">
+    <div style="width: 49%;" *featureToggle="featureGates.appMgmt">
+      <div class="card" style="border-radius: 0.5rem;border-color: #eee;">
+        <div class="card-block">
+        <h5 class="card-title">
+          <clr-icon shape="help-info" size="24"></clr-icon>
+          <span> {{ 'OVERVIEW.OVERVIEWINFO' | translate }}</span>
+        </h5>
+        <div style="min-height: 260px;" *ngIf="!summaryBasic || basicMetricsLoading">
+          <clr-spinner style="margin-left: 50%;margin-top: 10%;">Loading ...</clr-spinner>
+        </div>
+        <div class="card-text clr-row" style="min-height: 260px;" *ngIf="!!summaryBasic && !basicMetricsLoading">
+          <div class="clr-col-lg-8 clr-col-12">
+            <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-2 center-title">
+                        <clr-icon shape="organization"  style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-10" style="margin-left: -8px;">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.orgCount}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.PROJECTS' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+              <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-4 center-title">
+                        <clr-icon shape="users" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-8">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.activeUsers}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.ACTIVEUSERS' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+              <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-4 center-title">
+                        <clr-icon shape="applications" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-8">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.customComponentCount}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.COMPONENTS' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+              <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-4 center-title">
+                        <clr-icon shape="pod" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-8">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.instanceCount}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.INSTANCES' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+              <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-4 center-title">
+                        <clr-icon shape="layers" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-8">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.imageBuildsCount}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.BUILDS' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-8 clr-col-12">
+              <div class="card card-no-shadow" style="margin-top: .6rem;">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                    <div class="clr-row">
+                      <div class="clr-col-md-2 center-title">
+                        <clr-icon shape="cloud-traffic" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                      </div>
+                      <div class="clr-col-md-10" style="margin-left: -8px;">
+                        <div>
+                          <span style="font-size: 0.95vw;"><b>{{summaryBasic.routeCount}}</b></span>
+                        </div>
+                        <div>
+                          <span style="color: gray;font-size: 0.75vw;">{{ 'OVERVIEW.CLUSTERROUTE' | translate }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12">
+            <div class="card card-no-shadow" style="margin-top: .6rem;">
+              <div class="card-block" style="background-color: #fafafa">
+                <div class="card-text">
+                  <div class="clr-row">
+                    <div class="clr-col-md-4 center-title">
+                      <clr-icon shape="router" style="color: #0072a3;width: 2.5vw;height: 2.5vw;"></clr-icon>
+                    </div>
+                    <div class="clr-col-md-8">
+                      <div>
+                        <span style="font-size: 0.95vw;"><b>{{summaryBasic.ingressCount}}</b></span>
+                      </div>
+                      <div>
+                        <span style="color: #808080;font-size: 0.75vw;">{{ 'OVERVIEW.INGRESSES' | translate }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <div [ngClass]="{'clusterstatus': appMgmt, 'clusterheight': !appMgmt}">
+      <div class="card" style="border-radius: 0.5rem;border-color: #eee;">
+        <div class="card-block">
+        <h5 class="card-title">
+          <clr-icon shape="cluster" size="24"></clr-icon>
+          <span>
+            {{ 'OVERVIEW.CLUSTERSTATUS' | translate }}
+            <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg">
+              <cds-icon shape="info-circle" size="md"></cds-icon>
+              <span class="tooltip-content">{{ 'OVERVIEW.CLUSTERTIPS' | translate }}</span>
+            </a>
+          </span>
+        </h5>
+        <div style="min-height: 260px;" *ngIf="!summaryExtensions || clusterMetricsLoading">
+          <clr-spinner style="margin-left: 50%;margin-top: 10%;">Loading ...</clr-spinner>
+        </div>
+        <div class="card-text clr-row" style="min-height: 260px;" *ngIf="!!summaryExtensions && !clusterMetricsLoading">
+          <div class="clr-col-lg-4 clr-col-12">
+            <div class="card card-no-shadow">
+                <div class="card-block">
+                  <div class="card-text center-title">
+                      <div echarts id="clusterStatusChart1" (chartInit)="clusterHealthyChartInit($event)" [options]="clusterStatusChartOption1" style="height: 160px;margin-top: -20px;" *ngIf="appMgmt"></div>
+                      <div echarts id="clusterStatusChart2" (chartInit)="clusterHealthyChartInit($event)" [options]="clusterStatusChartOption2" style="height: 160px;margin-top: -20px;" *ngIf="!appMgmt"></div>
+                  </div>
+                  <div class="card-text" style="margin-top: -20px;">
+                    <div>
+                      <span style="font-size: 0.73vw;"><b>{{ 'OVERVIEW.CLUSTERSTATUS' | translate }}</b></span>
+                    </div>
+                    <div>
+                      <clr-icon shape="heart" class="HEALTHY is-solid"></clr-icon>
+                      <span style="font-size: 0.73vw;"> {{ 'OVERVIEW.HEALTHYCLUSTER' | translate }}
+                        <b>
+                          <a href="javascript:void(0);" class="nav-link" (click)="showClusterDetails(healthyClusterList, 'HEALTHY')">{{healthyClusterList.length}}</a>
+                        </b>
+                      </span>
+                    </div>
+                    <div>
+                      <clr-icon shape="heart-broken" class="UNHEALTHY is-solid"></clr-icon>
+                      <span style="font-size: 0.73vw;"> {{ 'OVERVIEW.UNHEALTHYCLUSTER' | translate }}
+                        <b>
+                          <a href="javascript:void(0);" class="nav-link" (click)="showClusterDetails(unhealthyClusterList, 'UNHEALTHY')">{{unhealthyClusterList.length}}</a>
+                        </b>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-8 clr-col-12">
+              <div class="card card-no-shadow">
+                  <div class="card-block">
+                      <div class="card-text">
+                        <div class="clr-row">
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/contour.png" alt="icon">
+                                    <span style="margin-left: 5px;font-size: 0.7vw;" > Contour </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.contour.extensions, 'Contour')">{{summaryExtensions.contour.readyCount}}/{{summaryExtensions.contour.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/octant.png" alt="icon">
+                                    <span style="margin-left: 5px;font-size: 0.7vw;" > Octant </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.octant.extensions, 'Octant')">{{summaryExtensions.octant.readyCount}}/{{summaryExtensions.octant.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/grafana.png" alt="icon">
+                                    <span style="margin-left: 5px;font-size: 0.7vw;" > Grafana </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.grafana.extensions, 'Grafana')">{{summaryExtensions.grafana.readyCount}}/{{summaryExtensions.grafana.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/prometheus.png" alt="icon">
+                                    <span style="font-size: 0.6vw;"> Prometheus </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.prometheus.extensions, 'Prometheus')">{{summaryExtensions.prometheus.readyCount}}/{{summaryExtensions.prometheus.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/kibana.png" alt="icon">
+                                    <span style="margin-left: 5px;font-size: 0.7vw;" > Logging </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.elasticsearch.extensions, 'Logging')">{{summaryExtensions.elasticsearch.readyCount}}/{{summaryExtensions.elasticsearch.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="clr-col-md-6 card card-no-shadow" style="margin-top: .6rem;padding-left: 0px;">
+                            <div class="card-block" style="background-color: #fafafa">
+                              <div class="card-text">
+                                <div class="clr-row">
+                                  <div class="clr-col-md-8" style="padding-right: 0px;">
+                                    <img style="width: 1.6vw; max-height: 1.6vw" src="{{imagePath}}/fluent-bit.png" alt="icon">
+                                    <span style="margin-left: 5px;font-size: 0.7vw;" > FluentBit </span>
+                                  </div>
+                                  <div class="clr-col-md-4 center-title">
+                                    <span style="font-size: 1vw;">
+                                      <b>
+                                        <a href="javascript:void(0);" class="nav-link" (click)="showExtensionDetails(summaryExtensions.fluentbit.extensions, 'FluentBit')">{{summaryExtensions.fluentbit.readyCount}}/{{summaryExtensions.fluentbit.extensions.length}}</a>
+                                      </b>
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="clr-row">
+    <div class="card" style="border-radius: 0.5rem;border-color: #eee;">
+      <div class="card-block">
+        <h5 class="card-title">
+          <clr-icon shape="resource-pool" size="24"></clr-icon>
+          <span>
+            {{ 'OVERVIEW.PROJECTRESOURCEINFO' | translate }}
+            <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg">
+              <cds-icon shape="info-circle" size="md"></cds-icon>
+              <span class="tooltip-content">{{ 'OVERVIEW.PROJECTRESOURCEINFOTIPS' | translate }}</span>
+            </a>
+          </span>
+        </h5>
+        <div style="min-height: 800px;" *ngIf="orgResourcesLoading">
+          <clr-spinner style="margin-left: 50%;margin-top: 10%;">Loading ...</clr-spinner>
+        </div>
+        <div style="min-height: 200px;margin-top: 10%;" *ngIf="allOrgResourceMetrics.orgMetrics.name.length === 0 && !orgResourcesLoading">
+          <span style="margin-left: 40%;font-size: 1vw;">{{ 'OVERVIEW.NOQUOTA' | translate }}</span>
+        </div>
+        <div class="card-text clr-col-lg-12 clr-row" *ngIf="allOrgResourceMetrics.orgMetrics.name.length != 0 && !orgResourcesLoading">
+          <div class="clr-col-lg-4 clr-col-12 clr-row" style="margin-left: .1rem;">
+            <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text center-title" style="min-height: 160px;">
+                        <div echarts id="allTenantCpuChart" (chartInit)="allTenantCPUChartInit($event)" [options]="allTenantCPUOption" style="height: 160px;"></div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                      <div class="card-text" style="min-height: 160px;margin-left: -2vw;">
+                        <div style="padding-top: 2.5vw;">
+                          <div style="font-size: 0.8vw;padding-bottom: 5px;">{{ 'OVERVIEW.CPUTOTAL' | translate }}</div>
+                          <div>
+                            <span style="font-size: 1.2vw;">
+                              <b>{{allOrgResourceMetrics.totalResource.cpu.used}}</b>
+                            </span>
+                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.cpu.total}}</span>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12 clr-row" style="margin-left: .8rem;">
+            <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text center-title" style="min-height: 160px;">
+                        <div echarts id="allTenantMemoryChart" (chartInit)="allTenantMemoryChartInit($event)" [options]="allTenantMemoryOption" style="height: 160px;"></div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                      <div class="card-text" style="min-height: 160px;margin-left: -2vw;">
+                        <div style="padding-top: 2.5vw;">
+                          <div style="font-size: 0.8vw;padding-bottom: 5px;">{{ 'OVERVIEW.MEMTOTAL' | translate }}</div>
+                          <div>
+                            <span style="font-size: 1.2vw;">
+                              <b>{{allOrgResourceMetrics.totalResource.memory.used}}</b>
+                            </span>
+                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.memory.total}}</span>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+          <div class="clr-col-lg-4 clr-col-12 clr-row" style="margin-left: .8rem;">
+            <div class="clr-col-lg-8 clr-col-12" style="padding-right: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                    <div class="card-text center-title" style="min-height: 160px;">
+                        <div echarts id="allTenantStorageChart" (chartInit)="allTenantStorageChartInit($event)" [options]="allTenantStoageOption" style="height: 160px;"></div>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="clr-col-lg-4 clr-col-12" style="padding-left: 0px;">
+              <div class="card card-no-shadow">
+                  <div class="card-block" style="background-color: #fafafa">
+                      <div class="card-text" style="min-height: 160px;margin-left: -2vw;">
+                        <div style="padding-top: 2.5vw;">
+                          <div style="font-size: 0.8vw;padding-bottom: 5px;">{{ 'OVERVIEW.STORAGETOTAL' | translate }}</div>
+                          <div>
+                            <span style="font-size: 1.2vw;">
+                              <b>{{allOrgResourceMetrics.totalResource.storage.used}}</b>
+                            </span>
+                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.storage.total}}</span>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-text clr-col-lg-12 clr-row" style="padding-left: 2.4rem;" *ngIf="allOrgResourceMetrics.orgMetrics.name.length != 0 && !orgResourcesLoading">
+          <div class="clr-col-lg-12 clr-row" style="background-color: #fafafa;padding-top: 10px;">
+            <div class="label label-blue" style="padding-top: 4px;">
+              <span style="font-size: 0.8vw;"> {{ 'OVERVIEW.RESOURCECPUTOP5' | translate }} </span>
+            </div>
+          </div>
+          <div class="clr-col-lg-12, clr-col-12 clr-row" style="background-color: #fafafa">
+            <div class="clr-col-lg-4 clr-col-12 clr-row">
+            <div class="card card-no-shadow">
+              <div class="card-block" style="background-color: #fafafa">
+                <div class="card-text">
+                    <div echarts id="CPUUsageTop5Chart" (chartInit)="cpuUsageTop5ChartInit($event)" [options]="CPUUsageTop5Option"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+            <div class="clr-col-lg-4 clr-col-12 clr-row" style="margin-left: .8rem;">
+            <div class="card card-no-shadow">
+              <div class="card-block" style="background-color: #fafafa">
+                <div class="card-text">
+                    <div echarts id="memoryUsageTop5Chart" (chartInit)="memoryUsageTop5ChartInit($event)" [options]="MemoryUsageTop5Option"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+            <div class="clr-col-lg-4 clr-col-12 clr-row" style="margin-left: .8rem;">
+            <div class="card card-no-shadow">
+              <div class="card-block" style="background-color: #fafafa">
+                <div class="card-text">
+                    <div echarts id="storageUsageTop5Chart" (chartInit)="storageUsageTop5ChartInit($event)" [options]="StorageUsageTop5Option"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="card-text clr-col-lg-12 clr-row" style="padding-left: 2.4rem;" *ngIf="allOrgResourceMetrics.orgMetrics.name.length != 0 && !orgResourcesLoading">
+          <div class="clr-col-lg-12 clr-row" style="background-color: #fafafa;padding-top: 10px;">
+            <div class="label label-blue" style="padding-top: 4px;">
+              <span style="font-size: 0.8vw;"> {{ 'OVERVIEW.PREPROJECTRESOURCE' | translate }} </span>
+            </div>
+          </div>
+          <div class="clr-col-lg-12 clr-col-12 clr-row" style="background-color: #fafafa">
+            <div class="card card-no-shadow">
+                <div class="card-block" style="background-color: #fafafa">
+                  <div class="card-text">
+                      <div echarts id="allTenantResourceUsageChart" (chartInit)="allTenantResourceUsageChartInit($event)" [options]="allTenantResourceUsageOption"></div>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<clr-modal [(clrModalOpen)]="showClusterDetailsModel" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ (showClusterStatus === 'HEALTHY' ? 'OVERVIEW.CLUSTERSTATUS-PAGE.PAGETITLE1' : 'OVERVIEW.CLUSTERSTATUS-PAGE.PAGETITLE2') | translate}}</h3>
+    <div class="modal-body">
+      <clr-datagrid [clrDgRowSelection]="false">
+        <clr-dg-column [clrDgField]="'organization'" [clrDgSorted]="true">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTERSTATUS-PAGE.PROJECT' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column [clrDgField]="'name'">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTERSTATUS-PAGE.CLUSTER' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column>
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTERSTATUS-PAGE.STATUS' | translate }}
+          </ng-container>
+        </clr-dg-column>
+
+        <clr-dg-placeholder>{{ (showClusterStatus === 'HEALTHY' ? 'OVERVIEW.CLUSTERSTATUS-PAGE.HEALTHYCLUSTER' : 'OVERVIEW.CLUSTERSTATUS-PAGE.UNHEALTHYCLUSTER') | translate }}</clr-dg-placeholder>
+        <clr-dg-row *clrDgItems="let cluster of allCluster" [clrDgItem]="cluster">
+          <clr-dg-cell>{{cluster.organization}}</clr-dg-cell>
+          <clr-dg-cell>{{cluster.name}}</clr-dg-cell>
+          <clr-dg-cell>{{cluster.status}}</clr-dg-cell>
+        </clr-dg-row>
+        <clr-dg-footer>
+          <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allCluster.length">
+            {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+          </clr-dg-pagination>
+        </clr-dg-footer>
+      </clr-datagrid>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showClusterDetailsModel=false;allCluster=[];showClusterStatus=null;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showExtensionDetailsModel" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ showExtensionName }}{{ 'OVERVIEW.CLUSTEREXTERSION-PAGE.PAGETITLE' | translate }}</h3>
+    <div class="modal-body">
+      <clr-datagrid [clrDgRowSelection]="false">
+        <clr-dg-column [clrDgField]="'organization'" [clrDgSorted]="true">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTEREXTERSION-PAGE.PROJECT' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column [clrDgField]="'name'">
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTEREXTERSION-PAGE.CLUSTER' | translate }}
+          </ng-container>
+        </clr-dg-column>
+        <clr-dg-column>
+          <ng-container *clrDgHideableColumn="{hidden: false}">
+            {{ 'OVERVIEW.CLUSTEREXTERSION-PAGE.STATUS' | translate }}
+          </ng-container>
+        </clr-dg-column>
+
+        <clr-dg-placeholder>{{showExtensionName}}{{ 'OVERVIEW.CLUSTEREXTERSION-PAGE.INSTANCE' | translate }}</clr-dg-placeholder>
+        <clr-dg-row *clrDgItems="let extension of allExtensions" [clrDgItem]="extension">
+          <clr-dg-cell>{{extension.organization}}</clr-dg-cell>
+          <clr-dg-cell>{{extension.cluster}}</clr-dg-cell>
+          <clr-dg-cell>{{extension.state}}</clr-dg-cell>
+        </clr-dg-row>
+        <clr-dg-footer>
+          <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allExtensions.length">
+            {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+          </clr-dg-pagination>
+        </clr-dg-footer>
+      </clr-datagrid>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="showExtensionDetailsModel=false;allExtensions=[];showExtensionName=null;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>
+

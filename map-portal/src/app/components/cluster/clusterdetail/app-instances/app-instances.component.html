@@ -1,0 +1,72 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showSearch = !showSearch"></clr-icon>
+        </span>
+        <input type="text" id="instance" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.SEARCH' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [clrDgRowSelection]="false">
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.NAME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.STATUS' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.NS' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.APP' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.COMPONENT' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+      <clr-dg-column>
+        <ng-container *clrDgHideableColumn="{hidden: false}">
+          {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+        </ng-container>
+      </clr-dg-column>
+
+      <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.COMPONENT-PAGE.NOINSTANCE' | translate }}</clr-dg-placeholder>
+      <clr-dg-row  *ngFor="let instance of allInstances" [clrDgItem]="instance">
+        <clr-dg-cell>{{instance.release.name}}-{{instance.release.num}}</clr-dg-cell>
+        <clr-dg-cell class="{{!!instance.status.state ? instance.status.state : 'UNKNOWN'}}">{{instance.status.state}}</clr-dg-cell>
+        <clr-dg-cell>{{instance.namespace}}</clr-dg-cell>
+        <clr-dg-cell>{{instance.application.name}}</clr-dg-cell>
+        <clr-dg-cell><a href="javascript:void(0)" class="nav-link" (click)="routeToComponent(instance.component.id, instance.component.name)">{{instance.component.name}}</a></clr-dg-cell>
+        <clr-dg-cell>{{instance.createdAt | datetimeTransition}}</clr-dg-cell>
+        <clr-dg-cell>{{instance.lastModified | datetimeTransition}}</clr-dg-cell>
+      </clr-dg-row>
+      <clr-dg-footer>
+        <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+          <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+          {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+        </clr-dg-pagination>
+      </clr-dg-footer>
+    </clr-datagrid>
+</div>

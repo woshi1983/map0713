@@ -1,0 +1,397 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-info" role="alert" *ngIf="clusterStatus != 'HEALTHY'">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <div class="alert-text">
+          <div>
+            <span style="font-weight: bold">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATION-INFO1' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-info" role="alert" *ngIf="noBackupLocationAlert">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <div class="alert-text">
+          <div>
+            <span style="font-weight: bold">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATION-INFO2' | translate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="closeNoBackupLocationAlert()">
+      <clr-icon aria-hidden="true" shape="close"></clr-icon>
+    </button>
+  </div>
+
+
+  <h4>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.ALLBACKUPLOCATION' | translate }}</h4>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateBackupLocation()" class="btn btn-primary btn-outline" [disabled]="clusterStatus != 'HEALTHY'">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='show-backup-location' type="button" [disabled]="!selectedBackupLocation" (click)="showBackupLocationDetails(selectedBackupLocation)" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION' | translate }}</button>
+          <button id='delete-backup-location' type="button" [disabled]="!selectedBackupLocation" (click)="showDeleteBackupLocation(selectedBackupLocation)" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.DELETEBACKUPLOCATION' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="showLocationSearch = !showLocationSearch"></clr-icon>
+        </span>
+        <input type="text" id="backuplocationname" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.SEARCHBACKUPLOCATION' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showLocationSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgLoading]="backupLoading" [(clrDgSingleSelected)]="selectedBackupLocation" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'"  [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.PROVIDER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.REGION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.BUCKET' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.PREFIX' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPLOCATIONDATAGRIDFEILD.ACCESSMODE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.NOBACKUPLOCATION' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let backuplocation of allBackupLocation" [clrDgItem]="backuplocation">
+      <clr-dg-cell class="title-bold">{{backuplocation.name}}</clr-dg-cell>
+      <clr-dg-cell class="{{!!backuplocation.status ? backuplocation.status : 'UNKNOWN'}}">{{!!backuplocation.status ? backuplocation.status : 'UNKNOWN'}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.spec.provider}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.spec.config.region}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.spec.objectStorage.bucket}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.spec.objectStorage.prefix}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.spec.accessMode}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{backuplocation.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="allBackupLocation.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+<clr-wizard #wizardbackuplocation [(clrWizardOpen)]="backupLocationOpen" (clrWizardOnFinish)="doBackupLocationFinish()"
+  (clrWizardOnCancel)="doBackupLocationCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="!checkConnectSuccess || basicBackupLocationForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicBackupLocationForm.invalid">
+    <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicBackupLocationForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicBackupLocationForm.value.name}}{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.PROVIDER-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.PROVIDER' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="backupProvider" required>
+          <option value="minio">MinIO</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE1.PROVIDER-ERROR1' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="minioBackupLocationForm.invalid" *ngIf="basicBackupLocationForm.value.backupProvider === 'minio'">
+    <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="minioBackupLocationForm">
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ENDPOINT' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ENDPOINT-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="http://minio:9000" (change)="this.checkConnectSuccess = false; this.showConnectAlert = false;"/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ENDPOINT-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ENDPOINT-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CA' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CA-HELP' | translate }}</clr-control-helper>
+        <textarea class="clr-col-md-9" clrTextarea formControlName="cacert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+        </textarea>
+      </clr-textarea-container>
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="accessKey" formControlName="accessKey" type="string" required (change)="this.checkConnectSuccess = false; this.showConnectAlert = false;"/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-password-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrPassword name="secretKey" formControlName="secretKey" type="string" required (change)="this.checkConnectSuccess = false; this.showConnectAlert = false;"/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK-ERROR' | translate }}</clr-control-error>
+      </clr-password-container>
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BUCKET' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BUCKET-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="bucket" formControlName="bucket" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BACKET-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <label class="clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PREFIX' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PREFIX-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="prefix" formControlName="prefix" type="string"/>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ACCESSMODE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ACCESSMODE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="accessMode" required>
+          <option value="READ_WRITE">READ_WRITE</option>
+          <option value="READ_ONLY">READ_ONLY</option>
+        </select>
+      </clr-select-container>
+    </form>
+    <br>
+    <button [disabled]="minioBackupLocationForm.invalid" (click)="checkObjectStorageAuth()" class="btn-sm btn btn-outline">
+       <clr-icon shape="connect"></clr-icon>
+       {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNENTTEST' | translate }}
+    </button>
+    <div class="alert" [ngClass]="{'alert-success': checkConnectSuccess, 'alert-danger': !checkConnectSuccess}" role="alert" *ngIf="showConnectAlert">
+      <div class="alert-items">
+       <div class="alert-item static">
+         <div class="alert-icon-wrapper">
+            <clr-icon *ngIf="checkConnectSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+            <clr-icon *ngIf="!checkConnectSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+         </div>
+         <span class="alert-text" *ngIf="checkConnectSuccess">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNECTSUCCESS' | translate }}</span>
+         <span class="alert-text" *ngIf="!checkConnectSuccess">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNECTFAILED' | translate }}</span>
+       </div>
+      </div>
+    </div>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="awsBackupLocationForm.invalid" *ngIf="basicBackupLocationForm.value.backupProvider === 'aws'">
+    <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="awsBackupLocationForm">
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="accessKey" formControlName="accessKey" type="string" required/>
+        <clr-control-error>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.AK-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-password-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrPassword name="secretKey" formControlName="secretKey" type="string" required/>
+        <clr-control-error>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.SK-ERROR' | translate }}</clr-control-error>
+      </clr-password-container>
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.REGION' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.REGION-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="region" formControlName="region" type="string" required placeholder="cn-north-1"/>
+        <clr-control-error>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.REGION-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-input-container>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BUCKET' | translate }}</label>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BUCKET-HELP' | translate }}</clr-control-helper>
+        <input class="clr-col-md-9" clrInput name="bucket" formControlName="bucket" type="string" required/>
+        <clr-control-error>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.BACKET-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ACCESSMODE-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.ACCESSMODE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="accessMode" required>
+          <option value="READ_WRITE">READ_WRITE</option>
+          <option value="READ_ONLY">READ_ONLY</option>
+        </select>
+      </clr-select-container>
+    </form>
+    <br>
+    <button [disabled]="awsBackupLocationForm.invalid" (click)="checkObjectStorageAuth()" class="btn-sm btn btn-outline">
+       <clr-icon shape="connect"></clr-icon>
+       {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNENTTEST' | translate }}
+    </button>
+    <div class="alert alert-info" role="alert" *ngIf="showConnectAlert">
+      <div class="alert-items">
+       <div class="alert-item static">
+         <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="check-circle"></clr-icon>
+         </div>
+         <span class="alert-text" *ngIf="checkConnectSuccess">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNECTSUCCESS' | translate }}</span>
+         <span class="alert-text" *ngIf="!checkConnectSuccess">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.CREATEBACKUPLOCATION-PAGE2.CONNECTFAILED' | translate }}</span>
+       </div>
+      </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showBackupLocationInfoDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body" *ngIf="!!selectedBackupLocation">
+    <div class="card">
+      <div class="progress top success" style="height: 4px;" *ngIf="selectedBackupLocation.status === 'AVAILABLE'">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="progress top danger" style="height: 4px;" *ngIf="selectedBackupLocation.status === 'UNAVAILABLE'">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="progress top progress-fade" style="height: 4px;" *ngIf="selectedBackupLocation.status === 'UNKNOWN'">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="card-block">
+        <div class="card-text">
+          <h3 style="margin-top: 0px;margin-bottom: 10px;"><b>{{selectedBackupLocation.name}}</b></h3>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.STATUS' | translate }}</span>
+        <span [class]="selectedBackupLocation?.status">{{selectedBackupLocation?.status}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.PROVIDER' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.provider}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.ADDRESS' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.config.s3Url }}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.BUCKET' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.objectStorage?.bucket}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.PREFIX' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.objectStorage?.prefix}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.REGION' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.config.region }}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.MODE' | translate }}</span>
+        <span>{{selectedBackupLocation?.spec?.accessMode}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.CREATETIME' | translate }}</span>
+        <span>{{selectedBackupLocation.createdAt | datetimeTransition}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.VIEWBACKUPLOCATION-PAGE.MODIFYTIME' | translate }}</span>
+        <span>{{selectedBackupLocation.lastModified | datetimeTransition}}</span>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showBackupLocationInfoDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.DELETEBACKUPLOCATION' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.DELETEBACKUPLOCATION-DESC' | translate }} <b>{{selectedBackupLocationName}}</b> ?</p>
+      <div class="alert alert-info" role="alert">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="info-standard"></clr-icon>
+            </div>
+            <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATAPROTECTED-PAGE.BACKUPACTIONS.DELETEBACKUPLOCATION-ALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+      <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+        <clr-input-container>
+          <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+        </clr-input-container>
+      </div>
+      <form clrForm [formGroup]="deleteBackupLocationForm">
+        <clr-input-container style="margin-top: .2rem;">
+          <label style="max-width: 0px; display: none"></label>
+          <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedBackupLocationName}}" size="20"/>
+        </clr-input-container>
+      </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="removeDialog=false;deleteBackupLocationForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="deleteBackupLocationById(selectedBackupLocationName);deleteBackupLocationForm.reset()" [disabled]="deleteBackupLocationForm.invalid || deleteBackupLocationForm.value.confirm !== selectedBackupLocationName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<router-outlet></router-outlet>
+</div>

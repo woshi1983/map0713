@@ -1,0 +1,96 @@
+type User {
+  id: ID!
+  name: String!
+  email: String!
+  displayName: String!
+  remark: String!
+  admin: Boolean!
+  managed: Boolean!
+  roleBindings(page: QueryPage = {}, filters: [QueryFilter!] = []): RoleBindings!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type CreatedUser {
+  id: ID!
+  name: String!
+  email: String!
+  displayName: String!
+  remark: String!
+  admin: Boolean!
+  managed: Boolean!
+  password: String!
+  roleBindings(page: QueryPage = {}, filters: [QueryFilter!] = []): RoleBindings!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Users {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: UserNodes!
+}
+
+extend type Query {
+  Whoami: User!
+  """
+  user can be queried by anyone.
+  """
+  User(id: ID!): User!
+  """
+  users can be queried by anyone.
+
+  Filters:
+
+  - `name`
+
+  - `email`
+  """
+  Users(page: QueryPage = {}, filters: [QueryFilter!] = []): Users!
+}
+
+extend type Mutation {
+  """
+  only global admin can create users.
+  """
+  CreateUser(input: CreateUser!): CreatedUser!
+  """
+  user can be updated by itself or by an admin.
+  """
+  UpdateUser(input: UpdateUser!): User!
+  """
+  only global admin can delete users.
+  """
+  DeleteUser(input: DeleteUser!): User!
+}
+
+type UserNodes {
+  nodes: [User!]
+}
+
+input CreateUser {
+  name: String!
+  displayName: String!
+  """only admins are able to grant admin.
+  """
+  admin: Boolean
+  password: String
+}
+
+input UpdateUser {
+  id: ID!
+  name: String
+  displayName: String
+  """only admins are able to grant admin.
+  """
+  admin: Boolean
+  """required when user attempts to update their password.
+  """
+  oldPassword: String
+  password: String
+}
+
+input DeleteUser {
+  id: ID!
+}

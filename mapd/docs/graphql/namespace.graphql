@@ -1,0 +1,58 @@
+type Namespace {
+  name: String!
+  labels: Map
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Namespace(cluster: ID!, name: String!): Namespace!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+  
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Namespaces(filters: [QueryFilter!] = []): [Namespace!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateNamespace(input: CreateNamespace!): Namespace!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateNamespace(input: UpdateNamespace!): Namespace!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteNamespace(input: DeleteNamespace!): Namespace!
+}
+
+input CreateNamespace {
+  name: String!
+  labels: Map
+  cluster: ID!
+}
+
+input UpdateNamespace {
+  name: String!
+  labels: Map
+  cluster: ID!
+}
+
+input DeleteNamespace {
+  name: String!
+  cluster: ID!
+}

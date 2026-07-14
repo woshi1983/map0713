@@ -1,0 +1,143 @@
+type PersistentVolumeClaim {
+  name: String!
+  namespace: String!
+  labels: Map
+  spec: PersistentVolumeClaimSpec
+  status: String
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  PersistentVolumeClaim(cluster: ID!, namespace: String!, name: String!): PersistentVolumeClaim!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `namespace`
+
+  - `cluster`
+
+  - `organization`
+  """
+  PersistentVolumeClaims(filters: [QueryFilter!] = []): [PersistentVolumeClaim!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreatePersistentVolumeClaim(input: CreatePersistentVolumeClaim!): PersistentVolumeClaim!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdatePersistentVolumeClaim(input: UpdatePersistentVolumeClaim!): PersistentVolumeClaim!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeletePersistentVolumeClaim(input: DeletePersistentVolumeClaim!): PersistentVolumeClaim!
+}
+
+type PersistentVolumeClaimSpec {
+  accessModes: [String!]
+  resources: PersistentVolumeClaimSpecResources
+  storageClass: String
+  volumeMode: String
+}
+
+type PersistentVolumeClaimSpecResources {
+  limits: PersistentVolumeClaimSpecResourcesLimits
+  requests: PersistentVolumeClaimSpecResourcesRequests
+}
+
+type PersistentVolumeClaimSpecResourcesLimits {
+  storage: String
+}
+
+type PersistentVolumeClaimSpecResourcesRequests {
+  storage: String
+}
+
+input CreatePersistentVolumeClaim {
+  name: String!
+  namespace: String!
+  spec: CreatePersistentVolumeClaimSpec!
+  cluster: ID!
+}
+
+input UpdatePersistentVolumeClaim {
+  name: String!
+  namespace: String!
+  spec: UpdatePersistentVolumeClaimSpec!
+  cluster: ID!
+}
+
+input DeletePersistentVolumeClaim {
+  name: String!
+  namespace: String!
+  cluster: ID!
+}
+
+input CreatePersistentVolumeClaimSpec {
+  """valid values:
+
+	- `ReadWriteOnce`
+	- `ReadOnlyMany`
+	- `ReadWriteMany`
+  """
+  accessModes: [String!]
+  resources: CreatePersistentVolumeClaimSpecResources!
+  storageClass: String
+  volumeMode: String
+}
+
+input CreatePersistentVolumeClaimSpecResources {
+  limits: CreatePersistentVolumeClaimSpecResourcesLimits
+  requests: CreatePersistentVolumeClaimSpecResourcesRequests!
+}
+
+input CreatePersistentVolumeClaimSpecResourcesLimits {
+  storage: String
+}
+
+input CreatePersistentVolumeClaimSpecResourcesRequests {
+  storage: String!
+}
+
+input UpdatePersistentVolumeClaimSpec {
+  accessModes: [String!]
+  resources: UpdatePersistentVolumeClaimSpecResources
+  storageClass: String
+  volumeMode: String
+}
+
+input UpdatePersistentVolumeClaimSpecResources {
+  limits: UpdatePersistentVolumeClaimSpecResourcesLimits
+  requests: UpdatePersistentVolumeClaimSpecResourcesRequests
+}
+
+input UpdatePersistentVolumeClaimSpecResourcesLimits {
+  storage: String
+}
+
+input UpdatePersistentVolumeClaimSpecResourcesRequests {
+  storage: String
+}

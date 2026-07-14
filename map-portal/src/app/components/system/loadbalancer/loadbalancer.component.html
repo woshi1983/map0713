@@ -1,0 +1,388 @@
+<div *ngIf="authService.isLoggedIn">
+  <div *featureToggle="featureGates.appMgmt">
+    <div class="alert alert-info" role="alert" *ngIf="noAVILBAlert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'LBMGMT.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+      <button type="button" class="close" aria-label="Close" (click)="closeNoLBAlert()">
+        <clr-icon aria-hidden="true" shape="close"></clr-icon>
+      </button>
+    </div>
+  </div>
+  <div class="alert alert-info" role="alert">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <span class="alert-text">{{ 'LBMGMT.PAGEALERT2' | translate }}</span>
+      </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="closeNoLBAlert()">
+      <clr-icon aria-hidden="true" shape="close"></clr-icon>
+    </button>
+  </div>
+
+  <div>
+    <span class="custom-h2">{{ 'LBMGMT.ALL-LB' | translate }}</span>
+  </div>
+  <br>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <button (click)="showAddGlb()" class="btn btn-primary btn-outline">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'LBMGMT.ADDLB' | translate }}
+      </button>
+    </div>
+    <div class="clr-form">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-lb' type="button" (click)="showEditGLb(selectedLB)" [disabled]="!selectedLB" clrDropdownItem>{{ 'LBMGMT.ACTION.EDITLB' | translate }}</button>
+            <button id='delete-lb' type="button" (click)="showDeleteLB(selectedLB)" [disabled]="!selectedLB" clrDropdownItem>{{ 'LBMGMT.ACTION.DELETELB' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="lbname" placeholder="{{ 'LBMGMT.SEARCHLB' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="certResult.length > 0">
+    <div class="alert alert-warning" role="alert" *ngFor="let result of certResult">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text" *ngIf="!result.isCA"> {{result.name}}{{ 'LBMGMT.CERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'LBMGMT.CERTEXPIRED' | translate }}</span>
+          <span class="alert-text" *ngIf="result.isCA"> {{result.name}}{{ 'LBMGMT.CACERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'LBMGMT.CERTEXPIRED' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedLB" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'SHARED.DATAGRID.DESC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.ADDRESS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.TYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.LICENSE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.AUTHUSER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column *featureToggle="featureGates.appMgmt">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.SEGROUP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column *featureToggle="featureGates.appMgmt">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.NETWORK' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'LBMGMT.DATAGRIDFIELD.NOLB' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let lb of lbs" [clrDgItem]="lb">
+      <clr-dg-cell>{{lb.name}}</clr-dg-cell>
+      <clr-dg-cell>{{lb.description}}</clr-dg-cell>
+      <clr-dg-cell><a href="{{lb.endpoint}}" target="_blank">{{lb.endpoint}}</a></clr-dg-cell>
+      <clr-dg-cell>{{lb.type}}</clr-dg-cell>
+      <clr-dg-cell>{{!!lb.spec?.licenseTier ? lb.spec.licenseTier : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{!!lb.authUser ? lb.authUser : '-'}}</clr-dg-cell>
+      <clr-dg-cell *featureToggle="featureGates.appMgmt">{{!!lb.spec?.seGroup ? lb.spec.seGroup : '-'}}</clr-dg-cell>
+      <clr-dg-cell *featureToggle="featureGates.appMgmt">{{!!lb.spec?.preferredNetwork ? lb.spec.preferredNetwork : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{lb.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{lb.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+</clr-datagrid>
+</div>
+
+<clr-wizard #wizardglb [(clrWizardOpen)]="addGlbOpen" (clrWizardOnFinish)="doGlbFinish()" (clrWizardOnCancel)="doGlbCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'LBMGMT.ADDLB' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicGlbForm.invalid || basicGlbForm.value.type === LoadBalancerType.AVI ? !(checkStatus.checked && checkStatus.checkSuccess) : false">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle>{{ 'LBMGMT.ADDLB-PAGE.PAGETITLE' | translate }}</ng-template>
+        <div class="alert alert-warning alert-sm" role="alert">
+            <div class="alert-items">
+              <div class="alert-item static">
+                <div class="alert-icon-wrapper">
+                  <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+                </div>
+                <span class="alert-text" style="font-size: 12px">{{ 'LBMGMT.ADDLB-PAGE.PAGEALERT' | translate }}</span>
+              </div>
+            </div>
+          </div>
+        {{ 'LBMGMT.ADDLB-PAGE.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="basicGlbForm">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.NAME' | translate }}</label>
+              <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{basicGlbForm.value.name}}{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-select-container>
+              <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.TYPE' | translate }}</label>
+              <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.TYPE-HELP' | translate }}</clr-control-helper>
+              <select class="clr-col-md-9" clrSelect formControlName="type" (change)="resetCheckStatus();">
+                <option value="{{LoadBalancerType.AVI}}">NSX Advanced Load Balancer(AVI)</option>
+                <option value="{{LoadBalancerType.EXTERNAL}}">External</option>
+              </select>
+              <clr-control-error>{{ 'LBMGMT.ADDLB-PAGE.TYPE-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <div *ngIf="basicGlbForm.value.type === 'EXTERNAL'">
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.EXTERNAL-ADDRESS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1"/>
+                <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+                <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+              </clr-input-container>
+            </div>
+            <div *ngIf="basicGlbForm.value.type === 'AVI'">
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1" (change)="resetCheckStatus();"/>
+                <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+                <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+              </clr-input-container>
+              <clr-textarea-container *ngIf="!basicGlbForm.value.skipTLS">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.CACERT' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.CACERT-HELP' | translate }}</clr-control-helper>
+                <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+                </textarea>
+              </clr-textarea-container>
+              <clr-toggle-container>
+                <clr-toggle-wrapper>
+                  <label class="clr-col-md-9">{{ 'LBMGMT.ADDLB-PAGE.SKIPTLS' | translate }}</label>
+                  <input type="checkbox" clrToggle [checked]="basicGlbForm.value.skipTLS" formControlName="skipTLS" name="skipTLS"/>
+                </clr-toggle-wrapper>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SKIPTLS-HELP' | translate }}</clr-control-helper>
+              </clr-toggle-container>
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="authUser" formControlName="user" type="string" (change)="resetCheckStatus();"/>
+                <clr-control-error>{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER-ERROR' | translate }}</clr-control-error>
+              </clr-input-container>
+              <clr-password-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.AUTHPASS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.AUTHPASS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrPassword name="authPassword" formControlName="password" type="string" (change)="resetCheckStatus();"/>
+                <clr-control-error>{{ 'LBMGMT.ADDLB-PAGE.AUTHPASS-ERROR' | translate }}</clr-control-error>
+              </clr-password-container>
+              <button (click)="checkCreateGlbAuth()" class="btn-sm btn btn-outline">
+                 <clr-icon shape="connect"></clr-icon>
+                 {{ 'LBMGMT.ADDLB-PAGE.CONTECTTEST' | translate }}
+              </button>
+              <div class="alert" [ngClass]="{'alert-success': checkStatus.checkSuccess, 'alert-danger': !checkStatus.checkSuccess}" role="alert" *ngIf="checkStatus.checked">
+                <div class="alert-items">
+                 <div class="alert-item static">
+                   <div class="alert-icon-wrapper">
+                      <clr-icon *ngIf="checkStatus.checkSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+                      <clr-icon *ngIf="!checkStatus.checkSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+                   </div>
+                   <span class="alert-text" *ngIf="checkStatus.checkSuccess">{{ 'LBMGMT.ADDLB-PAGE.SUCCESS' | translate }}</span>
+                   <span class="alert-text" *ngIf="!checkStatus.checkSuccess">{{ 'LBMGMT.ADDLB-PAGE.FAILED' | translate }}</span>
+                 </div>
+                </div>
+              </div>
+              <clr-input-container *featureToggle="featureGates.appMgmt">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.SEGROUP' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SEGROUP-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput  formControlName="seGroup" type="string" placeholder="seGroup Name"/>
+              </clr-input-container>
+              <clr-input-container *featureToggle="featureGates.appMgmt">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.NETWORK' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.NETWORK-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput  formControlName="routeAviNetwork" type="string" placeholder="route-networkName"/>
+              </clr-input-container>
+            </div>
+        </form>
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardeditglb [(clrWizardOpen)]="editGlbOpen" (clrWizardOnFinish)="doEditGlbFinish()" (clrWizardOnCancel)="doEditGlbCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'LBMGMT.ACTION.EDITLB' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editGlbForm.invalid || checkStatus.checked ? !checkStatus.checkSuccess : checkStatus.checked">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page>
+        <ng-template clrPageTitle>{{ 'LBMGMT.ADDLB-PAGE.PAGETITLE' | translate }}</ng-template>
+        {{ 'LBMGMT.ACTION.EDITPAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="editGlbForm">
+            <clr-input-container>
+              <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.NAME' | translate }}</label>
+              <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.NAME-HELP' | translate }}</clr-control-helper>
+              <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR3' | translate }} {{restricNamePattern}}。</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{editGlbForm.value.name}}{{ 'LBMGMT.ADDLB-PAGE.NAME-ERROR4' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-select-container>
+              <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.TYPE' | translate }}</label>
+              <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.TYPE-HELP' | translate }}</clr-control-helper>
+              <select class="clr-col-md-9" clrSelect formControlName="type" disabled>
+                <option value="{{LoadBalancerType.AVI}}">NSX Advanced Load Balancer(AVI)</option>
+                <option value="{{LoadBalancerType.EXTERNAL}}">External</option>
+              </select>
+              <clr-control-error>{{ 'LBMGMT.ADDLB-PAGE.TYPE-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <div *ngIf="editGlbForm.value.type === 'EXTERNAL'">
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.EXTERNAL-ADDRESS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1"/>
+                <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+                <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+              </clr-input-container>
+            </div>
+            <div *ngIf="editGlbForm.value.type === 'AVI'">
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1" (change)="resetCheckStatus();"/>
+                <clr-control-error *clrIfError="'required'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR1' | translate }}</clr-control-error>
+                <clr-control-error *clrIfError="'pattern'">{{ 'LBMGMT.ADDLB-PAGE.ADDRESS-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+              </clr-input-container>
+              <clr-textarea-container *ngIf="!editGlbForm.value.skipTLS">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.CACERT' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.CACERT-HELP' | translate }}</clr-control-helper>
+                <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+                </textarea>
+              </clr-textarea-container>
+              <clr-toggle-container>
+                <clr-toggle-wrapper>
+                  <label class="clr-col-md-9">{{ 'LBMGMT.ADDLB-PAGE.SKIPTLS' | translate }}</label>
+                  <input type="checkbox" clrToggle [checked]="editGlbForm.value.skipTLS" formControlName="skipTLS" name="skipTLS"/>
+                </clr-toggle-wrapper>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SKIPTLS-HELP' | translate }}</clr-control-helper>
+              </clr-toggle-container>
+              <clr-input-container>
+                <label class="required clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput name="authUser" formControlName="user" type="string" required (change)="resetCheckStatus();"/>
+                <clr-control-error>{{ 'LBMGMT.ADDLB-PAGE.AUTHUSER-ERROR' | translate }}</clr-control-error>
+              </clr-input-container>
+              <clr-password-container>
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.AUTHPASS' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.AUTHPASS-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrPassword name="authPassword" formControlName="password" type="string" (change)="resetCheckStatus();"/>
+              </clr-password-container>
+              <button [disabled]="!editGlbForm.value.password" (click)="checkUpdateGlbAuth()" class="btn-sm btn btn-outline">
+                 <clr-icon shape="connect"></clr-icon>
+                 {{ 'LBMGMT.ADDLB-PAGE.CONTECTTEST' | translate }}
+              </button>
+              <div class="alert" [ngClass]="{'alert-success': checkStatus.checkSuccess, 'alert-danger': !checkStatus.checkSuccess}" role="alert" *ngIf="checkStatus.checked">
+                <div class="alert-items">
+                 <div class="alert-item static">
+                   <div class="alert-icon-wrapper">
+                      <clr-icon *ngIf="checkStatus.checkSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+                      <clr-icon *ngIf="!checkStatus.checkSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+                   </div>
+                     <span class="alert-text" *ngIf="checkStatus.checkSuccess">{{ 'LBMGMT.ADDLB-PAGE.SUCCESS' | translate }}</span>
+                     <span class="alert-text" *ngIf="!checkStatus.checkSuccess">{{ 'LBMGMT.ADDLB-PAGE.FAILED' | translate }}</span>
+                 </div>
+                </div>
+              </div>
+              <clr-input-container *featureToggle="featureGates.appMgmt">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.SEGROUP' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SEGROUP-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput  formControlName="seGroup" type="string" placeholder="seGroup Name" disabled/>
+              </clr-input-container>
+              <clr-input-container *featureToggle="featureGates.appMgmt">
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.NETWORK' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.NETWORK-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput  formControlName="routeAviNetwork" type="string" placeholder="route-networkName"/>
+              </clr-input-container>
+            </div>
+        </form>
+    </clr-wizard-page>
+</clr-wizard>
+
+<app-delete-object #deleteObjectComponent (confirmAction)="deleteLB($event)"></app-delete-object>
+
+<router-outlet></router-outlet>

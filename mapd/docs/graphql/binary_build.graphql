@@ -1,0 +1,66 @@
+type BinaryBuild {
+  name: String!
+  annotations: Map
+  spec: BinaryBuildSpec!
+  status: BinaryBuildStatus!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  BinaryBuild(cluster: ID!, name: String!): BinaryBuild!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `image`
+
+  - `cluster`
+
+  - `organization`
+  """
+  BinaryBuilds(filters: [QueryFilter!] = []): [BinaryBuild!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateBinaryBuild(input: CreateBinaryBuild!): BinaryBuild!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteBinaryBuild(input: DeleteBinaryBuild!): BinaryBuild!
+}
+
+type BinaryBuildSpec {
+  baseImage: String
+  distImage: String
+  binaryDir: String
+  url: URL
+  processUID: Int
+}
+
+type BinaryBuildStatus {
+  num: Int!
+  status: JobStatus!
+  image: String
+  job: Job!
+}
+
+input CreateBinaryBuild {
+  image: String!
+  cluster: ID!
+}
+
+input DeleteBinaryBuild {
+  name: String!
+  cluster: ID!
+}

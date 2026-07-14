@@ -1,0 +1,434 @@
+type ClusterProvider {
+  id: ID!
+  name: String!
+  description: String!
+  class: ClusterClass!
+  spec: ClusterProviderSpec!
+  tlsCertChain: [X509Certificate!]
+  """
+  Filters:
+
+  - `name`
+
+  - `default`
+
+  - `pushable`
+  """
+  imageRegistries(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterProviderImageRegistries!
+  loadBalancer: LoadBalancer
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type ClusterProviders {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterProviderNodes!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_provider` or above.
+  """
+  ClusterProvider(id: ID!): ClusterProvider!
+  """
+  requires `read:cluster_provider` or above.
+
+  Filters:
+
+  - `name`
+
+  - `class`
+
+  - `imageRegistry`
+
+  - `loadBalancer`
+
+  - `organization`
+  """
+  ClusterProviders(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterProviders!
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_provider` or above.
+  """
+  CreateTKGSClusterProvider(input: CreateTKGSClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  CreateTKGMClusterProvider(input: CreateTKGMClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  CreateTKG2SClusterProvider(input: CreateTKG2SClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  CreateTKG2MClusterProvider(input: CreateTKG2MClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  UpdateTKGSClusterProvider(input: UpdateTKGSClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  UpdateTKGMClusterProvider(input: UpdateTKGMClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  UpdateTKG2SClusterProvider(input: UpdateTKG2SClusterProvider!): ClusterProvider!
+  """
+  requires `write:cluster_provider` or above.
+  """
+  UpdateTKG2MClusterProvider(input: UpdateTKG2MClusterProvider!): ClusterProvider!
+  """
+  requires `modify:cluster_provider` or above.
+  """
+  DeleteClusterProvider(input: DeleteClusterProvider!): ClusterProvider!
+}
+
+type ClusterProviderNodes {
+  nodes: [ClusterProvider!]
+}
+
+union ClusterProviderSpec = TKGSClusterProviderSpec | TKGMClusterProviderSpec | TKG2SClusterProviderSpec | TKG2MClusterProviderSpec
+
+type TKGSClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  authUser: String!
+  defaultNamespace: String!
+  vmClasses: [VMClass!]
+  clusterReleases: [Version!]
+  """name of namespaces can be queried during mutation with `validate` and `dryrun` enabled.
+
+  Filters will not work when `validate` and `dryrun` are enabled.
+  """
+  namespaces(filters: [QueryFilter!] = []): [TKGSClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type TKGSClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  storages: [String!]
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type TKGMClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  defaultNamespace: String!
+  defaultEnv: Map
+  clusterReleases: [Version!]
+  """name of namespaces can be queried during mutation with `validate` and `dryrun` enabled.
+
+  Filters will not work when `validate` and `dryrun` are enabled.
+  """
+  namespaces(filters: [QueryFilter!] = []): [TKGMClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type TKGMClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type TKG2SClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  authUser: String!
+  defaultNamespace: String!
+  vmClasses: [VMClass!]
+  tanzuKubernetesReleases: [Version!]
+  """name of namespaces can be queried during mutation with `validate` and `dryrun` enabled.
+
+  Filters will not work when `validate` and `dryrun` are enabled.
+  """
+  namespaces(filters: [QueryFilter!] = []): [TKG2SClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type TKG2SClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  storageClasses: [ClusterProviderStorageClass!]
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type TKG2MClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  defaultNamespace: String!
+  tanzuKubernetesReleases: [Version!]
+  """name of namespaces can be queried during mutation with `validate` and `dryrun` enabled.
+
+  Filters will not work when `validate` and `dryrun` are enabled.
+  """
+  namespaces(filters: [QueryFilter!] = []): [TKG2MClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+  """the followings will be used as the default value.
+  """
+  vsphereNetwork: String!
+  vsphereResourcePool: String!
+  vsphereFolder: String!
+  vsphereDatastore: String!
+  aviServiceEngineGroup: String!
+  aviDataNetwork: String!
+  aviDataNetworkCidr: String!
+}
+
+type TKG2MClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type ClusterProviderSpecTrustedCA {
+  name: String!
+  cert: String!
+}
+
+type ClusterProviderStorageClass {
+  name: String!
+  usedGi: Int!
+  totalGi: Int!
+}
+
+type VMClass {
+  name: String!
+  spec: Any
+}
+
+type ClusterProviderImageRegistries {
+  _provider: ID!
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterProviderImageRegistryNodes!
+}
+
+type ClusterProviderImageRegistryNodes {
+  nodes: [ClusterProviderImageRegistry!]
+}
+
+type ClusterProviderImageRegistry {
+  _id: ID!
+  imageRegistry: ImageRegistry!
+  default: Boolean!
+}
+
+input CreateTKGSClusterProvider {
+  name: String!
+  description: String
+  spec: CreateTKGSClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input CreateTKGMClusterProvider {
+  name: String!
+  description: String
+  spec: CreateTKGMClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input CreateTKG2SClusterProvider {
+  name: String!
+  description: String
+  spec: CreateTKG2SClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input CreateTKG2MClusterProvider {
+  name: String!
+  description: String
+  spec: CreateTKG2MClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateTKGSClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateTKGSClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateTKGMClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateTKGMClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateTKG2SClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateTKG2SClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateTKG2MClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateTKG2MClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input DeleteClusterProvider {
+  id: ID!
+}
+
+input CreateTKGSClusterProviderSpec {
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String!
+  authPassword: String!
+  defaultNamespace: String!
+  trustedCAs: [AddClusterProviderTrustedCA!]
+}
+
+input CreateTKGMClusterProviderSpec {
+  kubeConfig: String!
+  defaultNamespace: String!
+  defaultEnv: Map
+  """certificates of root CA that will be only used for configuring TBS.
+
+  These certificates will not be injected to the certificate pool on the hosts.
+
+  To inject those CA certificates into the provisioned hosts, you MUST modify
+  the template file that WILL BE used for provisioning the management cluster.
+  """
+  trustedCAs: [AddClusterProviderTrustedCA!]
+}
+
+input CreateTKG2SClusterProviderSpec {
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String!
+  authPassword: String!
+  defaultNamespace: String!
+  trustedCAs: [AddClusterProviderTrustedCA!]
+}
+
+input CreateTKG2MClusterProviderSpec {
+  kubeConfig: String!
+  defaultNamespace: String!
+  trustedCAs: [AddClusterProviderTrustedCA!]
+  """the followings will be used as the default value.
+  """
+  vsphereNetwork: String
+  vsphereResourcePool: String
+  vsphereFolder: String
+  vsphereDatastore: String
+  aviServiceEngineGroup: String
+  aviDataNetwork: String
+  aviDataNetworkCidr: String
+}
+
+input UpdateTKGSClusterProviderSpec {
+  endpoint: URL
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String
+  authPassword: String
+  defaultNamespace: String
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+}
+
+input UpdateTKGMClusterProviderSpec {
+  kubeConfig: String
+  defaultNamespace: String
+  defaultEnv: Map
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+}
+
+input UpdateTKG2SClusterProviderSpec {
+  endpoint: URL
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String
+  authPassword: String
+  defaultNamespace: String
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+}
+
+input UpdateTKG2MClusterProviderSpec {
+  kubeConfig: String
+  defaultNamespace: String
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+  vsphereNetwork: String
+  vsphereResourcePool: String
+  vsphereFolder: String
+  vsphereDatastore: String
+  aviServiceEngineGroup: String
+  aviDataNetwork: String
+  aviDataNetworkCidr: String
+}
+
+input AddClusterProviderTrustedCA {
+  name: String!
+  cert: String!
+}
+
+input RemoveClusterProviderTrustedCA {
+  name: String!
+}
+
+input AddClusterProviderImageRegistry {
+  id: ID!
+  default: Boolean
+}
+
+input RemoveClusterProviderImageRegistry {
+  id: ID!
+}

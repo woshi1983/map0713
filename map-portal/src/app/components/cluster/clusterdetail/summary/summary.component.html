@@ -1,0 +1,147 @@
+<div class="clr-row" *ngIf="authService.isLoggedIn">
+  <div class="clr-col-md-12" *ngIf="cluster">
+    <div class="header-context">
+      {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO' | translate }}
+    </div>
+    <div class="clr-col-md-12" fxLayout="flex">
+      <div class="summary-left clr-col-md-6">
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.APIENDPOINT' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.endpoint}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.PROVIDER' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>
+              <a routerLink="/portal/system/providers/{{cluster.provider.id}}/{{cluster.provider.name}}" *ngIf="!!cluster.provider">{{cluster.provider.name}}({{cluster.class}})</a>
+              <span *ngIf="!cluster.provider">UNKNOWN</span>
+            </li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.CREATETIME' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.createdAt | datetimeTransition}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.UPDATETIME' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.lastModified | datetimeTransition}}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="summary-right clr-col-md-6">
+        <div class="display-flex summary pt-05" *ngIf="cluster && cluster.type === 'PROVISIONED'">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.NAMESPACE' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster?.spec?.namespace}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.REGISTRY' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>
+              <div style="display: inline" *ngFor="let registry of cluster.imageRegistries.edge.nodes;let i = index;">
+                <span *ngIf="i === 0"><a href="{{ registry.imageRegistry.endpoint }}" target="_blank">{{registry.imageRegistry.name}}</a></span>
+                <span *ngIf="i !== 0">, <a href="{{ registry.imageRegistry.endpoint }}" target="_blank">{{registry.imageRegistry.name}}</a></span>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.DEFAULT' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>
+              <div style="display: inline" *ngFor="let registry of cluster.imageRegistries.edge.nodes;">
+                <a *ngIf="registry.default" href="{{ registry.imageRegistry.endpoint }}" target="_blank">{{registry.imageRegistry.name}}</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.LB' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>
+              <span *ngIf="!!cluster.loadBalancer">{{ cluster.loadBalancer.name }}</span>
+              <span *ngIf="!cluster.loadBalancer">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.BASICINFO-PAGE.NONE' | translate }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="clr-col-md-12" *ngIf="cluster && cluster.type === 'PROVISIONED'">
+    <div class="header-context">
+      {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK' | translate }}
+    </div>
+    <div class="clr-col-md-12" fxLayout="flex">
+      <div class="summary-left clr-col-md-6">
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK-PAGE.NETWORKTYPE' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.cni}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05" *ngIf="cluster.spec.cni !== 'antrea-nsx-routed'">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK-PAGE.PODCIDR' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.podCIDR}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05" *ngIf="cluster.spec.cni === 'antrea-nsx-routed'">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK-PAGE.SERVICEDOMAIN' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.svcDomain}}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="summary-right clr-col-md-6">
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK-PAGE.SERVICECIDR' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.svcCIDR}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05" *ngIf="cluster.class === 'TKGS' && cluster.spec.cni !== 'antrea-nsx-routed'">
+          <h5 class="mt-0 width-7-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.NETWORK-PAGE.SERVICEDOMAIN' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.svcDomain}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="clr-col-md-12" *ngIf="cluster && cluster.type === 'PROVISIONED' && cluster.class === 'TKGS'">
+    <div class="header-context">
+      {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.STORAGE' | translate }}
+    </div>
+    <div class="clr-col-md-12" fxLayout="flex">
+      <div class="summary-left clr-col-md-6">
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.STORAGE-PAGE.DEFAULTSTORAGE' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.defStorage}}</li>
+          </ul>
+        </div>
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.STORAGE-PAGE.ETCDSTORAGECAP' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.ctlPlaneStorageCapGi}} Gi</li>
+          </ul>
+        </div>
+      </div>
+      <div class="summary-right clr-col-md-6">
+        <div class="display-flex summary pt-05">
+          <h5 class="mt-0 width-9-5">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.OVERVIEW-PAGE.STORAGE-PAGE.IMAGESTORAGECAP' | translate }}</h5>
+          <ul class="list-unstyled">
+            <li>{{cluster.spec.dataPlaneStorageCapGi}} Gi</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<router-outlet></router-outlet>

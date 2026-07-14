@@ -1,0 +1,867 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-info" role="alert" *ngIf="noAVILBAlert">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+        </div>
+        <span class="alert-text">{{ 'LBMGMT.PAGEALERT1' | translate }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="clr-row" style="margin-left: 0px; max-height: 40px">
+    <div class="clr-form">
+      <h4>{{ 'APPROUTE.ROUTE.ALL-ROUTES' | translate }}</h4>
+    </div>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteRoute">
+      <button (click)="showCreateRoute()" class="btn btn-primary btn-outline" [disabled]="noAVILBAlert">
+          <clr-icon shape="plus"></clr-icon>
+          {{ 'APPROUTE.ROUTE.CREATEROUTE' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteRoute">
+      <clr-dropdown class="dropdown" >
+          <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+              <clr-icon shape="bars"></clr-icon>
+              {{ 'SHARED.MOREACTIONS' | translate }}
+          </button>
+          <clr-dropdown-menu *clrIfOpen>
+            <button id='edit-route' type="button" (click)="showUpdateRoute(selectedRoute)" [disabled]="!selectedRoute"
+              clrDropdownItem>{{ 'APPROUTE.ROUTE.ACTION.EDITROUTE' | translate }}</button>
+            <button id='delete-route' type="button" (click)="showDeleteRoute()" [disabled]="!selectedRoute"
+              clrDropdownItem>{{ 'APPROUTE.ROUTE.ACTION.DELETEROUTE' | translate }}</button>
+            <button id='force-delete-route' type="button" (click)="showForceDeleteRoute()" [disabled]="!selectedRoute || selectedRoute.status !== 'DELETING'"
+              clrDropdownItem [fxHide]="!canForceDelete">{{ 'APPROUTE.ROUTE.ACTION.FORCEDELETE' | translate }}</button>
+          </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="routename" placeholder="{{ 'APPROUTE.ROUTE.SEARCHROUTE' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedRoute" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'SHARED.DATAGRID.DESC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column style="min-width: 120px;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.ACCESSURL' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.PROTOCOL' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.STATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.LB' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.LBALGO' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.VIP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.RETAINVIP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.COMPONENT' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.APP' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'APPROUTE.ROUTE.DATAGRIDFIELD.NOROUTE' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let route of glbRoutes" [clrDgItem]="route">
+      <clr-dg-cell class="datagrid-long-text">{{route.name}}</clr-dg-cell>
+      <clr-dg-cell>{{route.description}}</clr-dg-cell>
+      <clr-dg-cell *ngIf="route.ip" style="min-width: 120px;"><a href="http://{{route.ip}}:{{route.port}}" target="_blank">{{route.ip}}{{route.port === 80 ? '' : ':' + route.port}}</a></clr-dg-cell>
+      <clr-dg-cell *ngIf="!route.ip" style="min-width: 120px;"></clr-dg-cell>
+      <clr-dg-cell>{{route.protocol}}</clr-dg-cell>
+      <clr-dg-cell>{{route.status}}</clr-dg-cell>
+      <clr-dg-cell style="padding: 0 12px;" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="12px">
+        <span>{{!!route.backends ? route.backends.length > 1 ? 2 : 1 : 0}}/2</span>
+        <div *ngIf="!!route?.backends && route.backends.length > 0" style="cursor: pointer;" (click)="openRouteDetailsPage(route.id)">
+          <div echarts [options]=getChartOption(route.backends) class="div-inline" style="width: 32px;height: 32px;"></div>
+        </div>
+      </clr-dg-cell>
+      <clr-dg-cell>
+        <div *ngFor="let algorithm of LBAlgorithmShortName">
+          <span *ngIf="algorithm.value === route.spec.lbAlgorithm">{{algorithm.shortName}}</span>
+        </div>
+        <div *ngIf="route.spec.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH">
+          <div style="display: inline" *ngFor="let hash of AlgorithmHashShortName">
+            <span *ngIf="hash.value === route.spec.lbAlgorithmHash"> &#8627; {{hash.shortName}}</span>
+          </div>
+          <span *ngIf="route.spec.lbAlgorithmHash == AlgorithmHash.LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER">: {{route.spec.lbAlgorithmConsistentHashHeader}}</span>
+        </div>
+      </clr-dg-cell>
+      <clr-dg-cell>{{route.spec.manualAllocatedVsVIP}}</clr-dg-cell>
+      <clr-dg-cell>{{route.spec.persistentVsVIP}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text"><a routerLink="/portal/appmgmt/components/{{route.component.id}}/{{route.component.name}}">{{route.component.name}}</a></clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{route.application.name}}</clr-dg-cell>
+      <clr-dg-cell>{{route.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{route.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardroute [(clrWizardOpen)]="createRouteOpen" (clrWizardOnFinish)="doRouteFinish()"
+  (clrWizardOnCancel)="doRouteCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPROUTE.ROUTE.CREATEROUTE' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicRouteForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicRouteForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PAGEDESC' | translate }}
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form clrForm [formGroup]="basicRouteForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME' | translate }}</label>
+        <input clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicRouteForm.value.name}}{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label>{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+      </clr-textarea-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="application" (change)="refreshComponentInApplication($event);">
+          <option [value]="app.id" *ngFor="let app of applicationList">{{app.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="component" (change)="refreshInstanceInComponent($event);">
+          <option [value]="component.id" *ngFor="let component of componentList">{{component.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT' | translate }}</label>
+        <input clrInput name="port" formControlName="port" type="number" required />
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'min'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'max'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR3' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PROTOCOL-HELP' | translate }}</clr-control-helper>
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PROTOCOL' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="protocol" name="protocol">
+          <option value="TCP">TCP</option>
+          <option value="UDP">UDP</option>
+        </select>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.LBALGO-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.LBALGO' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="lbAlgorithm">
+          <option [value]="algorithm.value" *ngFor="let algorithm of LBAlgorithmShortName">{{algorithm.shortName}}</option>
+        </select>
+      </clr-select-container>
+      <clr-select-container *ngIf="basicRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH">
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HASHTYPE-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HASHTYPE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="lbAlgorithmHash">
+          <option [value]="hash.value" *ngFor="let hash of AlgorithmHashShortName">{{hash.shortName}}</option>
+        </select>
+      </clr-select-container>
+      <clr-input-container *ngIf="basicRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH && basicRouteForm.value.lbAlgorithmHash == AlgorithmHash.LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER">
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HEADERKEY-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HEADERKEY' | translate }}</label>
+        <input clrInput name="lbAlgorithmConsistentHashHeader" formControlName="lbAlgorithmConsistentHashHeader" type="string"/>
+      </clr-input-container>
+      <clr-toggle-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PRECREATEVIP-HELP' | translate }}</clr-control-helper>
+        <clr-toggle-wrapper>
+          <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PRECREATEVIP' | translate }}</label>
+          <input type="checkbox" clrToggle [checked]="basicRouteForm.value.enableVsvip" formControlName="enableVsvip" name="enableVsvip" (change)="setVsvipVaildtor(basicRouteForm.value.enableVsvip)"/>
+        </clr-toggle-wrapper>
+      </clr-toggle-container>
+      <clr-input-container *ngIf="basicRouteForm.value.enableVsvip">
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.VIPNAME-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.VIPNAME' | translate }}</label>
+        <input clrInput name="vsvipRef" formControlName="vsvipRef" placeholder="app01-vip"/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.VIPNAME-ERROR' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-toggle-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PERSISTENTVIP-HELP' | translate }}</clr-control-helper>
+        <clr-toggle-wrapper>
+          <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PERSISTENTVIP' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="persistentVsvip" name="persistentVsvip"/>
+        </clr-toggle-wrapper>
+      </clr-toggle-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="appGlbRouteForm.invalid || !appGlbRouteForm.value.backends[0]">
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEDESC' | translate }}
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form clrForm style="padding: 0px;!important;" [formGroup]="appGlbRouteForm">
+      <div formArrayName="backends" fxLayout="row" fxLayoutAlign="start stretch" fxLayoutGap="4px">
+        <div *ngFor="let backend of appGlbParamsArray.controls; let i = index" [formGroupName]="i" fxFlex="0 0.8">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h3 class="card-title">
+                    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICEINFO1' | translate }} {{i + 1}} {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICEINFO2' | translate }}
+                    <button class="btn btn-link btn-icon" (click)="deleteFieldValue(i)">
+                      <clr-icon shape="window-close"></clr-icon>
+                    </button>
+                  </h3>
+                  <div class="card-text">
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': appGlbParamsArray.length <= 1, 'clr-col-md-3': appGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.INSTANCENAME' | translate }}</label>
+                      <select *ngIf="appGlbParamsArray.length <= 1" class="clr-col-md-9" clrSelect formControlName="instanceId" (change)="refreshServicesInInstance($event);service.value = ''">
+                        <option [value]="instance.id" *ngFor="let instance of instanceList">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</option>
+                      </select>
+                      <select *ngIf="appGlbParamsArray.length > 1" class="clr-col-md-9" clrSelect formControlName="instanceId" (change)="refreshServicesInInstance($event);service.value = ''">
+                        <option [value]="instance.id" *ngFor="let instance of getInstanceInSameLB()">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.INSTANCENAME-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': appGlbParamsArray.length <= 1, 'clr-col-md-3': appGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICE' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="service" #service>
+                        <option [value]="each.name" *ngFor="let each of servicesInInstance(backend.value?.instanceId)">{{each.name}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICE-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': appGlbParamsArray.length <= 1, 'clr-col-md-3': appGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.IP' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="ip">
+                        <option [value]="each.ip" *ngFor="let each of ipsInService(backend.value?.instanceId, backend.value?.service)">{{each.ip}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.IP-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': appGlbParamsArray.length <= 1, 'clr-col-md-3': appGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PORT' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="port">
+                        <option [value]="each.port" *ngFor="let each of portsInService(backend.value?.instanceId, backend.value?.service)">{{each.name}}{{!!each.name ? '(' : ''}}{{each.port}}/{{each.protocol}}{{!!each.name ? ')' : ''}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PORT-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <clr-range-container *ngIf="appGlbParamsArray.length > 1">
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.CHANGELB' | translate }} ({{slider1.value * 5 | number}}%)</label>
+        <input type="range" clrRange min="0" max="20" step="1" formControlName="ratio" style="width: 100%;" #slider1/>
+      </clr-range-container>
+      <br>
+      <button class="btn btn-outline" [disabled]="appGlbParamsArray.length >= 2 || (appGlbParamsArray.length === 1 && appGlbParamsArray.controls[0].invalid)" (click)="addFieldValue()">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.ADDSERVICE' | translate }}</button>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.NETWORKPROFILE-HELP' | translate }}</clr-control-helper>
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.NETWORKPROFILE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="networkProfile">
+          <option [value]="profile.name" *ngFor="let profile of networkProfile">{{profile.name}}</option>
+        </select>
+      </clr-select-container>
+    </form>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.PAGEDESC' | translate }}
+    <br>
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.NAME' | translate }}</span>
+                    <span>{{basicRouteForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.DESC' | translate }}</span>
+                    <span>{{basicRouteForm.value.description}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.APP' | translate }}</span>
+                    <div style="display: inline" *ngFor="let app of applicationList">
+                      <span *ngIf="app.id === basicRouteForm.value.application">{{app.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.COMPONENT' | translate }}</span>
+                    <div style="display: inline" *ngFor="let component of componentList">
+                      <span *ngIf="component.id === basicRouteForm.value.component">{{component.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PORT' | translate }}</span>
+                    <span>{{basicRouteForm.value.port}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PROTOCOL' | translate }}</span>
+                    <span>{{basicRouteForm.value.protocol}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.LBALGO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let algorithm of LBAlgorithmShortName">
+                      <span *ngIf="algorithm.value === basicRouteForm.value.lbAlgorithm">{{algorithm.shortName}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="basicRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH">
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.HASHTYPE' | translate }}</span>
+                    <div style="display: inline" *ngFor="let hash of AlgorithmHashShortName">
+                      <span *ngIf="hash.value === basicRouteForm.value.lbAlgorithmHash">{{hash.shortName}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="basicRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH && basicRouteForm.value.lbAlgorithmHash == AlgorithmHash.LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER">
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.HEADERKEY' | translate }}</span>
+                    <span>{{basicRouteForm.value.lbAlgorithmConsistentHashHeader}}</span>
+                  </div>
+                  <div *ngIf="!basicRouteForm.value.enableVsvip">
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.AUTOVIPE' | translate }}</span>
+                    <span>{{!basicRouteForm.value.enableVsvip}}</span>
+                  </div>
+                  <div *ngIf="basicRouteForm.value.enableVsvip">
+                    <span class="validateTitle">{{ 'AAPPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.VIPNAME' | translate }}</span>
+                    <span>{{basicRouteForm.value.vsvipRef}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PERSISENTVIP' | translate }}</span>
+                    <span>{{basicRouteForm.value.persistentVsvip}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.NETWORKPROFILE' | translate }}</span>
+                    <span>{{appGlbRouteForm.value.networkProfile}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <div class="clr-row" *ngIf="appGlbRouteForm.value.backends[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.INSTANCENAME' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 30%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.SERVICENAME' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 30%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.WEIGHT' | translate }}</span>
+                  <div *ngIf="appGlbRouteForm.value.backends.length == 1">
+                    <div style="display: inline" *ngFor="let instance of instanceList">
+                      <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === appGlbRouteForm.value.backends[0].instanceId">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</span>
+                    </div>
+                    <div style="display: inline" *ngFor="let service of servicesInInstance(appGlbRouteForm.value.backends[0].instanceId)">
+                      <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === appGlbRouteForm.value.backends[0].service">{{service.name}}</span>
+                    </div>
+                    <span style="min-width: 30%;display: inline-block; width: 18%">100%</span>
+                  </div>
+                  <div *ngIf="appGlbRouteForm.value.backends.length == 2">
+                    <div>
+                      <div style="display: inline" *ngFor="let instance of instanceList">
+                        <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === appGlbRouteForm.value.backends[0].instanceId">{{instance.name}}({{instance.cluster.name}})</span>
+                      </div>
+                      <div style="display: inline" *ngFor="let service of servicesInInstance(appGlbRouteForm.value.backends[0].instanceId)">
+                        <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === appGlbRouteForm.value.backends[0].service">{{service.name}}</span>
+                      </div>
+                      <span style="min-width: 30%;display: inline-block; width: 18%">{{appGlbRouteForm.value.ratio*5 | number}}%</span>
+                    </div>
+                    <div>
+                      <div style="display: inline" *ngFor="let instance of instanceList">
+                        <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === appGlbRouteForm.value.backends[1].instanceId">{{instance.name}}({{instance.cluster.name}})</span>
+                      </div>
+                      <div style="display: inline" *ngFor="let service of servicesInInstance(appGlbRouteForm.value.backends[1].instanceId)">
+                        <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === appGlbRouteForm.value.backends[1].service">{{service.name}}</span>
+                      </div>
+                      <span style="min-width: 30%;display: inline-block; width: 18%">{{100 - appGlbRouteForm.value.ratio*5 | number}}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+
+<clr-wizard #wizardeditroute [(clrWizardOpen)]="updateRouteOpen" (clrWizardOnFinish)="doUpdateRouteFinish()"
+  (clrWizardOnCancel)="doUpdateRouteCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPROUTE.ROUTE.ACTION.EDITROUTE' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="editRouteForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="editRouteForm.invalid">
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="editRouteForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME' | translate }}</label>
+        <input clrInput name="name" formControlName="name" type="string" required disabled/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{editRouteForm.value.name}}{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.NAME-ERROR5' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label>{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+      </clr-textarea-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="application" disabled>
+          <option [value]="selectedRoute?.application?.id">{{selectedRoute?.application?.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.APP-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="component" disabled>
+          <option [value]="selectedRoute?.component?.id">{{selectedRoute?.component?.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.COMPONENT-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT' | translate }}</label>
+        <input clrInput name="port" formControlName="port" type="number" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'min'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'max'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PORT-ERROR3' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PROTOCOL-HELP' | translate }}</clr-control-helper>
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PROTOCOL' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="protocol" name="protocol" disabled>
+          <option value="TCP">TCP</option>
+          <option value="UDP">UDP</option>
+        </select>
+      </clr-select-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.LBALGO-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.LBALGO' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="lbAlgorithm">
+          <option [value]="algorithm.value" *ngFor="let algorithm of LBAlgorithmShortName">{{algorithm.shortName}}</option>
+        </select>
+      </clr-select-container>
+      <clr-select-container *ngIf="editRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH">
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HASHTYPE-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HASHTYPE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="lbAlgorithmHash">
+          <option [value]="hash.value" *ngFor="let hash of AlgorithmHashShortName">{{hash.shortName}}</option>
+        </select>
+      </clr-select-container>
+      <clr-input-container *ngIf="editRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH && editRouteForm.value.lbAlgorithmHash == AlgorithmHash.LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER">
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HEADERKEY-HELP' | translate }}</clr-control-helper>
+        <label class="required">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.HEADERKEY' | translate }}</label>
+        <input clrInput name="lbAlgorithmConsistentHashHeader" formControlName="lbAlgorithmConsistentHashHeader" type="string"/>
+      </clr-input-container>
+      <clr-toggle-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PERSISTENTVIP-HELP' | translate }}</clr-control-helper>
+        <clr-toggle-wrapper>
+          <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE1.PERSISTENTVIP' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="persistentVsvip" name="persistentVsvip"/>
+        </clr-toggle-wrapper>
+      </clr-toggle-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="editappGlbRouteForm.invalid || !editappGlbRouteForm.value.backends[0]">
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEDESC' | translate }}
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEALERT1' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form clrForm [formGroup]="editappGlbRouteForm">
+      <div formArrayName="backends" fxLayout="row" fxLayoutAlign="start stretch" fxLayoutGap="12px">
+        <div *ngFor="let backend of editappGlbParamsArray.controls; let i = index" [formGroupName]="i" fxFlex="1 1 auto">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h3 class="card-title">
+                    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICEINFO1' | translate }} {{i + 1}} {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICEINFO2' | translate }}
+                    <button class="btn btn-link btn-icon" (click)="deleteFieldValueForUpdate(i)">
+                      <clr-icon shape="window-close"></clr-icon>
+                    </button>
+                  </h3>
+                  <div class="card-text">
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': editappGlbParamsArray.length <= 1, 'clr-col-md-3': editappGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.INSTANCENAME' | translate }}</label>
+                      <select *ngIf="editappGlbParamsArray.length <= 1" class="clr-col-md-9" clrSelect formControlName="instanceId" (change)="refreshServicesInInstance($event);service.value = ''" [attr.disabled]="backend.value.disable === 'disabled' ? true : null">
+                        <option [value]="instance.id" *ngFor="let instance of instanceList">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</option>
+                      </select>
+                      <select *ngIf="editappGlbParamsArray.length > 1" class="clr-col-md-9" clrSelect formControlName="instanceId" (change)="refreshServicesInInstance($event);service.value = ''" [attr.disabled]="backend.value.disable === 'disabled' ? true : null">
+                        <option [value]="instance.id" *ngFor="let instance of getInstanceInSameLB()">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.INSTANCENAME-ERROR' | translate }}</clr-control-error>
+                      <clr-control-helper *ngIf="backend.value.noInstanceAlert" style="color: #c21d00">原来选择的实例不存在或处于非SUCCESS状态。</clr-control-helper>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': editappGlbParamsArray.length <= 1, 'clr-col-md-3': editappGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICE' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="service" #service>
+                        <option [value]="each.name" *ngFor="let each of servicesInInstance(backend.value?.instanceId)">{{each.name}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.SERVICE-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': editappGlbParamsArray.length <= 1, 'clr-col-md-3': editappGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.IP' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="ip">
+                        <option [value]="each.ip" *ngFor="let each of ipsInService(backend.value?.instanceId, backend.value?.service)">{{each.ip}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.IP-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                    <clr-select-container>
+                      <label class="required" [ngClass]="{'clr-col-md-2': editappGlbParamsArray.length <= 1, 'clr-col-md-3': editappGlbParamsArray.length > 1}">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PORT' | translate }}</label>
+                      <select class="clr-col-md-9" clrSelect formControlName="port">
+                        <option [value]="each.port" *ngFor="let each of portsInService(backend.value?.instanceId, backend.value?.service)">{{each.name}}{{!!each.name ? '(' : ''}}{{each.port}}/{{each.protocol}}{{!!each.name ? ')' : ''}}</option>
+                      </select>
+                      <clr-control-error *clrIfError="'required'">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.PORT-ERROR' | translate }}</clr-control-error>
+                    </clr-select-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <clr-range-container *ngIf="editappGlbParamsArray.length > 1">
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.CHANGELB' | translate }} ({{slider2.value * 5 | number}}%)</label>
+        <input type="range" clrRange min="0" max="20" step="1" formControlName="ratio" style="width: 100%;" #slider2/>
+      </clr-range-container>
+      <br>
+      <button class="btn btn-outline" [disabled]="editappGlbParamsArray.length >= 2 || (editappGlbParamsArray.length === 1 && editappGlbParamsArray.controls[0].invalid)" (click)="addFieldValueForUpdate()">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.ADDSERVICE' | translate }}</button>
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.NETWORKPROFILE-HELP' | translate }}</clr-control-helper>
+        <label>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE2.NETWORKPROFILE' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="networkProfile" disabled>
+          <option value="{{selectedRoute?.spec?.networkProfile}}">{{selectedRoute?.spec?.networkProfile}}</option>
+        </select>
+      </clr-select-container>
+    </form>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.PAGEDESC' | translate }}
+    <br>
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.NAME' | translate }}</span>
+                    <span>{{editRouteForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.DESC' | translate }}</span>
+                    <span>{{editRouteForm.value.description}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.APP' | translate }}</span>
+                    <span>{{selectedRoute?.application?.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.COMPONENT' | translate }}</span>
+                    <span>{{selectedRoute?.component?.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PORT' | translate }}</span>
+                    <span>{{editRouteForm.value.port}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PROTOCOL' | translate }}</span>
+                    <span>{{editRouteForm.value.protocol}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.LBALGO' | translate }}</span>
+                    <div style="display: inline" *ngFor="let algorithm of LBAlgorithmShortName">
+                      <span *ngIf="algorithm.value === editRouteForm.value.lbAlgorithm">{{algorithm.shortName}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="editRouteForm.value.lbAlgorithm == LBAlgorithm.LB_ALGORITHM_CONSISTENT_HASH">
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.HASHTYPE' | translate }}</span>
+                    <div style="display: inline" *ngFor="let hash of AlgorithmHashShortName">
+                      <span *ngIf="hash.value === editRouteForm.value.lbAlgorithmHash">{{hash.shortName}}</span>
+                    </div>
+                  </div>
+                  <div *ngIf="editRouteForm.value.lbAlgorithmHash == AlgorithmHash.LB_ALGORITHM_CONSISTENT_HASH_CUSTOM_HEADER">
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.HEADERKEY' | translate }}</span>
+                    <span>{{editRouteForm.value.lbAlgorithmConsistentHashHeader}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.PERSISENTVIP' | translate }}</span>
+                    <span>{{editRouteForm.value.persistentVsvip}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.BASICINFO-PAGE.NETWORKPROFILE' | translate }}</span>
+                    <span>{{editappGlbRouteForm.value.networkProfile}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <div class="clr-row" *ngIf="editappGlbRouteForm.value.backends[0]">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <span class="validateTitle" style="min-width: 40%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.INSTANCENAME' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 30%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.SERVICENAME' | translate }}</span>
+                  <span class="validateTitle" style="min-width: 30%;">{{ 'APPROUTE.ROUTE.CREATEROUTE-PAGE3.DEPLOYINFO-PAGE.WEIGHT' | translate }}</span>
+                  <div *ngIf="editappGlbRouteForm.value.backends.length == 1">
+                    <div style="display: inline" *ngFor="let instance of instanceList">
+                      <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === editappGlbRouteForm.value.backends[0].instanceId">{{instance.release.name}}-{{instance.release.num}} ({{instance.cluster.name}})</span>
+                    </div>
+                    <div style="display: inline" *ngFor="let service of servicesInInstance(editappGlbRouteForm.value.backends[0].instanceId)">
+                      <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === editappGlbRouteForm.value.backends[0].service">{{service.namespace}}/{{service.name}}</span>
+                    </div>
+                    <span style="min-width: 30%;display: inline-block; width: 18%">100%</span>
+                  </div>
+                  <div *ngIf="editappGlbRouteForm.value.backends.length == 2">
+                    <div>
+                      <div style="display: inline" *ngFor="let instance of instanceList">
+                        <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === editappGlbRouteForm.value.backends[0].instanceId">{{instance.name}}({{instance.cluster.name}})</span>
+                      </div>
+                      <div style="display: inline" *ngFor="let service of servicesInInstance(editappGlbRouteForm.value.backends[0].instanceId)">
+                        <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === editappGlbRouteForm.value.backends[0].service">{{service.name}}</span>
+                      </div>
+                      <span style="min-width: 30%;display: inline-block; width: 18%">{{editappGlbRouteForm.value.ratio*5 | number}}%</span>
+                    </div>
+                    <div>
+                      <div style="display: inline" *ngFor="let instance of instanceList">
+                        <span style="min-width: 40%;display: inline-block; width: 18%" *ngIf="instance.id === editappGlbRouteForm.value.backends[1].instanceId">{{instance.name}}({{instance.cluster.name}})</span>
+                      </div>
+                      <div style="display: inline" *ngFor="let service of servicesInInstance(editappGlbRouteForm.value.backends[0].instanceId)">
+                        <span style="min-width: 30%;display: inline-block; width: 18%" *ngIf="service.name === editappGlbRouteForm.value.backends[1].service">{{service.name}}</span>
+                      </div>
+                      <span style="min-width: 30%;display: inline-block; width: 18%">{{100 - editappGlbRouteForm.value.ratio*5 | number}}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<app-route-details [open]="!!selectedRouteId && detailsModalOpen" [routeId]="selectedRouteId" (close)="detailsModalOpen = false"></app-route-details>
+
+<clr-modal [(clrModalOpen)]="deleteRouteOpen" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPROUTE.ROUTE.ACTION.DELETEROUTE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPROUTE.ROUTE.ACTION.DELETEROUTE-PAGE.PAGEDESC' | translate }} <b>{{selectedRoute?.name}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.ACTION.DELETEROUTE-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteRouteForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedRoute?.name}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="deleteRouteOpen=false;deleteRouteForm.reset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" (click)="deleteRoute();deleteRouteForm.reset()" [disabled]="deleteRouteForm.invalid || deleteRouteForm.value.confirm !== selectedRoute?.name">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="forceDeleteRouteOpen" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'APPROUTE.ROUTE.ACTION.FORCEDELETE' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'APPROUTE.ROUTE.ACTION.FORCEDELETE-PAGE.PAGEDESC' | translate }} <b>{{selectedRoute?.name}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.ACTION.FORCEDELETE-PAGE.PAGEALERT1' | translate }}</span>
+        </div>
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'APPROUTE.ROUTE.ACTION.FORCEDELETE-PAGE.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteRouteForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedRoute?.name}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="forceDeleteRouteOpen=false;deleteRouteForm.reset();">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary" (click)="forceDeleteRoute();deleteRouteForm.reset()" [disabled]="deleteRouteForm.invalid || deleteRouteForm.value.confirm !== selectedRoute?.name">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<router-outlet></router-outlet>
+

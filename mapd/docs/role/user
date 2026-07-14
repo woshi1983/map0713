@@ -1,0 +1,12 @@
+full:application
+read:cluster
+read:cluster_provider
+full:cluster_resource
+full:component
+read:image_registry
+full:instance
+read:load_balancer
+read:organization
+full:route
+full:shortcut
+read:user

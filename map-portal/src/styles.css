@@ -1,0 +1,63 @@
+/* You can add global styles to this file, and also import other style files */
+.custom-h2 {
+  color: #000000;
+  font-weight: 200;
+  font-family: Metropolis, "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: normal;
+  line-height: 2.4rem;
+  margin-top: 1.2rem;
+  margin-bottom: 0;
+}
+
+label.required::after {
+	  content: '*';
+    font-size: .58479532rem;
+    line-height: .5rem;
+    color: #c92100;
+    margin-left: .25rem;
+}
+
+.Description {
+	  display: block;
+    height: 2.8em;
+    line-height: 1.4em;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.CardTitle {
+    display: block;
+    height: 2.8em;
+    line-height: 1.8em;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.nav-group-trigger-icon {
+  height: .8rem !important;
+}
+
+.my-toast-top-right{
+  top: 12px;
+  right: 12px;
+  min-width: 20%;
+  max-width: 50%;
+}
+
+/*used for code line warp in innerHTML*/
+code {
+  white-space: pre-wrap !important;
+  max-height: 200px;
+}
+
+/*used in datagrid long text*/
+.datagrid-long-text {
+  word-wrap: anywhere;
+}
+
+/* fix signpost overflow by datagrid */
+/* https://github.com/vmware/clarity/issues/2683 */
+.datagrid-table {
+  position: static;
+}

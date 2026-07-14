@@ -1,0 +1,62 @@
+<header class="header header-6">
+  <div class="branding">
+    <a routerLink="/portal/cluster/management" [class.disabled]="getRouteUrl === '/portal/no-org' || getRouteUrl === '/portal/logout' ? true : null" class="nav-link">
+      <img style="max-height: 32px;" src="{{logoImage}}">
+      <span class="title">{{ 'LOGINPAGE.TITLE' | translate }}</span>
+    </a>
+  </div>
+  <div class="header-nav" *ngIf="authService.isLoggedIn">
+    <div class="header-actions" *ngIf="this.orgList.length > 0">
+      <div class="nav-divider"></div>
+      <clr-dropdown style="min-width: 170px;!important;">
+        <button class="nav-text" clrDropdownTrigger aria-label="change org" style="outline: none">
+          <clr-icon shape="organization"></clr-icon>
+            {{orgService.getSelectedOrgName}}
+          <clr-icon shape="caret down" style="margin-right: 20px"></clr-icon>
+        </button>
+        <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left" style="min-width: 160px;overflow: auto;max-height: 260px;" >
+          <a href="javascript:void(0)" style="min-height: 30px;" clrDropdownItem (click)='changeOrg(org)' [class.lang-selected]='matchOrg(org)' *ngFor="let org of orgList">
+            <span> {{org.name}}</span>
+          </a>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+  </div>
+  <div class="header-actions">
+    <clr-dropdown class="dropdown-lang dropdown bottom-left">
+      <button class="nav-text nav-icon-width" clrDropdownToggle style="outline: none">
+        <clr-icon shape="world"></clr-icon>
+        　{{langShowName}}
+        <clr-icon shape="caret down" style="margin-right: 20px"></clr-icon>
+      </button>
+      <clr-dropdown-menu *clrIfOpen>
+        <a href="javascript:void(0)" clrDropdownItem (click)='useLanguage("en-us")' [class.lang-selected]='matchLang("en-us")'>{{languageNames['en-us']}}</a>
+        <a href="javascript:void(0)" clrDropdownItem (click)='useLanguage("zh-cn")' [class.lang-selected]='matchLang("zh-cn")'>{{languageNames['zh-cn']}}</a>
+        <!---
+        <a href="javascript:void(0)" clrDropdownItem (click)='useLanguage("zh-tw")' [class.lang-selected]='matchLang("zh-tw")'>{{languageNames['zh-tw']}}</a>
+        --->
+      </clr-dropdown-menu>
+    </clr-dropdown>
+    <div class="nav-divider"></div>
+    <div>
+      <a href="javascript:void(0)" class="nav-link nav-icon" (click)="openAboutModal()">
+        <clr-icon shape="help"></clr-icon>
+      </a>
+    </div>
+    <div class="nav-divider" *ngIf="authService.isLoggedIn"></div>
+    <clr-dropdown *ngIf="authService.isLoggedIn" style="min-width: 170px;!important;">
+      <button class="nav-text" clrDropdownTrigger aria-label="open user profile" style="outline: none">
+        <clr-icon shape="user"></clr-icon>
+          {{authService.loginUserDisplayName}}
+        <clr-icon shape="caret down" style="margin-right: 20px"></clr-icon>
+      </button>
+      <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left" style="min-width: 160px;">
+        <h1 class="dropdown-header" style="font-size: 14px;">{{authService.loginUserDisplayName}}</h1>
+        <a href="javascript:void(0)" clrDropdownItem (click)="openUserInfoModal()" [fxHide]="(authService.loginUserName === 'admin' && authService.loginUserManaged)"><span [ngClass]="{'eng-font': selectedLang === 'en-us'}">{{ 'NAVHEADER.USERINFO' | translate }}</span></a>
+        <a href="javascript:void(0)" clrDropdownItem (click)="openChangePasswordModal()" [fxHide]="!authService.loginUserManaged"><span [ngClass]="{'eng-font': selectedLang === 'en-us'}">{{ 'NAVHEADER.CANGEPASSWD' | translate }}</span></a>
+        <a href="javascript:void(0)" clrDropdownItem (click)="openLogsModal()" [fxHide]="!authService.loginUserAdmin"><span [ngClass]="{'eng-font': selectedLang === 'en-us'}">{{ 'NAVHEADER.SYSTEMLOGS' | translate }}</span></a>
+        <a href="/portal/logout" clrDropdownItem>{{ 'NAVHEADER.LOGOUT' | translate }}</a>
+      </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+</header>

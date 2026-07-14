@@ -1,0 +1,50 @@
+type AuditLog {
+  id: ID!
+  action: String!
+  objectType: String!
+  objectName: String!
+  objectID: ID!
+  userName: String!
+  user: User
+  organization: Organization
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type AuditLogs {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: AuditLogNodes!
+}
+
+extend type Query {
+  """
+  requires `read:audit_log` or above.
+
+  Filters:
+
+  - `action`
+
+  - `objectType`
+
+  - `objectName`
+
+  - `object`
+
+  - `userName`
+
+  - `user`
+
+  - `organization`
+
+  - `from_time`
+
+  - `until_time`
+  """
+  AuditLogs(page: QueryPage = {}, filters: [QueryFilter!] = []): AuditLogs!
+}
+
+type AuditLogNodes {
+  nodes: [AuditLog!]
+}

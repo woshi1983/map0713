@@ -1,0 +1,873 @@
+<div *ngIf="authService.isLoggedIn">
+  <h4>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ALL-BACKUPS' | translate }}</h4>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateBackup()" class="btn btn-primary btn-outline">
+        <clr-icon shape="backup"></clr-icon>
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showCreateRestore(selectedBackup)" [disabled]="!selectedBackup || selectedBackup.status !== 'SUCCESS'" class="btn btn-primary btn-outline">
+        <clr-icon shape="backup-restore"></clr-icon>
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='view-backup' type="button" (click)="showBackupInfo(selectedBackup)" [disabled]="!selectedBackup" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP' | translate }}</button>
+          <button id='delete-backup' type="button" (click)="showRemoveBackupDialog(selectedBackup)" [disabled]="!selectedBackup" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.DELETEBACKUP' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showBackupSearch = !this.showBackupSearch;"></clr-icon>
+        </span>
+        <input type="text" id="backupname" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SEARCHBACKUP' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchBackupName" [hidden]="!showBackupSearch" (keydown.enter)="refreshBackup();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refreshBackup()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refreshBackup()" [clrDgLoading]="backupLoading" [(clrDgSingleSelected)]="selectedBackup" [clrDgRowSelection]="true">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.DATAGRIDFIELD.BACKUPNAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'status'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.DATAGRIDFIELD.BACKUPSTATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'location.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.DATAGRIDFIELD.BACKUPLOCATION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.DATAGRIDFIELD.NOBACKUP' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let backup of allClusterBackups" [clrDgItem]="backup">
+      <clr-dg-cell>{{backup.name}}</clr-dg-cell>
+      <clr-dg-cell [class]="backup.status">{{backup.status}}</clr-dg-cell>
+      <clr-dg-cell>{{!!backup?.location?.name ? backup.location.name : '-' }}</clr-dg-cell>
+      <clr-dg-cell>{{backup.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{backup.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #backupPagination [clrDgPageSize]="10" [clrDgTotalItems]="allClusterBackups.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{backupPagination.firstItem + 1}} - {{backupPagination.lastItem + 1}} / {{backupPagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+  <br>
+  <h4>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ALL-SCHEDULABLE' | translate }}</h4>
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <button (click)="showEditBackupScheduler(selectedBackupScheduler)" class="btn btn-primary btn-outline" [disabled]="!selectedBackupScheduler">
+        <clr-icon shape="pencil"></clr-icon>
+          {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.EDIT' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWriteResources">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='view-schedule' type="button" (click)="showBackupScheduler(selectedBackupScheduler)" [disabled]="!selectedBackupScheduler" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEW' | translate }}</button>
+          <button id='delete-schedule' type="button" (click)="showDeleteScheduler(selectedBackupScheduler)" [disabled]="!selectedBackupScheduler" clrDropdownItem>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.DELETE' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showBackupSchedulerSearch = !this.showBackupSchedulerSearch;"></clr-icon>
+        </span>
+        <input type="text" id="backupSchedulerName" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLESEARCH' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchBackupSchedulerName" [hidden]="!showBackupSchedulerSearch" (keydown.enter)="refreshBackupScheduler();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refreshBackupScheduler()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refreshBackupScheduler($event)" [clrDgLoading]="backupSchedulerLoading" [(clrDgSingleSelected)]="selectedBackupScheduler" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.DATAGRIDFIELD.CRONTAB' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column style="min-width: 20%;">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.DATAGRIDFIELD.LASTFIRE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.DATAGRIDFIELD.NEXTFIRE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.NOSCHEDULABLE' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let scheduler of allBackupsScheduler" [clrDgItem]="scheduler">
+      <clr-dg-cell>{{scheduler.name}}</clr-dg-cell>
+      <clr-dg-cell>{{scheduler.schedule}}</clr-dg-cell>
+      <clr-dg-cell style="min-width: 20%;">{{!!scheduler.lastFire ? (scheduler.lastFire | datetimeTransition) : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{scheduler.nextFire | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{scheduler.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{scheduler.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #schedulerPagination [clrDgPageSize]="10" [clrDgTotalItems]="scheduleTotal">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{schedulerPagination.firstItem + 1}} - {{schedulerPagination.lastItem + 1}} / {{schedulerPagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+  <br>
+  <h4>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.ALL-RESOTRES' | translate }}</h4>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form">
+      <div style="height: 1.8rem; line-height: 1.8rem"></div>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showRestoreSearch = !this.showRestoreSearch;"></clr-icon>
+        </span>
+        <input type="text" id="restorename" placeholder="{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.SEARCHRESTORE' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchRestoreName" [hidden]="!showRestoreSearch" (keydown.enter)="refreshRestore();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refreshRestore()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <clr-datagrid (clrDgRefresh)="refreshRestore()" [clrDgLoading]="restoreLoading"[clrDgRowSelection]="false">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.DATAGRIDFIELD.RESTORENAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'status'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.DATAGRIDFIELD.RESTORESTATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'location.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.DATAGRIDFIELD.BACKUPLOCATION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'backup.name'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.DATAGRIDFIELD.BACKUPNAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERRESTORE-PAGE.DATAGRIDFIELD.NORESTORE' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let restore of allClusterRestores" [clrDgItem]="restore">
+      <clr-dg-cell>{{restore.name}}</clr-dg-cell>
+      <clr-dg-cell [class]="restore.status">{{restore.status}}</clr-dg-cell>
+      <clr-dg-cell>{{!!restore?.location?.name ? restore.location.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{!!restore?.backup?.name ? restore.backup.name : '-'}}</clr-dg-cell>
+      <clr-dg-cell>{{restore.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{restore.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #restorePagination [clrDgPageSize]="10" [clrDgTotalItems]="allClusterRestores.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{restorePagination.firstItem + 1}} - {{restorePagination.lastItem + 1}} / {{restorePagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+
+
+</div>
+
+<clr-wizard #wizardbackup [(clrWizardOpen)]="createBackupOpen" (clrWizardOnFinish)="doCreateBackupFinish()" (clrWizardOnCancel)="doCreateBackupCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicBackupsForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="basicBackupsForm.invalid">
+        <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="basicBackupsForm">
+            <clr-input-container>
+              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME' | translate }}</label>
+              <input class="clr-col-md-9" clrInput id="backup-name" name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-ERROR4' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{basicBackupsForm.value.name}}{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPNAME-ERROR5' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPLOCATION-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPLOCATION' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="backupLocation" required>
+                <option value="{{backuplocation.name}}" *ngFor="let backuplocation of clusterBackupLocationList">{{backuplocation.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPLOCATION-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="backupMode" name="backupMode" (change)="setSchedulerVaildtor(basicBackupsForm.value.backupMode)">
+                <option value="ONETIME">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE-ONETIME' | translate }}</option>
+                <option value="SCHEDULER">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE-SCHEDULER' | translate }}</option>
+              </select>
+            </clr-select-container>
+            <clr-input-container *ngIf="basicBackupsForm.value.backupMode === 'SCHEDULER'">
+              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB' | translate }}
+                <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg">
+                  <cds-icon shape="info-circle" size="sm"></cds-icon>
+                  <span class="tooltip-content">
+                    <app-cron-tooltip></app-cron-tooltip>
+                  </span>
+                </a>
+              </label>
+              <input class="clr-col-md-9 required" clrInput id="backupCron" name="backupCron" formControlName="backupCron" type="string"/>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'cron'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-ERROR2' | translate }}</clr-control-error>
+            </clr-input-container>
+        </form>
+        <br>
+    </clr-wizard-page>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="backupParamsForm.invalid">
+        <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="backupParamsForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                    <div class="card-text">
+                      <div class="card-text">
+                        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                            <clr-input-container>
+                              <label style="min-width: 50%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPNAMESPACE' | translate }}</label>
+                              <clr-control-helper style="width: 120%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPNAMESPACE-HELP' | translate }}</clr-control-helper>
+                            </clr-input-container>
+                        </div>
+                        <clr-combobox-container>
+                          <label style="display: none"></label>
+                          <clr-combobox name="includeNamespaces" clrMulti="true" formControlName="includeNamespaces" (clrSelectionChange)="getUniqComponentList($event)">
+                            <ng-container *clrOptionSelected="let selected">
+                              <clr-icon shape="block" role="img"></clr-icon> {{selected}}
+                            </ng-container>
+                            <clr-options>
+                              <clr-option *clrOptionItems="let ns of namespaceList" [clrValue]="ns.name">
+                                <clr-icon shape="block" role="img"></clr-icon> {{ns.name}}
+                              </clr-option>
+                            </clr-options>
+                          </clr-combobox>
+                        </clr-combobox-container>
+                      </div>
+                      <div class="card-text" *featureToggle="featureGates.appMgmt">
+                        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                            <clr-input-container>
+                              <label style="min-width: 50%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPCOMPONENT' | translate }}</label>
+                              <clr-control-helper style="width: 120%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPCOMPONENT-HELP' | translate }}</clr-control-helper>
+                            </clr-input-container>
+                        </div>
+                        <clr-combobox-container>
+                          <label style="display: none"></label>
+                          <clr-combobox name="includeComponent" clrMulti="true" formControlName="includeComponent">
+                            <ng-container *clrOptionSelected="let cpt">
+                              <clr-icon shape="application" role="img"></clr-icon> {{cpt.name}}
+                            </ng-container>
+                            <clr-options>
+                              <clr-option *clrOptionItems="let component of uniqComponentList" [clrValue]="component">
+                                <clr-icon shape="application" role="img"></clr-icon> {{component.name}}
+                              </clr-option>
+                            </clr-options>
+                          </clr-combobox>
+                        </clr-combobox-container>
+                      </div>
+                      <div class="card-text">
+                        <clr-toggle-container>
+                          <clr-toggle-wrapper>
+                            <label>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPDATA' | translate }}</label>
+                            <input type="checkbox" clrToggle name="enableVolumeBackup" formControlName="enableVolumeBackup"/>
+                          </clr-toggle-wrapper>
+                          <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPDATA-HELP' | translate }}</clr-control-helper>
+                        </clr-toggle-container>
+                      </div>
+                      <div class="card-text">
+                        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                          <clr-input-container>
+                            <label style="min-width: 50%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPDAYS' | translate }}</label>
+                            <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE2.BACKUPDAYS-HELP' | translate }}</clr-control-helper>
+                          </clr-input-container>
+                        </div>
+                        <clr-input-container>
+                          <label style="display: none;"></label>
+                          <input clrInput id="ttl" formControlName="backupTTL" type="number" min="1" step="1" max="365" pattern="\d*"/>
+                        </clr-input-container>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+        <br>
+    </clr-wizard-page>
+
+    <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.PAGEDESC' | translate }}
+        <br>
+        <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+                <div class="card">
+                  <div class="card-header">
+                    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO' | translate }}
+                  </div>
+                  <div class="card-block">
+                    <div class="card-text">
+                      <div>
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.NAME' | translate }}</span>
+                        <span>{{basicBackupsForm.value.name}}</span>
+                      </div>
+                      <div>
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.LOCATION' | translate }}</span>
+                        <div style="display: inline" *ngFor="let location of clusterBackupLocationList">
+                          <span *ngIf="location.name === basicBackupsForm.value.backupLocation">{{location.name}}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.MODE' | translate }}</span>
+                        <span *ngIf="basicBackupsForm.value.backupMode === 'ONETIME'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE-ONETIME' | translate }}</span>
+                        <span *ngIf="basicBackupsForm.value.backupMode === 'SCHEDULER'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.BACKUPMODE-SCHEDULER' | translate }}</span>
+                      </div>
+                      <div *ngIf="basicBackupsForm.value.backupMode === 'SCHEDULER'">
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.CRONTAB' | translate }}</span>
+                        <span>{{basicBackupsForm.value.backupCron}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+                <div class="card">
+                  <div class="card-header">
+                    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM' | translate }}
+                  </div>
+                  <div class="card-block">
+                    <div class="card-text">
+                      <div>
+                        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.NAMESPACE' | translate }}</span>
+                      </div>
+                      <div *ngIf="backupParamsForm.value.includeNamespaces">
+                        <ul>
+                          <div *ngFor="let each of backupParamsForm.value.includeNamespaces;">
+                            <li>
+                              <span>{{each}}</span>
+                            </li>
+                          </div>
+                        </ul>
+                      </div>
+                      <div *ngIf="!backupParamsForm.value.includeNamespaces">
+                        <ul>
+                          <div *ngFor="let each of namespaceList;">
+                            <li>
+                              <span>{{each.name}}</span>
+                            </li>
+                          </div>
+                        </ul>
+                      </div>
+                      <div *featureToggle="featureGates.appMgmt">
+                        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.COMPONENT' | translate }}</span>
+                      </div>
+                      <div *featureToggle="featureGates.appMgmt">
+                        <div *ngIf="backupParamsForm.value.includeComponent" >
+                          <ul>
+                            <div *ngFor="let each of backupParamsForm.value.includeComponent;">
+                              <li>
+                                <span>{{each.name}}</span>
+                              </li>
+                            </div>
+                          </ul>
+                        </div>
+                        <div *ngIf="!backupParamsForm.value.includeComponent">
+                          <ul>
+                            <li>
+                              {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.ALLRESOURCE' | translate }}
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div>
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.BACKUPDATA' | translate }}</span>
+                        <span>{{backupParamsForm.value.enableVolumeBackup}}</span>
+                      </div>
+                      <div>
+                        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.DAYS' | translate }}</span>
+                        <span>{{backupParamsForm.value.backupTTL}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardrestore [(clrWizardOpen)]="createRestoreOpen" (clrWizardOnFinish)="doCreateRestoreFinish(selectedBackup)" (clrWizardOnCancel)="doCreateRestoreCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="restoreParamsForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGERESTORE' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="restoreParamsForm.invalid">
+        <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.PAGEDESC' | translate }}
+        <br>
+
+        <form clrForm [formGroup]="restoreParamsForm">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                    <div class="card-text">
+                      <div class="card-text">
+                        <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                            <clr-input-container>
+                              <label style="min-width: 50%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACE' | translate }}</label>
+                              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACE-HELP' | translate }}</clr-control-helper>
+                            </clr-input-container>
+                          </div>
+                        <clr-combobox-container>
+                          <label style="display: none"></label>
+                          <clr-combobox name="includeNamespaces" clrMulti="true" formControlName="includeNamespaces" [clrLoading]="loadingNamespace">
+                            <ng-container *clrOptionSelected="let selected">
+                              <clr-icon shape="block" role="img"></clr-icon> {{selected}}
+                            </ng-container>
+                            <clr-options>
+                              <clr-option *clrOptionItems="let ns of namespaceList" [clrValue]="ns">
+                                <clr-icon shape="block" role="img"></clr-icon> {{ns}}
+                              </clr-option>
+                            </clr-options>
+                          </clr-combobox>
+                        </clr-combobox-container>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                    <div class="card-text">
+                      <div class="card-text">
+                        <div class="card-text" formArrayName="nsMapping">
+                          <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+                            <clr-input-container>
+                              <label style="min-width: 100%;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACEMAPS' | translate }}</label>
+                              <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACEMAPS-HELP' | translate }}</clr-control-helper>
+                            </clr-input-container>
+                          </div>
+                          <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px" [fxShow]="!!restoreNsMapping.controls?.length" fxHide>
+                            <clr-input-container>
+                              <label style="min-width: 192px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.OLDNAMESPACE' | translate }}</label>
+                            </clr-input-container>
+                            <clr-input-container>
+                              <label style="min-width: 192px;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NEWNAMESPACE' | translate }}</label>
+                            </clr-input-container>
+                          </div>
+                          <div class="section" *ngFor="let each of restoreNsMapping.controls; let i = index" [formGroupName]="i">
+                            <div fxLayout="row" fxLayoutAlign="start start">
+                              <clr-input-container>
+                                <label style="max-width: 0px; display: none"></label>
+                                <input fxFlex="1 1 auto" clrInput name="oldNs" formControlName="oldNs" type="string" size="20"
+                                autocomplete="off" required/>
+                                <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACEMAPERROR1' | translate }}</clr-control-error>
+                              </clr-input-container>
+                              <clr-input-container style="margin-left: 8px">
+                                <label style="max-width: 0px; display: none"></label>
+                                <input fxFlex="1 1 auto" clrInput name="newNs" formControlName="newNs" type="string" required/>
+                                <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.NAMESPACEMAPERROR2' | translate }}</clr-control-error>
+                              </clr-input-container>
+                              <button style="min-height: 48px; min-width: 48px; margin-left: 10px" class="btn btn-link btn-icon" (click)="deleteNsMapping(i)" fxLayout="row" fxLayoutAlign="start end">
+                                <clr-icon shape="minus-circle"></clr-icon>
+                              </button>
+                            </div>
+                          </div>
+                          <br>
+                          <button (click)="addNsMapping()" class="btn btn-sm btn-outline">
+                            <clr-icon shape="plus"></clr-icon>
+                            {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE1.ADDNAMESPACEMAP' | translate }}
+                          </button>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </form>
+        <br>
+    </clr-wizard-page>
+
+
+    <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.PAGEDESC' | translate }}
+        <br>
+        <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+                <div class="card">
+                  <div class="card-header">
+                    {{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.RESTOREPARAM' | translate }}
+                  </div>
+                  <div class="card-block">
+                    <div class="card-text">
+                      <div>
+                        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.NAMESPACE' | translate }}</span>
+                      </div>
+                      <div *ngIf="restoreParamsForm.value.includeNamespaces">
+                        <ul>
+                          <div *ngFor="let each of restoreParamsForm.value.includeNamespaces;">
+                            <li>
+                              <span>{{each}}</span>
+                            </li>
+                          </div>
+                        </ul>
+                      </div>
+                      <div *ngIf="!restoreParamsForm.value.includeNamespaces">
+                        <ul>
+                          <div *ngFor="let each of namespaceList;">
+                            <li>
+                              <span>{{each}}</span>
+                            </li>
+                          </div>
+                        </ul>
+                      </div>
+                      <div *ngIf="restoreParamsForm.value.nsMapping[0]">
+                        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.NSMAP' | translate }}</span>
+                      </div>
+                      <div *ngIf="restoreParamsForm.value.nsMapping[0]">
+                        <span style="min-width: 50%;display: inline-block;width: 40%;font-weight: bold">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.OLDNS' | translate }}</span>
+                        <span style="min-width: 49%;display: inline-block;width: 48%;font-weight: bold">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.RESTOREBACKUP-PAGE2.NEWNS' | translate }}</span>
+                        <div *ngFor="let each of restoreParamsForm.value.nsMapping;">
+                          <span style="min-width: 50%;display: inline-block; width: 40%;">{{each.oldNs}}</span>
+                          <span style="min-width: 49%;display: inline-block; width: 40%;">{{each.newNs}}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+        </div>
+
+    </clr-wizard-page>
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showBackupDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.PAGETITLE' | translate }}</h3>
+  <div class="modal-body" *ngIf="!!selectedBackup">
+    <div class="card">
+      <div class="progress top success" style="height: 4px;" *ngIf="selectedBackup.status === 'SUCCESS'">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="progress top danger" style="height: 4px;" *ngIf="selectedBackup.status === 'FAILURE'">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="progress top loop" style="height: 4px;" *ngIf="selectedBackup.status === 'RUNNING'">
+        <progress></progress>
+      </div>
+      <div class="progress top" style="height: 4px;" *ngIf="selectedBackup.status != 'RUNNING' && selectedBackup.status != 'FAILURE' && selectedBackup.status != 'SUCCESS'">
+        <progress value="0" max="100"></progress>
+      </div>
+      <div class="card-block">
+        <div class="card-text">
+          <h3 style="margin-top: 0px;margin-bottom: 10px;"><b>{{selectedBackup.name}}</b></h3>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.STATUS' | translate }}</span>
+        <span [class]="selectedBackup.status">{{selectedBackup.status}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.LOCATION' | translate }}</span>
+        <span>{{!!selectedBackup?.location?.name ? selectedBackup.location.name : '-'}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.NS' | translate }}</span>
+      </div>
+      <div>
+        <ul>
+          <div *ngFor="let each of selectedBackup.spec.includedNamespaces;">
+            <li>
+              <span>{{each}}</span>
+            </li>
+          </div>
+        </ul>
+      </div>
+      <div style="line-height: 30px;" *ngIf="!!selectedBackup?.instances">
+        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.COMPONENT' | translate }}</span>
+      </div>
+      <div>
+        <ul>
+          <div *ngFor="let each of selectedBackup?.instances;">
+            <li>
+              <span>{{each.namespace + ' / ' + each.name}}</span>
+            </li>
+          </div>
+        </ul>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.DATA' | translate }}</span>
+        <span>{{selectedBackup.spec.useRestic}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.DAYS' | translate }}</span>
+        <span>{{+selectedBackup.spec.ttl.slice(2).split('H')[0]/24}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.CREATETIME' | translate }}</span>
+        <span>{{selectedBackup.createdAt | datetimeTransition}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.VIEWBACKUP-PAGE.MODIFYTIME' | translate }}</span>
+        <span>{{selectedBackup.lastModified | datetimeTransition}}</span>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showBackupDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeBackupDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.DELETEBACKUP' | translate }}</h3>
+    <div class="modal-body" *ngIf="disableRemove">
+    <p>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.DELETEBACKUP-PAGE.DISABLEREMOVE' | translate }}</p>
+    </div>
+    <div class="modal-body" *ngIf="!disableRemove">
+      <p>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.DELETEBACKUP-PAGE.PAGEDESC' | translate }} <b>{{selectedBackupName}}</b> ?</p>
+      <div class="alert alert-danger" role="alert">
+        <div class="alert-items">
+          <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+              <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+            </div>
+            <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.ACTION.DELETEBACKUP-PAGE.DELETEBACKUPALERT' | translate }}</span>
+          </div>
+        </div>
+      </div>
+      <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+        <clr-input-container>
+          <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+        </clr-input-container>
+      </div>
+      <form clrForm [formGroup]="deleteBackupForm">
+        <clr-input-container style="margin-top: .2rem;">
+          <label style="max-width: 0px; display: none"></label>
+          <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedBackupName}}" size="20"/>
+        </clr-input-container>
+      </form>
+    </div>
+    <div class="modal-footer" *ngIf="!disableRemove">
+        <button type="button" class="btn btn-outline" (click)="removeBackupDialog=false;deleteBackupForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="deleteBackupById(selectedBackup);deleteBackupForm.reset()" [disabled]="deleteBackupForm.invalid || deleteBackupForm.value.confirm !== selectedBackupName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+  <div class="modal-footer" *ngIf="disableRemove">
+    <button type="button" class="btn btn-outline" (click)="removeBackupDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeSchedulerDialog" [clrModalClosable]="false">
+    <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.DELETE' | translate }}</h3>
+    <div class="modal-body">
+      <p>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.DELETECONFIRM' | translate }} <b>{{selectedSchedulerName}}</b> ?</p>
+      <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+        <clr-input-container>
+          <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+        </clr-input-container>
+      </div>
+      <form clrForm [formGroup]="deleteSchedulerForm">
+        <clr-input-container style="margin-top: .2rem;">
+          <label style="max-width: 0px; display: none"></label>
+          <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedSchedulerName}}" size="20"/>
+        </clr-input-container>
+      </form>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="removeSchedulerDialog=false;deleteSchedulerForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+        <button type="button" class="btn btn-primary" (click)="deleteSchedulerById(selectedBackupScheduler);deleteSchedulerForm.reset()" [disabled]="deleteSchedulerForm.invalid || deleteSchedulerForm.value.confirm !== selectedSchedulerName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+    </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateSchedulerDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.EDIT' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateBackupSchedulerForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB' | translate }}</label>
+        <input class="clr-col-md-9 required" clrInput name="backupCron" formControlName="backupCron" type="string" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'cron'">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE1.CRONTAB-ERROR2' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateSchedulerDialog=false;updateBackupSchedulerForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateBackupScheduler(selectedBackupScheduler);updateBackupSchedulerForm.reset()" [disabled]="updateBackupSchedulerForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showBackupSchedulerDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEWTITLE' | translate }}</h3>
+  <div class="modal-body" *ngIf="!!selectedBackupScheduler">
+    <div class="card">
+      <div class="progress top progress-meter" data-value="100" style="height: 4px;">
+        <progress value="100" max="100"></progress>
+      </div>
+      <div class="card-block">
+        <div class="card-text">
+          <h3 style="margin-top: 0px;margin-bottom: 10px;"><b>{{selectedBackupScheduler.name}}</b></h3>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.CRONTAB' | translate }}</span>
+        <span>{{selectedBackupScheduler.schedule}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPINFO-PAGE.LOCATION' | translate }}</span>
+        <span>{{!!selectedBackupScheduler?.location ? selectedBackupScheduler.location : '-'}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.NAMESPACE' | translate }}</span>
+      </div>
+      <div>
+        <ul>
+          <div *ngFor="let each of selectedBackupScheduler.spec.includedNamespaces;">
+            <li>
+              <span>{{each}}</span>
+            </li>
+          </div>
+        </ul>
+      </div>
+      <div style="line-height: 30px;" *ngIf="!!selectedBackupScheduler?.components?.edge?.nodes">
+        <span class="validateTitle2">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.COMPONENT' | translate }}</span>
+      </div>
+      <div>
+        <ul>
+          <div *ngFor="let each of selectedBackupScheduler.components.edge.nodes;">
+            <li>
+              <span>{{each.name}}</span>
+            </li>
+          </div>
+        </ul>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.BACKUPDATA' | translate }}</span>
+        <span>{{selectedBackupScheduler.spec.useRestic}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.CREATEBACKUP-PAGE3.BACKUPPARAM-PAGE.DAYS' | translate }}</span>
+        <span>{{+selectedBackupScheduler.spec.ttl.slice(2).split('H')[0]/24}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEWPAGE.LASTFIRE' | translate }}</span>
+        <span>{{!!selectedBackupScheduler.lastFire ? (selectedBackupScheduler.lastFire | datetimeTransition) : '未启动'}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEWPAGE.NEXTFIRE' | translate }}</span>
+        <span>{{selectedBackupScheduler.nextFire | datetimeTransition}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEWPAGE.CREATETIME' | translate }}</span>
+        <span>{{selectedBackupScheduler.createdAt | datetimeTransition}}</span>
+      </div>
+      <div style="line-height: 30px;">
+        <span class="validateTitle">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE-PAGE.CLUSTERBACKUP-PAGE.SCHEDULABLE-PAGE.ACTIONS.VIEWPAGE.MODIFYTIME' | translate }}</span>
+        <span>{{selectedBackupScheduler.lastModified | datetimeTransition}}</span>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="this.showBackupSchedulerDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+  </div>
+</clr-modal>
+

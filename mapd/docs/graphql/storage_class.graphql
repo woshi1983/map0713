@@ -1,0 +1,86 @@
+type StorageClass {
+  name: String!
+  annotations: Map
+  labels: Map
+  provisioner: String!
+  parameters: Map
+  reclaimPolicy: String
+  mountOptions: [String!]
+  allowVolumeExpansion: Boolean
+  volumeBindingMode: String
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  StorageClass(cluster: ID!, name: String!): StorageClass!
+  """
+  requires `read:cluster_resource` or above.
+
+  - `name`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `cluster`
+
+  - `organization`
+  """
+  StorageClasses(filters: [QueryFilter!] = []): [StorageClass!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateStorageClass(input: CreateStorageClass!): StorageClass!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateStorageClass(input: UpdateStorageClass!): StorageClass!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteStorageClass(input: DeleteStorageClass!): StorageClass!
+}
+
+input CreateStorageClass {
+  name: String!
+  annotations: Map
+  labels: Map
+  provisioner: String!
+  parameters: Map
+  reclaimPolicy: String
+  mountOptions: [String!]
+  allowVolumeExpansion: Boolean
+  volumeBindingMode: String
+  cluster: ID!
+}
+
+input UpdateStorageClass {
+  name: String!
+  annotations: Map
+  labels: Map
+  provisioner: String
+  parameters: Map
+  reclaimPolicy: String
+  mountOptions: [String!]
+  allowVolumeExpansion: Boolean
+  volumeBindingMode: String
+  cluster: ID!
+}
+
+input DeleteStorageClass {
+  name: String!
+  cluster: ID!
+}

@@ -1,0 +1,52 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="clr-row" style="margin-left: 0px; margin-top: 20px;">
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh()" [clrDgRowSelection]="false" [clrDgLoading]="loading">
+    <clr-dg-column [clrDgField]="'name'" [clrDgSorted]="true">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'PROVIDERDETAIL.TABS.NAMESPACE-PAGE.DATAGRIDFIELD.NAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'storages'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'PROVIDERDETAIL.TABS.NAMESPACE-PAGE.DATAGRIDFIELD.STORAGE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'createdAt'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column [clrDgField]="'lastModified'">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+
+    <clr-dg-placeholder>{{ 'PROVIDERDETAIL.TABS.NAMESPACE-PAGE.DATAGRIDFIELD.NONS' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let ns of namespaceList" [clrDgItem]="ns">
+      <clr-dg-cell>{{ns.name}}</clr-dg-cell>
+      <clr-dg-cell>
+        <ng-container *ngIf="!!ns?.storages && ns.storages.length > 0">
+          <div class="label label-light-blue">{{ns.storages[0]}}<span class="badge" *ngIf="ns.storages.length > 1">{{ns.storages.length - 1}}</span></div>
+        </ng-container>
+      </clr-dg-cell>
+      <clr-dg-cell>{{ns.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{ns.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="namespaceList.length">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }}{{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>

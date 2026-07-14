@@ -1,0 +1,220 @@
+<div *ngIf="authService.isLoggedIn">
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="!chartDetails">Loading ...</clr-spinner>
+  <div *ngIf="!!chartDetails">
+    <div>
+      <clr-icon shape="undo"></clr-icon>
+      <a (click)="backToCatalogs()" class="backStyle">{{ 'APPCATALOG.CATALOG-DETAILS.BACK' | translate }}</a>
+    </div>
+    <br>
+    <div>
+      <header class="chart-header">
+        <div class="chart-header-content">
+          <div class="clr-row">
+            <div class="clr-col-7">
+               <div class="chart-title-section">
+                 <div class="img-container">
+                    <img src="{{!!chartDetails.avatar ? chartDetails.avatar : defaultChartImage}}" alt="icon">
+                 </div>
+                 <div class="chart-title-block">
+                    <h3>{{chartDetails.name}}</h3>
+                    <div class="chart-header-subtitle">
+                     <img src="{{helmImage}}" alt="icon">
+                     <span>Helm Chart</span>
+                    </div>
+                 </div>
+               </div>
+            </div>
+            <div class="clr-col-5">
+              <div class="control-buttons">
+                <label class="header-version-label">{{ 'APPCATALOG.CATALOG-DETAILS.VERSION' | translate }}</label>
+                <div class="header-version" style="margin-right: 20px;" [formGroup]="chartVersionForm">
+                  <clr-select-container style="margin-top: 0rem;!important;">
+                   <label class="header-version-label" style="display: none;"></label>
+                    <select name="chart-versions" clrSelect formControlName="version" class="clr-page-size-select" (change)="getChartDetails($event)">
+                      <option value="{{chartVersion.version}}" *ngFor="let chartVersion of chartVersionListSorted;">{{chartVersion.version}}</option>
+                    </select>
+                  </clr-select-container>
+                </div>
+                <div class="header-button" [fxHide]="!canWriteComponent">
+                    <a (click)="showAddComponent()" style="line-height: 0; text-decoration: none;">
+                      <button class="btn btn-primary">
+                        <clr-icon shape="deploy"></clr-icon>
+                        {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT' | translate }}
+                      </button>
+                    </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    </div>
+    <br>
+    <clr-tabs>
+      <clr-tab>
+          <button clrTabLink id="summary-link">{{ 'APPCATALOG.CATALOG-DETAILS.OVERVIEW' | translate }}</button>
+          <clr-tab-content id="summary-content" *clrIfActive>
+              <app-chart-detail-summary [description]="chartDetails.description"
+                                        [download]="chartDetails.download"
+                                        [homepage]="chartDetails.homepage"
+                                        [readme]="chartDetails.files['README.md']"
+                                        [sources]="chartDetails.sources"
+                                        [keywords]="chartDetails.keywords"></app-chart-detail-summary>
+          </clr-tab-content>
+      </clr-tab>
+      <clr-tab>
+          <button clrTabLink id="depend-link">{{ 'APPCATALOG.CATALOG-DETAILS.DENPANDENCES' | translate }}</button>
+          <clr-tab-content id="depend-content">
+              <app-chart-detail-dependency [dependencies]='chartDetails.dependencies'></app-chart-detail-dependency>
+          </clr-tab-content>
+      </clr-tab>
+      <clr-tab>
+          <button clrTabLink id="value-link">{{ 'APPCATALOG.CATALOG-DETAILS.VALUES' | translate }}</button>
+          <clr-tab-content id="value-content">
+              <app-chart-detail-values
+              [values]="chartDetails.values"
+              [yaml]="chartDetails.files['values.yaml']"></app-chart-detail-values>
+          </clr-tab-content>
+      </clr-tab>
+    </clr-tabs>
+
+  </div>
+</div>
+
+<clr-wizard #wizardhelm [(clrWizardOpen)]="showComponentModel" (clrWizardOnFinish)="doComponentFinish()"
+  (clrWizardOnCancel)="doComponentCancel()" clrWizardSize="xl">
+  <clr-wizard-title>{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicHelmComponentForm.invalid || componentNameExist">
+    <ng-template clrPageTitle>{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicHelmComponentForm">
+      <clr-select-container>
+        <clr-control-helper>{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.APP-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.APP' | translate }}</label>
+        <select class="clr-col-md-10" clrSelect formControlName="applicationId" required (change)="getAllComponentOfApp($event)">
+          <option value="{{app.id}}" *ngFor="let app of appList">{{app.name}}</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.APP-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-input-container>
+        <clr-control-helper *ngIf="!checkNameExist(basicHelmComponentForm.value.name)">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-2">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME' | translate }}</label>
+        <input class="clr-col-md-10" clrInput name="name" formControlName="name" required/>
+        <clr-control-error *clrIfError="'required'">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-ERROR3' | translate }} {{restricNamePattern}}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicHelmComponentForm.value.name}}{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-helper *ngIf="checkNameExist(basicHelmComponentForm.value.name)" style="color: #c21d00">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.NAME-ERROR5' | translate }}</clr-control-helper>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-2">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-10" clrTextarea formControlName="description" type="string" style="width: 150%;height: 150px;"></textarea>
+      </clr-textarea-container>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="!checkFormateOk">
+    <ng-template clrPageTitle>{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.PAGETITLE' | translate }}</ng-template>
+    {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.PAGEDESC' | translate }}
+    <br>
+    <br>
+    <div class="switch-container">
+      <label>values.yaml</label>
+    </div>
+    <div class="editor-container" style="height: 400px;">
+      <div class="editor">
+        <ngx-monaco-editor style="height: 100%;" [options]="editorOptions" [(ngModel)]="newValues" (ngModelChange)="modelValueChange()"></ngx-monaco-editor>
+      </div>
+      <div class="controls">
+        <button (click)="checkFileFormat()" class="btn-sm btn btn-outline">
+           <clr-icon shape="code"></clr-icon>
+           {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.CHECK' | translate }}
+        </button>
+        <button type="button" class="btn btn-sm btn-outline" (click)="resetValues()">
+          <clr-icon shape="backup-restore"></clr-icon>
+           {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.RESTOREDEFAULT' | translate }}
+        </button>
+      </div>
+    </div>
+    <div class="alert" [ngClass]="{'alert-success': checkFormateOk, 'alert-danger': !checkFormateOk}" role="alert" *ngIf="showCheckedAlert">
+      <div class="alert-items">
+       <div class="alert-item static">
+         <div class="alert-icon-wrapper">
+            <clr-icon *ngIf="checkFormateOk" class="alert-icon" shape="check-circle"></clr-icon>
+            <clr-icon *ngIf="!checkFormateOk" class="alert-icon" shape="error-standard"></clr-icon>
+         </div>
+         <span class="alert-text" *ngIf="checkFormateOk">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.CHECK-OK' | translate }}</span>
+         <span class="alert-text" *ngIf="!checkFormateOk">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE2.CHECK-ERROR' | translate }}{{parseError}}</span>
+       </div>
+      </div>
+    </div>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+      <ng-template clrPageTitle>{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.PAGETITLE' | translate }}</ng-template>
+        {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.PAGEDESC' | translate }}
+        <br>
+    <div class="clr-row">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE1.PAGETITLE' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                <div>
+                  <span class="validateTitle">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.BASICINFO-PAGE.APP' | translate }}</span>
+                  <div style="display: inline" *ngFor="let app of appList">
+                    <span *ngIf="app.id === basicHelmComponentForm.value.applicationId">{{app.name}}</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.BASICINFO-PAGE.COMPONENT' | translate }}</span>
+                  <span>{{basicHelmComponentForm.value.name}}</span>
+                </div>
+                <div>
+                  <span class="validateTitle">{{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.BASICINFO-PAGE.DESC' | translate }}</span>
+                  <span>{{basicHelmComponentForm.value.description}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+    <div class="clr-row">
+      <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-header">
+              {{ 'APPCATALOG.CATALOG-DETAILS.ADDCOMPONENT-PAGE3.VALUES' | translate }}
+            </div>
+            <div class="card-block">
+              <div class="card-text">
+                <div class="row value-container">
+                    <div class="col-xs-8">
+                        <div class="line-numbers" [innerHTML]="newValues | language : 'yaml' | markdown"></div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+  </clr-wizard-page>
+
+</clr-wizard>
+
+
+
+
+

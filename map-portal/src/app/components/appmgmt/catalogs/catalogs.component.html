@@ -1,0 +1,143 @@
+<div *ngIf="authService.isLoggedIn">
+  <div class="alert alert-danger" role="alert" *ngIf="showNoProjectAlert">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+        </div>
+        <span class="alert-text">{{ 'APPCATALOG.CATALOGS.NOPROJECTALERT' | translate }}</span>
+      </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="showNoProjectAlert = false;">
+      <clr-icon aria-hidden="true" shape="close"></clr-icon>
+    </button>
+  </div>
+  <div>
+    <span class="custom-h2">{{ 'APPCATALOG.CATALOGS.ALL-CATALOGS' | translate }}</span>
+    <clr-signpost>
+      <clr-signpost-content *clrIfOpen [clrPosition]="'right-bottom'">
+         <span style="font-size: 12px;">{{ 'APPCATALOG.CATALOGS.SIGNPOST' | translate }}</span>
+      </clr-signpost-content>
+    </clr-signpost>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" style="max-width: 220px;">
+      <form clrForm [formGroup]="selectForm">
+        <clr-select-container style="margin-top: 0px;">
+          <label class="clr-col-md-4">{{ 'APPCATALOG.CATALOGS.REPO' | translate }}</label>
+          <select class="clr-col-md-8" clrSelect formControlName="registry" required (change)="changeProjectList($event)">
+            <option value="{{registry.id}}" *ngFor="let registry of registryList;let i = index">{{registry.name}}</option>
+          </select>
+        </clr-select-container>
+      </form>
+    </div>
+    <div class="clr-form" style="max-width: 220px;">
+      <form clrForm [formGroup]="selectForm">
+        <clr-select-container style="margin-top: 0px;">
+          <label class="clr-col-md-4">{{ 'APPCATALOG.CATALOGS.PROJECT' | translate }}</label>
+          <select class="clr-col-md-8" clrSelect formControlName="project" required (change)="refresh()">
+            <option value="{{project}}" *ngFor="let project of projectList">{{project}}</option>
+          </select>
+        </clr-select-container>
+      </form>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="catalog" placeholder="{{ 'APPCATALOG.CATALOGS.SEARCHCATALOG' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-divider"></div>
+  <clr-spinner style="margin-left: 50%;margin-top: 10%;" *ngIf="loading">Loading ...</clr-spinner>
+  <div class="clr-row" *ngIf="!loading">
+    <div class="clr-col-md-3" *ngIf="noChartRepo">
+      <div class="card">
+          <div class="card-header CardTitle" title="none">
+            <div class="info-card-header clr-col-sm-12">
+              <span class="card-title">{{ 'APPCATALOG.CATALOGS.NOCATALOG' | translate }}</span>
+            </div>
+          </div>
+          <div class="card-block">
+            <div class="info-card-block">
+              <div class="none-bg-img">
+                <img src="{{backgroupImage}}" alt="bg-img">
+              </div>
+            </div>
+          </div>
+        <footer class="card-footer">
+            <div class="clr-row">
+              <div class="custom-card-footer">
+                  <div class="none-card-footer-col2">
+                    <div class="footer-tags">
+                      <span class="label label-info">
+                        <span>None</span>
+                      </span>
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </footer>
+      </div>
+    </div>
+
+    <div class="clr-col-md-2" *ngFor="let chartrepo of chartReposList">
+      <div class="card clickable">
+        <a routerLink="details/{{chartrepo.name}}" [state]="{versions: chartrepo.versions | json}">
+          <div class="card-header CardTitle" title="{{chartrepo.name}}">
+            <div class="clr-col-sm-12" style="text-align: center;">
+              <span class="card-title" style="font-size: 0.7rem;">{{ chartrepo.name }}</span>
+            </div>
+          </div>
+          <div class="card-block">
+            <div class="info-card-block">
+              <div class="card-icon">
+                <img *ngIf="!!chartrepo.avatar" style="width: 64px; max-height: 64px" src="{{chartrepo.avatar}}" alt="icon">
+                <img *ngIf="!chartrepo.avatar" style="width: 64px; max-height: 64px" src="{{imagePath}}/other.png" alt="icon">
+              </div>
+              <div class="card-description-wrapper">
+                <div class="card-description">
+                  <!--占位，展示信息待补充-->
+                  <span></span>
+                </div>
+              </div>
+              <div class="bg-img">
+                <img src="{{backgroupImage}}" alt="bg-img">
+              </div>
+            </div>
+          </div>
+        </a>
+        <footer class="card-footer">
+            <div class="clr-row">
+              <div class="custom-card-footer">
+                <div class="custom-card-footer-col1">
+                  <span class="label label-light-blue clickable">{{chartrepo.versions.sort()[0].version}}<span class="badge">{{chartrepo.versions.length}}</span></span>
+                </div>
+                <div class="custom-card-footer-col2">
+                  <div class="footer-tags">
+                    <span class="label label-success" *ngIf="!chartrepo.deprecated">
+                      <span>{{ 'APPCATALOG.CATALOGS.VAILD' | translate }}</span>
+                    </span>
+                    <span class="label label-danger" *ngIf="chartrepo.deprecated">
+                      <span>{{ 'APPCATALOG.CATALOGS.INVAILD' | translate }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </footer>
+      </div>
+    </div>
+  </div>
+
+</div>

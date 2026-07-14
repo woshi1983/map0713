@@ -1,0 +1,127 @@
+type InstanceFederation {
+  id: ID!
+  name: String!
+  description: String!
+  status: InstanceFederationStatus!
+  instances: [Instance!]
+  routes: [Route!]
+  component: Component!
+  application: Application!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type InstanceFederations {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: InstanceFederationNodes!
+}
+
+extend type Query {
+  """
+  requires `read:instance` or above.
+  """
+  InstanceFederation(id: ID!): InstanceFederation!
+  """
+  requires `read:instance` or above.
+
+  Filters:
+
+  - `name`
+
+  - `component`
+
+  - `application`
+
+  - `organization`
+  """
+  InstanceFederations(page: QueryPage = {}, filters: [QueryFilter!] = []): InstanceFederations!
+}
+
+extend type Mutation {
+  """
+  requires `write:instance` or above.
+  """
+  CreateInstanceFederation(input: CreateInstanceFederation!): InstanceFederation! @deprecated(reason: "will be removed in future release")
+  """
+  requires `write:instance` or above.
+  """
+  UpdateInstanceFederation(input: UpdateInstanceFederation!): InstanceFederation!
+  """
+  requires `modify:instance` or above.
+  """
+  DeleteInstanceFederation(input: DeleteInstanceFederation!): InstanceFederation! @deprecated(reason: "will be removed in future release")
+}
+
+type InstanceFederationNodes {
+  nodes: [InstanceFederation!]
+}
+
+enum InstanceFederationStatus {
+  PENDING
+  PROVISIONING
+  PROVISIONED
+  DELETING
+}
+
+input CreateInstanceFederation {
+  name: String!
+  description: String
+  """LoadBalancer will be automatically determined by instances' Cluster.
+  Instances across multiple LoadBalancer will not be allowed.
+  """
+  instances: [AddInstance!]
+  component: ID!
+}
+
+input UpdateInstanceFederation {
+  id: ID!
+  description: String
+  addInstances: [AddInstance!]
+  modifyInstances: [ModifyInstance!]
+  removeInstances: [RemoveInstance!]
+}
+
+input DeleteInstanceFederation {
+  id: ID!
+  """when specified as true, will only delete the federation & its instances
+  from the database.
+
+  Only global admins are allowed to perform this action.
+
+  Should be only used when network is disconnected with the clusters, and
+  the instances have been manually removed from the cluster.
+
+  This should not be specified if the instances are still in use.
+  """
+  force: Boolean = false
+}
+
+input AddInstance {
+  autoRestart: Boolean
+  release: ID!
+  namespace: String = "default"
+  cluster: ID!
+}
+
+input ModifyInstance {
+  id: ID!
+  autoRestart: Boolean
+  release: ID
+}
+
+input RemoveInstance {
+  id: ID!
+  """when specified as true, will only delete the instance from the database.
+
+  Only global admins are allowed to perform this action.
+
+  Should be only used when network is disconnected with the cluster, and
+  the instance has been manually removed from the cluster.
+
+  This should not be specified if the instance are still in use.
+  """
+  force: Boolean = false
+}

@@ -1,0 +1,114 @@
+<div class="main-container">
+  <app-applevel-messages></app-applevel-messages>
+  <app-navigator (showDialogModalAction)=openModal($event)></app-navigator>
+  <div toastContainer *ngIf="authService.isLoggedIn"></div>
+  <div class="content-container">
+    <clr-vertical-nav [clrVerticalNavCollapsible]="true" [(clrVerticalNavCollapsed)]="collapsed">
+      <div class="nav-content">
+        <a clrVerticalNavLink routerLink="overview/summary" routerLinkActive="active" [fxHide]="hideOverview">
+          <clr-icon clrVerticalNavIcon shape="home"></clr-icon>
+          {{ 'HOMEPAGE.HOMEOVERVIEW' | translate}}
+        </a>
+        <clr-vertical-nav-group routerLinkActive="active">
+          <clr-icon shape="cloud-scale" clrVerticalNavIcon></clr-icon>
+          {{ 'HOMEPAGE.NAVCLUSTER' | translate }}
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="cluster/management" routerLinkActive="active">
+              {{ 'HOMEPAGE.CLUSTERLIST' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="cluster/operations" routerLinkActive="active">
+              {{ 'HOMEPAGE.OPERATORSVC' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+        </clr-vertical-nav-group>
+        <clr-vertical-nav-group routerLinkActive="active" *featureToggle="featureGates.appMgmt">
+          <clr-icon shape="applications" clrVerticalNavIcon></clr-icon>
+          {{ 'HOMEPAGE.APPMGMT' | translate }}
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="appmgmt/components" routerLinkActive="active">
+              {{ 'HOMEPAGE.COMPONENT' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="appmgmt/catalogs" routerLinkActive="active">
+              {{ 'HOMEPAGE.MGMTCATALOG' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="appmgmt/routes/ingress" routerLinkActive="active">
+              {{ 'HOMEPAGE.ROUTE' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="appmgmt/volumes/configmap" routerLinkActive="active">
+              {{ 'HOMEPAGE.CONFIGVOLUME' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+        </clr-vertical-nav-group>
+        <clr-vertical-nav-group routerLinkActive="active" *featureToggle="featureGates.appBuild">
+          <clr-icon shape="ci-cd" clrVerticalNavIcon></clr-icon>
+            {{ 'HOMEPAGE.BUILDMGMT' | translate }}
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="appbuild/binary-image" routerLinkActive="active">
+              {{ 'HOMEPAGE.BUILDBINARY' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="appbuild/dockerfile-image" routerLinkActive="active">
+              {{ 'HOMEPAGE.BUILDDOCKERFILE' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="appbuild/source-image" routerLinkActive="active">
+              {{ 'HOMEPAGE.BUILDSOURCE' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+        </clr-vertical-nav-group>
+        <clr-vertical-nav-group routerLinkActive="active">
+          <clr-icon shape="organization" clrVerticalNavIcon></clr-icon>
+          {{ 'HOMEPAGE.NAVUSER' | translate }}
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="usermgmt/org" routerLinkActive="active">
+              {{ 'HOMEPAGE.ORGMGMT' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="usermgmt/user" routerLinkActive="active" [fxHide]="hideUser">
+              {{ 'HOMEPAGE.USERMGMT' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="usermgmt/auditlogs" routerLinkActive="active" [fxHide]="hideAuditlog">
+              {{ 'HOMEPAGE.AUDITLOG' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+        </clr-vertical-nav-group>
+        <clr-vertical-nav-group routerLinkActive="active" [fxHide]="hideClusterProvider">
+          <clr-icon shape="cog" clrVerticalNavIcon></clr-icon>
+          {{ 'HOMEPAGE.NAVSYSTEM' | translate }}
+          <clr-vertical-nav-group-children *clrIfExpanded="true">
+            <a clrVerticalNavLink routerLink="system/providers" routerLinkActive="active">
+              {{ 'HOMEPAGE.SYSTEMPROVIDER' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="system/repos" routerLinkActive="active">
+              {{ 'HOMEPAGE.SYSTEMREPO' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="system/standard-packages" routerLinkActive="active">
+              {{ 'HOMEPAGE.SYSTEMSTANDARDPACKAGE' | translate }}
+            </a>
+            <a clrVerticalNavLink routerLink="system/lbs" routerLinkActive="active">
+              {{ 'HOMEPAGE.SYSTEMLB' | translate }}
+            </a>
+          </clr-vertical-nav-group-children>
+        </clr-vertical-nav-group>
+      </div>
+      <div class="mb-1">
+        <a clrVerticalNavLink href="javascript:void(0)">
+          <clr-icon clrVerticalNavIcon shape="sun"></clr-icon>
+          {{ 'HOMEPAGE.THEME' | translate }}
+        </a>
+        <a clrVerticalNavLink href="/devtool/graphql" target="_blank">
+          <clr-icon clrVerticalNavIcon shape="code"></clr-icon>
+           MAP API
+        </a>
+      </div>
+    </clr-vertical-nav>
+    <div class="content-area">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>
+<app-userinfo-setting></app-userinfo-setting>
+<app-change-password></app-change-password>
+<app-about-dialog></app-about-dialog>
+<app-subscribe-mapd-logs></app-subscribe-mapd-logs>

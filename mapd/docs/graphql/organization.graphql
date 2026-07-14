@@ -1,0 +1,93 @@
+type Organization {
+  id: ID!
+  name: String!
+  description: String!
+  avatar: URL!
+  link: URL
+  quota: OrganizationQuota!
+  roleBindings(page: QueryPage = {}, filters: [QueryFilter!] = []): RoleBindings!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Organizations {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: OrganizationNodes!
+}
+
+extend type Query {
+  """
+  requires `read:organization` or above.
+  """
+  Organization(id: ID!): Organization!
+  """
+  requires `read:organization` or above.
+
+  Filters:
+
+  - `name`
+  """
+  Organizations(page: QueryPage = {}, filters: [QueryFilter!] = []): Organizations!
+}
+
+extend type Mutation {
+  """
+  anyone is able to create an organization.
+  """
+  CreateOrganization(input: CreateOrganization!): Organization!
+  """
+  requires `write:organization` or above.
+  """
+  UpdateOrganization(input: UpdateOrganization!): Organization!
+  """
+  requires `modify:organization` or above.
+  """
+  DeleteOrganization(input: DeleteOrganization!): Organization!
+}
+
+type OrganizationNodes {
+  nodes: [Organization!]
+}
+
+type OrganizationQuota {
+  _id: ID!
+  used: OrganizationQuotaUsage!
+  total: OrganizationQuotaUsage!
+}
+
+type OrganizationQuotaUsage {
+  cpus: Int!
+  memoryMi: Int!
+  storageGi: Int!
+}
+
+input CreateOrganization {
+  name: String!
+  description: String
+  avatar: URL
+  link: URL
+  quota: OrganizationQuotaInput
+}
+
+input UpdateOrganization {
+  id: ID!
+  name: String
+  description: String
+  avatar: URL
+  link: URL
+  quota: OrganizationQuotaInput
+}
+
+input DeleteOrganization {
+  id: ID!
+}
+
+input OrganizationQuotaInput {
+  """zero or negative value means unlimited (default).
+  """
+  cpus: Int
+  memoryMi: Int
+  storageGi: Int
+}

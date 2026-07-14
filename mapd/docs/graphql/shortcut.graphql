@@ -1,0 +1,70 @@
+type Shortcut {
+  id: ID!
+  name: String!
+  description: String!
+  endpoint: URL!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Shortcuts {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ShortcutNodes!
+}
+
+extend type Query {
+  """Shortcut can be queried with an ID or a keyword.
+
+  requires `read:shortcut` or above.
+  """
+  Shortcut(id: ID!): Shortcut!
+  """
+  requires `read:shortcut` or above.
+
+  Filters:
+
+  - `name`
+
+  - `organization`
+  """
+  Shortcuts(page: QueryPage = {}, filters: [QueryFilter!] = []): Shortcuts!
+}
+
+extend type Mutation {
+  """
+  requires `write:shortcut` or above.
+  """
+  CreateShortcut(input: CreateShortcut!): Shortcut!
+  """
+  requires `write:shortcut` or above.
+  """
+  UpdateShortcut(input: UpdateShortcut!): Shortcut!
+  """
+  requires `modify:shortcut` or above.
+  """
+  DeleteShortcut(input: DeleteShortcut!): Shortcut!
+}
+
+type ShortcutNodes {
+  nodes: [Shortcut!]
+}
+
+input CreateShortcut {
+  name: String!
+  description: String
+  endpoint: URL!
+  organization: ID!
+}
+
+input UpdateShortcut {
+  id: ID!
+  description: String
+  endpoint: URL
+}
+
+input DeleteShortcut {
+  id: ID!
+}

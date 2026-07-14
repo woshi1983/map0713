@@ -1,0 +1,44 @@
+.summary-left {
+  padding-top: .55rem;
+  padding-left: 15px;
+}
+
+.summary-right {
+  padding-top: .55rem;
+  padding-left: 15px;
+}
+
+.display-flex {
+    display: flex;
+}
+
+.pt-05 {
+    padding-top: .5rem;
+}
+
+.summary {
+    min-height: 1.45rem;
+}
+
+.width-7-5 {
+    width: 7.5rem;
+}
+
+.width-9-5 {
+    width: 9.5rem;
+}
+
+.mt-0 {
+    margin-top: 0 !important;
+}
+
+ul.list-unstyled {
+  padding-left: 0;
+  margin-left: 0;
+  list-style: none;
+}
+
+.header-context {
+  margin-top: 20px;
+  font-size: 0.8rem;
+}

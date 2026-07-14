@@ -1,0 +1,30 @@
+<div *ngIf="opened">
+  <div class="modal">
+      <div class="modal-dialog" role="dialog" aria-hidden="true">
+          <div class="modal-content">
+              <div class="modal-body dialog-body">
+                  <div class="map-logo-black">
+                      <img src="{{logoImage}}" class="map-icon">
+                  </div>
+                  <div class="content" tabindex="1">
+                      <div><b>{{ 'LOGINPAGE.TITLE' | translate }}</b></div>
+                      <div>
+                          <span class="p5 about-version">{{ 'NAVHEADER.ABOUT.VERSION' | translate }} {{version}}</span>
+                      </div>
+                      <div>
+                        <p class="p5">{{ 'NAVHEADER.ABOUT.DESC' | translate }}</p>
+                        <div style="margin-top: 20px;">
+                          <span class="p5">{{ 'NAVHEADER.ABOUT.MOREINFO' | translate }}</span>
+                          <span class="p5"><a href="https://docs.vmware.com" target="_blank" class="nav-link">https://docs.vmware.com</a></span>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+              <div class="modal-footer margin-left-override">
+                  <button type="button" class="btn btn-primary" (click)="close()">{{ 'SHARED.PAGEACTIONS.PAGECLOSE' | translate }}</button>
+              </div>
+          </div>
+      </div>
+  </div>
+  <div class="modal-backdrop" aria-hidden="true"></div>
+</div>

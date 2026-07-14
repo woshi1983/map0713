@@ -1,0 +1,1219 @@
+<div *ngIf="authService.isLoggedIn">
+  <div>
+    <span class="custom-h2">{{ 'CLUSTERSMGMT.ALLCLUSTERS' | translate }}</span>
+  </div>
+  <br>
+
+  <div class="clr-row" style="margin-left: 0px">
+    <div class="clr-form" [fxHide]="!canWrite">
+      <button (click)="showCreateCluster()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus"></clr-icon>
+          {{ 'CLUSTERSMGMT.CREATECLUSTER' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWrite">
+      <button (click)="showAttachCluster()" class="btn btn-primary btn-outline">
+        <clr-icon shape="plus-circle"></clr-icon>
+          {{ 'CLUSTERSMGMT.ATTACHCLUSTER' | translate }}
+      </button>
+    </div>
+    <div class="clr-form" [fxHide]="!canWrite">
+      <clr-dropdown class="dropdown">
+        <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
+          <clr-icon shape="bars"></clr-icon>
+          {{ 'SHARED.MOREACTIONS' | translate }}
+        </button>
+        <clr-dropdown-menu *clrIfOpen>
+          <button id='reinit' type="button" [disabled]="!selectedCluster || selectedCluster.status !== 'INITIALIZING' || selectedCluster.state !== 'FAILED'" (click)="doReinitCluster(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.REINIT' | translate }}</button>
+          <button id='modify-desc' type="button" [disabled]="!selectedCluster" (click)="showUpdateClusterDesc(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</button>
+          <button id='scale-vmclass' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</button>
+          <button id='scale-node' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</button>
+          <button id='scale-master' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</button>
+          <button id='delete-cluster' type="button" [disabled]="!selectedCluster" (click)="showDeleteClusterDialog(selectedCluster)"  clrDropdownItem [fxHide]="selectedCluster?.type === 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</button>
+          <button id='remove-cluster' type="button" [disabled]="!selectedCluster" (click)="showRemoveClusterDialog(selectedCluster)"  clrDropdownItem [fxHide]="selectedCluster?.type !== 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</button>
+          <button id='force-delete-cluster' type="button" [disabled]="!selectedCluster" (click)="showForceDeleteDialog(selectedCluster)"  clrDropdownItem [fxHide]="!canForceDelete  || selectedCluster?.type === 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</button>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    <div class="clr-form rightPos">
+      <div>
+        <span class="refresh-btn">
+          <clr-icon shape="search" (click)="this.showSearch = !this.showSearch;"></clr-icon>
+        </span>
+        <input type="text" id="clustername" placeholder="{{ 'CLUSTERSMGMT.SEARCHCLUSTER' | translate }}" class="clr-input" size ="20" [(ngModel)]="searchName" [hidden]="!showSearch" (keydown.enter)="refresh();">
+        <div class="nav-divider"></div>
+        &nbsp;
+        <span class="refresh-btn">
+          <clr-icon shape="refresh" (click)="refresh()"></clr-icon>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="certResult.length > 0">
+    <div class="alert alert-warning" role="alert" *ngFor="let result of certResult">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+          </div>
+          <span class="alert-text" *ngIf="!result.isCA"> {{result.name}}{{ 'CLUSTERSMGMT.CERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'CLUSTERSMGMT.CERTEXPIRED' | translate }}</span>
+          <span class="alert-text" *ngIf="result.isCA"> {{result.name}}{{ 'CLUSTERSMGMT.CACERTALERT' | translate }} <b style="color: darkred">{{result.notAfter | datetimeTransition}}</b> {{ 'CLUSTERSMGMT.CERTEXPIRED' | translate }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <clr-datagrid (clrDgRefresh)="refresh($event)" [clrDgLoading]="loading" [(clrDgSingleSelected)]="selectedCluster" [clrDgRowSelection]="true">
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.CLUSTERNAME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'SHARED.DATAGRID.DESC' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.CLUSTERSTATUS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.CLUSTERSTATE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.CLUSTERVERSION' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.PROVIDER' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: true}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.PROVIDERNS' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'CLUSTERSMGMT.DATAGRIDFIELD.CLUSTERTYPE' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.CREATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column>
+      <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'SHARED.DATAGRID.UPDATETIME' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-placeholder>{{ 'CLUSTERSMGMT.DATAGRIDFIELD.NOCLUSTERPLACE' | translate }}</clr-dg-placeholder>
+    <clr-dg-row *ngFor="let cluster of allClusters" [clrDgItem]="cluster">
+      <clr-dg-cell class="datagrid-long-text"><a routerLink="{{cluster.id}}/{{cluster.name}}">{{cluster.name}}</a></clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{cluster.description}}</clr-dg-cell>
+      <clr-dg-cell class="{{!!cluster.status ? cluster.status : 'MAINTENANCE'}}">{{!!cluster.status ? cluster.status : 'MAINTENANCE'}}</clr-dg-cell>
+      <clr-dg-cell>{{!!cluster.state ? cluster.state : 'UNKNOWN'}}</clr-dg-cell>
+      <clr-dg-cell>{{cluster.version}}</clr-dg-cell>
+      <clr-dg-cell *ngIf="!!cluster.provider"><a routerLink="/portal/system/providers/{{cluster.provider.id}}/{{cluster.provider.name}}">{{cluster.provider.name}}({{cluster.class}})</a></clr-dg-cell>
+      <clr-dg-cell *ngIf="!cluster.provider">UNKNOWN</clr-dg-cell>
+      <clr-dg-cell>{{cluster?.spec?.namespace}}</clr-dg-cell>
+      <clr-dg-cell>{{cluster.type}}</clr-dg-cell>
+      <clr-dg-cell>{{cluster.createdAt | datetimeTransition}}</clr-dg-cell>
+      <clr-dg-cell>{{cluster.lastModified | datetimeTransition}}</clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="10" [clrDgTotalItems]="total">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{ 'SHARED.DATAGRID.PAGESIZE' | translate }}</clr-dg-page-size>
+        {{ 'SHARED.DATAGRID.FOOTER' | translate }} {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} / {{pagination.totalItems}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+  </clr-datagrid>
+</div>
+
+<clr-wizard #wizardcluster [(clrWizardOpen)]="createClusterOpen" (clrWizardOnFinish)="doClusterFinish()"
+  (clrWizardOnCancel)="doClusterCancel()" clrWizardSize="lg">
+  <clr-wizard-title>{{ 'CLUSTERSMGMT.CREATECLUSTER' | translate }}</clr-wizard-title>
+
+  <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+  <clr-wizard-button [type]="'finish'" [clrWizardButtonDisabled]="basicClusterForm.invalid">{{ 'SHARED.PAGEACTIONS.PAGECREATE' | translate }}</clr-wizard-button>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="basicClusterForm.invalid">
+    <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.PAGETITLE' | translate }}</ng-template>
+    {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.PAGEDESC' | translate }}
+    <br>
+
+    <form clrForm [formGroup]="basicClusterForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME' | translate }}</label>
+        <input class="clr-col-md-9" clrInput name="name" formControlName="name" type="string" required />
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'maxlength'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-ERROR4' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'name'">{{basicClusterForm.value.name}}{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.CLUSTERNAME-ERROR5' | translate }}</clr-control-error>
+      </clr-input-container>
+      <clr-textarea-container>
+        <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+      </clr-textarea-container>
+      <clr-select-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.PROVIDERNAME-HELP' | translate }}</clr-control-helper>
+        <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.PROVIDERNAME' | translate }}</label>
+        <select class="clr-col-md-9" clrSelect formControlName="providerId" required (change)="refreshNamespaceInProvider($event)">
+          <option value="{{provider.id}}" *ngFor="let provider of providerList">{{provider.name}} ({{provider.class}})</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.PROVIDERNAME-ERROR' | translate }}</clr-control-error>
+      </clr-select-container>
+      <clr-toggle-container>
+        <clr-toggle-wrapper>
+          <label>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLECONTOUR' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="enableContour" name="enableContour"/>
+        </clr-toggle-wrapper>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLECONTOUR-HELP' | translate }}</clr-control-helper>
+      </clr-toggle-container>
+      <clr-toggle-container *featureToggle="featureGates.appBuild">
+        <clr-toggle-wrapper>
+          <label>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLETBS' | translate }}</label>
+          <input type="checkbox" clrToggle formControlName="enableTBS" name="enableTBS"/>
+        </clr-toggle-wrapper>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLETBS-HELP' | translate }}</clr-control-helper>
+      </clr-toggle-container>
+    </form>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="tkgsClusterParamForm.invalid || clusterCIDRInvaildAlert" *ngIf="providerClass === 'TKGS'">
+    <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}</ng-template>
+    {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEDESC' | translate }}
+    <br>
+    <div class="alert alert-danger" role="alert" *ngIf="clusterCIDRInvaildAlert">
+      <div class="alert-items" style="align-items: center;">
+          <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                  <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+              </div>
+              <span class="alert-text" style="letter-spacing: 2px;white-space: nowrap;">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT1' | translate }}{{!!tkgsClusterParamForm.value.podCIDR ? tkgsClusterParamForm.value.podCIDR : '192.168.0.0/16'}}{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT2' | translate }}{{tkgsClusterParamForm.value.workerNum}}{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT3' | translate }}</span>
+          </div>
+      </div>
+    </div>
+
+    <form clrForm [formGroup]="tkgsClusterParamForm">
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-block">
+              <h3 class="card-title">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}
+              </h3>
+              <div class="card-text">
+                <clr-select-container>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION' | translate }}</label>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-HELP' | translate }}</clr-control-helper>
+                  <select class="clr-col-md-9" clrSelect formControlName="tkcVersion" required>
+                    <option value="{{version}}" *ngFor="let version of sortedTkcVersionList">{{version}}</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-ERROR' | translate }}</clr-control-error>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="masterNum" required>
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                  </select>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper *ngIf="!noVMclassOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="masterClass" required>
+                    <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR1' | translate }}</clr-control-error>
+                  <clr-control-helper style="color: #c21d00" *ngIf="noVMclassOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR2' | translate }}</clr-control-helper>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper *ngIf="!noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="masterStoragePolicy" required>
+                    <option value="{{storageClass}}" *ngFor="let storageClass of storageClassList">{{storageClass}}</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE-ERROR1' | translate }}</clr-control-error>
+                  <clr-control-helper style="color: #c21d00" *ngIf="noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE-ERROR2' | translate }}</clr-control-helper>
+                </clr-select-container>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput formControlName="workerNum" #stepInput type="number" min=0 max=150 required (change)="clusterCIDRAndWorkerNumValidator('TKGS')"/>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR1' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'min'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR2' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'max'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR3' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-select-container>
+                  <clr-control-helper *ngIf="!noVMclassOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="workerClass" required>
+                    <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-ERROR' | translate }}</clr-control-error>
+                  <clr-control-helper style="color: #c21d00" *ngIf="noVMclassOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR2' | translate }}</clr-control-helper>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper *ngIf="!noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERSTORAGE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERSTORAGE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="workerStoragePolicy" required>
+                    <option value="{{storageClass}}" *ngFor="let storageClass of storageClassList">{{storageClass}}</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERSTORAGE-ERROR' | translate }}</clr-control-error>
+                  <clr-control-helper style="color: #c21d00" *ngIf="noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE-ERROR2' | translate }}</clr-control-helper>
+                </clr-select-container>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-block">
+              <h3 class="card-title">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STROAGEPARAM' | translate }}
+              </h3>
+                <clr-select-container>
+                  <clr-control-helper *ngIf="!noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.DEFAULTSTORAGE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.DEFAULTSTORAGE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="defaultStorageClass" required>
+                    <option value="{{storageClass}}" *ngFor="let storageClass of storageClassList">{{storageClass}}</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.DEFAULTSTORAGE-ERROR' | translate }}</clr-control-error>
+                  <clr-control-helper style="color: #c21d00" *ngIf="noStorageOnNamespaceAlert">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERSTORAGE-ERROR2' | translate }}</clr-control-helper>
+                </clr-select-container>
+                <div>
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.ETCDSTORAGECAP-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.ETCDSTORAGECAP' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput name="etcdVolume" formControlName="masterEtcdSize" type="number" placeholder="10"/>
+                  </clr-input-container>
+                </div>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.IMAGESTORAGECAP-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.IMAGESTORAGECAP' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="containerVolume" formControlName="workerContainerdSize" type="number" placeholder="50"/>
+                </clr-input-container>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-block">
+              <h3 class="card-title">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPARAM' | translate }}
+              </h3>
+              <span class="alert-text" style="font-size: 12px" *ngIf="tkgsClusterParamForm.value.cniType !== 'antrea-nsx-routed'"><b>"{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKALERT1' | translate }}"</b> {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKALERT2' | translate }}</span>
+
+              <div class="card-text">
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="cniType">
+                    <option value="antrea">Antrea</option>
+                    <option value="calico">Calico</option>
+                    <option value="antrea-nsx-routed">Antrea-NSX-Routed</option>
+                  </select>
+                </clr-select-container>
+                <clr-input-container *ngIf="tkgsClusterParamForm.value.cniType !== 'antrea-nsx-routed'">
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="podCIDR" formControlName="podCIDR" type="string" placeholder="192.168.0.0/16" (change)="clusterCIDRAndWorkerNumValidator('TKGS')"/>
+                  <clr-control-error *clrIfError="'podNetmask'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR1' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR2' | translate }} {{CIDRPattern}} {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR3' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="serviceCIDR" formControlName="serviceCIDR" type="string" placeholder="10.96.0.0/12" />
+                  <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR-ERROR1' | translate }} {{CIDRPattern}} {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR-ERROR2' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-input-container [fxHide]="true">
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICEDOMAIN-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICEDOMAIN' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="serviceDomain" formControlName="serviceDomain" type="string" placeholder="cluster.local"/>
+                  <clr-control-error></clr-control-error>
+                </clr-input-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="tkgmClusterParamForm.invalid || clusterCIDRInvaildAlert" *ngIf="providerClass === 'TKGM' || providerClass === 'TKG2M'">
+    <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}</ng-template>
+    {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEDESC' | translate }}
+    <br>
+    <div class="alert alert-danger" role="alert" *ngIf="clusterCIDRInvaildAlert">
+      <div class="alert-items" style="align-items: center;">
+          <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                  <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+              </div>
+              <span class="alert-text" style="letter-spacing: 2px;white-space: nowrap;">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT1' | translate }}{{!!tkgmClusterParamForm.value.podCIDR ? tkgmClusterParamForm.value.podCIDR : '100.96.0.0/11'}}{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT2' | translate }}{{tkgmClusterParamForm.value.workerNum}}{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEALERT3' | translate }}</span>
+          </div>
+      </div>
+    </div>
+
+    <form clrForm [formGroup]="tkgmClusterParamForm">
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+          <div class="card">
+            <div class="card-block">
+              <h3 class="card-title">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}
+              </h3>
+              <div class="card-text">
+                <clr-select-container>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION' | translate }}</label>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-HELP' | translate }}</clr-control-helper>
+                  <select class="clr-col-md-9" clrSelect formControlName="tkcVersion" required>
+                    <option value="{{version}}" *ngFor="let version of sortedTkcVersionList">{{version}}</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-ERROR' | translate }}</clr-control-error>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="masterNum" required>
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                  </select>
+                </clr-select-container>
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect required formControlName="masterClass">
+                    <option value="{{vmClass.name}}" *ngFor="let vmClass of tkgmNodeType">{{vmClass.name}} (cpu: {{vmClass.cpu}} vCPU, ram: {{vmClass.mem}} Gi, disk: {{vmClass.storage}} Gi)</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR1' | translate }}</clr-control-error>
+                </clr-select-container>
+                <div *ngIf="tkgmClusterParamForm.value.masterClass === 'Custom'">
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="masterCPU" #stepInput type="number" min=1/>
+                  </clr-input-container>
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="masterRAM" #stepInput type="number" min="1"/>
+                  </clr-input-container>
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="masterDisk" #stepInput type="number" min=1/>
+                  </clr-input-container>
+                </div>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput formControlName="workerNum" #stepInput type="number" min=1 max=100 required (change)="clusterCIDRAndWorkerNumValidator('TKGM')"/>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR1' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'min'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.TKGM-WORKERCOUNT-ERROR2' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'max'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.TKGM-WORKERCOUNT-ERROR3' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="workerClass" required>
+                    <option value="{{vmClass.name}}" *ngFor="let vmClass of tkgmNodeType">{{vmClass.name}} (cpu: {{vmClass.cpu}} vCPU, ram: {{vmClass.mem}} Gi, disk: {{vmClass.storage}} Gi)</option>
+                    <option value="Custom">Custom</option>
+                  </select>
+                  <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-ERROR' | translate }}</clr-control-error>
+                </clr-select-container>
+                <div *ngIf="tkgmClusterParamForm.value.workerClass === 'Custom'">
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="workerCPU" #stepInput type="number" min=1/>
+                  </clr-input-container>
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="workerRAM" #stepInput type="number" min="1"/>
+                  </clr-input-container>
+                  <clr-input-container>
+                    <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK-HELP' | translate }}</clr-control-helper>
+                    <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK' | translate }}</label>
+                    <input class="clr-col-md-9" clrInput formControlName="workerDisk" #stepInput type="number" min=1/>
+                  </clr-input-container>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-block">
+              <h3 class="card-title">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPARAM' | translate }}
+              </h3>
+              <span class="alert-text" style="font-size: 12px"><b>"{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKALERT1' | translate }}"</b> {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKALERT2' | translate }}</span>
+
+              <div class="card-text">
+                <clr-toggle-container>
+                  <clr-toggle-wrapper>
+                    <label>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STATICIP' | translate }}</label>
+                    <input type="checkbox" clrToggle [checked]="tkgmClusterParamForm.value.enableVIP" formControlName="enableVIP"  name="enableVIP" (change)="setVIPVaildtor(tkgmClusterParamForm.value.enableVIP)"/>
+                  </clr-toggle-wrapper>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STATICIP-HELP' | translate }}</clr-control-helper>
+                </clr-toggle-container>
+                <clr-input-container *ngIf="tkgmClusterParamForm.value.enableVIP">
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STATICIP-ADDRESS-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3 required">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STATICIP-ADDRESS' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="masterVIP" formControlName="masterVIP" type="string" placeholder="192.168.0.1" required/>
+                  <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.STATICIP-ADDRESS-ERROR' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-select-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.TKGM-NETWORKTYPE-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKTYPE' | translate }}</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="cniType">
+                    <option value="antrea">Antrea</option>
+                    <option value="calico">Calico</option>
+                    <option value="none">None</option>
+                  </select>
+                </clr-select-container>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.TKGM-NETWORKPODCIDR-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="podCIDR" formControlName="podCIDR" type="string" placeholder="100.96.0.0/11" (change)="clusterCIDRAndWorkerNumValidator('TKGM')"/>
+                  <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR2' | translate }} {{CIDRPattern}} {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR3' | translate }}</clr-control-error>
+                  <clr-control-error *clrIfError="'podNetmask'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKPODCIDR-ERROR1' | translate }}</clr-control-error>
+                </clr-input-container>
+                <clr-input-container>
+                  <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.TKGM-NETWRKSERVICECIDR-HELP' | translate }}</clr-control-helper>
+                  <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR' | translate }}</label>
+                  <input class="clr-col-md-9" clrInput name="serviceCIDR" formControlName="serviceCIDR" type="string" placeholder="100.64.0.0/13" />
+                  <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR-ERROR1' | translate }} {{CIDRPattern}} {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.NETWORKSERVICECIDR-ERROR2' | translate }}</clr-control-error>
+                </clr-input-container>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <br>
+  </clr-wizard-page>
+
+  <clr-wizard-page>
+    <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.PAGETITLE' | translate }}</ng-template>
+    {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.PAGEDESC' | translate }}
+    <br>
+
+    <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.BASICPARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERNAME' | translate }}</span>
+                    <span>{{basicClusterForm.value.name}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERDESC' | translate }}</span>
+                    <span>{{basicClusterForm.value.description}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.PROVIDERNAME' | translate }}</span>
+                    <div style="display: inline" *ngFor="let provider of providerList">
+                      <span *ngIf="provider.id === basicClusterForm.value.providerId">{{provider.name}}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.ENABLECONTOUR' | translate }}</span>
+                    <span>{{basicClusterForm.value.enableContour}}</span>
+                  </div>
+                  <div *featureToggle="featureGates.appBuild">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.ENABLETBS' | translate }}</span>
+                    <span>{{basicClusterForm.value.enableTBS}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="providerClass === 'TKGS'">
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERPARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERVERSION' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.tkcVersion}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERCUNT' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.masterNum}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERTYPE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.masterClass}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERSTORAGE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.masterStoragePolicy}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERCOUNT' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.workerNum}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERTYPE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.workerClass}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERSTORAGE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.workerStoragePolicy}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.STORAGEARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.DEFAULTSTORAGE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.defaultStorageClass}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.ETCDSTORAGECAP' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.masterEtcdSize}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.IMAGESTORAGECAP' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.workerContainerdSize}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKPARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKTYPE' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.cniType}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKPODCIDR' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.podCIDR}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKSERVICECIDR' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.serviceCIDR}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKSERVICEDOMAIN' | translate }}</span>
+                    <span>{{tkgsClusterParamForm.value.serviceDomain}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div *ngIf="providerClass === 'TKGM' || providerClass === 'TKG2M'">
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERPARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.CLUSTERVERSION' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.tkcVersion}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERCUNT' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.masterNum}}</span>
+                  </div>
+                  <div *ngIf="tkgmClusterParamForm.value.masterClass !== 'Custom'">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERTYPE' | translate }}</span>
+                    <div style="display: inline" *ngFor="let vmClass of tkgmNodeType">
+                      <span *ngIf="vmClass.name === tkgmClusterParamForm.value.masterClass">CPU: {{vmClass.cpu}}, RAM: {{vmClass.mem}} Gi, DISK: {{vmClass.storage}} Gi</span>
+                    </div>
+                  </div>
+                  <div *ngIf="tkgmClusterParamForm.value.masterClass === 'Custom'">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.MASTERTYPE' | translate }}</span>
+                    <span>CPU: {{tkgmClusterParamForm.value.masterCPU}}, RAM: {{tkgmClusterParamForm.value.masterRAM}} Gi, DISK: {{tkgmClusterParamForm.value.masterDisk}} Gi</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERCOUNT' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.workerNum}}</span>
+                  </div>
+                  <div *ngIf="tkgmClusterParamForm.value.workerClass !== 'Custom'">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERTYPE' | translate }}</span>
+                    <div style="display: inline" *ngFor="let vmClass of tkgmNodeType">
+                      <span *ngIf="vmClass.name === tkgmClusterParamForm.value.workerClass">CPU: {{vmClass.cpu}}, RAM: {{vmClass.mem}} Gi, DISK: {{vmClass.storage}} Gi</span>
+                    </div>
+                  </div>
+                  <div *ngIf="tkgmClusterParamForm.value.workerClass === 'Custom'">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.WORKERTYPE' | translate }}</span>
+                    <span>CPU: {{tkgmClusterParamForm.value.workerCPU}}, RAM: {{tkgmClusterParamForm.value.workerRAM}} Gi, DISK: {{tkgmClusterParamForm.value.workerDisk}} Gi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="clr-row">
+        <div class="clr-col-lg-12 clr-col-12">
+            <div class="card">
+              <div class="card-header">
+                {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKPARAM' | translate }}
+              </div>
+              <div class="card-block">
+                <div class="card-text">
+                  <div *ngIf="tkgmClusterParamForm.value.enableVIP">
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.STATICIP' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.masterVIP}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKTYPE' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.cniType}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKPODCIDR' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.podCIDR}}</span>
+                  </div>
+                  <div>
+                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.NETWORKSERVICECIDR' | translate }}</span>
+                    <span>{{tkgmClusterParamForm.value.serviceCIDR}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    </div>
+  </clr-wizard-page>
+</clr-wizard>
+
+<clr-wizard #wizardaddcluster [(clrWizardOpen)]="attachClusterOpen" (clrWizardOnFinish)="doAttachClusterFinish()" (clrWizardOnCancel)="doAttachClusterCancel()" clrWizardSize="lg">
+    <clr-wizard-title>{{ 'CLUSTERSMGMT.ATTACHCLUSTER' | translate }}</clr-wizard-title>
+
+    <clr-wizard-button [type]="'cancel'">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'previous'">{{ 'SHARED.PAGEACTIONS.PAGEPRE' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'next'">{{ 'SHARED.PAGEACTIONS.PAGENEXT' | translate }}</clr-wizard-button>
+    <clr-wizard-button [type]="'finish'">{{ 'SHARED.PAGEACTIONS.PAGEADD' | translate }}</clr-wizard-button>
+
+    <clr-wizard-page [clrWizardPageNextDisabled]="!ClusterConnectSuccess || basicAttachClusterForm.invalid">
+        <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.PAGETITLE' | translate }}</ng-template>
+        {{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.PAGEDESC' | translate }}
+        <div class="alert alert-info alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+              </div>
+              <span class="alert-text">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.PAGEALERT1' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </div>
+              <span class="alert-text">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.PAGEALERT3' | translate }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form clrForm [formGroup]="basicAttachClusterForm">
+            <clr-input-container>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME' | translate }}</label>
+              <input class="clr-col-md-9" clrInput id="name" name="name" formControlName="name" type="string" required/>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'maxlength'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-ERROR2' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-ERROR3' | translate }} {{restricNamePattern}} {{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-ERROR4' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'name'">{{basicAttachClusterForm.value.name}}{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERNAME-ERROR5' | translate }}</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container>
+              <label class="clr-col-md-3">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="description" type="string" style="width: 150%; height: 100px;"></textarea>
+            </clr-textarea-container>
+            <clr-input-container>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERENDPOINT-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERENDPOINT' | translate }}</label>
+              <input class="clr-col-md-9" clrInput name="endpoint" formControlName="endpoint" type="string" required placeholder="https://192.168.1.1:6443" (change)="this.ClusterConnectSuccess = false; this.showClusterConnectAlert = false;"/>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERENDPOINT-ERROR1' | translate }}</clr-control-error>
+              <clr-control-error *clrIfError="'pattern'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERENDPOINT-ERROR2' | translate }} {{endpointPattern}}。</clr-control-error>
+            </clr-input-container>
+            <clr-textarea-container *ngIf="!basicAttachClusterForm.value.skipTLS">
+              <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CACERT' | translate }}</label>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CACERT-HELP' | translate }}</clr-control-helper>
+              <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+              </textarea>
+            </clr-textarea-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label class="clr-col-md-9">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.SKIPTLS' | translate }}</label>
+                <input type="checkbox" clrToggle [checked]="basicAttachClusterForm.value.skipTLS" formControlName="skipTLS" name="skipTLS"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.SKIPTLS-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-password-container>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERTOKEN-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERTOKEN' | translate }}</label>
+              <input class="clr-col-md-9" clrPassword name="token" formControlName="token" type="string" required (change)="this.ClusterConnectSuccess = false; this.showClusterConnectAlert = false;"/>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERTOKEN-ERROR' | translate }}</clr-control-error>
+            </clr-password-container>
+            <clr-combobox-container>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERREPO-HELP' | translate }}</clr-control-helper>
+              <label class="clr-col-md-3 required">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERREPO' | translate }}</label>
+              <clr-combobox class="clr-col-md-9" clrMulti="true" formControlName="registry" name="registry" required>
+                <ng-container *clrOptionSelected="let selected">
+                  <clr-icon shape="bundle" role="img"></clr-icon> {{selected.name}}
+                </ng-container>
+                <clr-options>
+                  <clr-option *clrOptionItems="let registry of registryList; field:'name'" [clrValue]="registry">
+                    <clr-icon shape="bundle" role="img"></clr-icon> {{registry.name}}
+                  </clr-option>
+                </clr-options>
+              </clr-combobox>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERREPO-ERROR' | translate }}</clr-control-error>
+            </clr-combobox-container>
+            <clr-select-container>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.DEFAULTREPO-HELP' | translate }}</clr-control-helper>
+              <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.DEFAULTREPO' | translate }}</label>
+              <select class="clr-col-md-9" clrSelect formControlName="defaultRegistry" required>
+                <option value="{{regsitry.id}}" *ngFor="let regsitry of getSelectedRegistry();">{{regsitry.name}}</option>
+              </select>
+              <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.DEFAULTREPO-ERROR' | translate }}</clr-control-error>
+            </clr-select-container>
+            <button [disabled]="!basicAttachClusterForm.value.defaultRegistry || !basicAttachClusterForm.value.endpoint || !basicAttachClusterForm.value.token" (click)="checkAttachClusterConnect(basicAttachClusterForm.value.endpoint, basicAttachClusterForm.value.token, basicAttachClusterForm.value.defaultRegistry)" class="btn-sm btn btn-outline">
+               <clr-icon shape="connect"></clr-icon>
+               {{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CONNECTTEST' | translate }}
+            </button>
+            <div class="alert" [ngClass]="{'alert-success': ClusterConnectSuccess, 'alert-danger': !ClusterConnectSuccess}" role="alert" *ngIf="showClusterConnectAlert">
+              <div class="alert-items">
+               <div class="alert-item static">
+                 <div class="alert-icon-wrapper">
+                    <clr-icon *ngIf="ClusterConnectSuccess" class="alert-icon" shape="check-circle"></clr-icon>
+                    <clr-icon *ngIf="!ClusterConnectSuccess" class="alert-icon" shape="error-standard"></clr-icon>
+                 </div>
+                 <span class="alert-text" *ngIf="ClusterConnectSuccess">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CONNECTSUCCESSALERT' | translate }}</span>
+                 <span class="alert-text" *ngIf="!ClusterConnectSuccess">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CONNECTFAILEDALERT' | translate }}</span>
+               </div>
+              </div>
+            </div>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERLBENABLE' | translate }}</label>
+                <input type="checkbox"  clrToggle name="enableGlobalLB" formControlName="enableGlobalLB" (change)="setLBVaildtor(basicAttachClusterForm.value.enableGlobalLB)"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper style="min-width: 120%">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERLBENABLE-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-select-container *ngIf="basicAttachClusterForm.value.enableGlobalLB">
+              <label class="clr-col-md-3 required">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERLB' | translate }}</label>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.CLUSTERLB-HELP' | translate }}</clr-control-helper>
+              <select class="clr-col-md-9" clrSelect formControlName="loadBalancerId">
+                <option value="{{lb.id}}" *ngFor="let lb of lbList">{{lb.name}}</option>
+              </select>
+            </clr-select-container>
+            <clr-toggle-container>
+              <clr-toggle-wrapper>
+                <label>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLECONTOUR' | translate }}</label>
+                <input type="checkbox" clrToggle formControlName="enableContour" name="enableContour"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLECONTOUR-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+            <clr-toggle-container *featureToggle="featureGates.appBuild">
+              <clr-toggle-wrapper>
+                <label>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLETBS' | translate }}</label>
+                <input type="checkbox" clrToggle formControlName="enableTBS" name="enableTBS"/>
+              </clr-toggle-wrapper>
+              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLETBS-HELP' | translate }}</clr-control-helper>
+            </clr-toggle-container>
+        </form>
+    </clr-wizard-page>
+
+  <clr-wizard-page [clrWizardPageNextDisabled]="trustCAFrom.invalid" *ngIf="basicAttachClusterForm.value.enableTBS">
+    <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.TITLE' | translate }}</ng-template>
+    <div class="alert alert-danger alert-sm" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+          </div>
+          <span class="alert-text" style="font-size: 12px">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.PAGEDESC' | translate }}</span>
+    </div>
+
+    <form clrForm [formGroup]="trustCAFrom">
+      <div formArrayName="trustCA">
+        <div *ngFor="let caInfo of caList.controls; let i = index" [formGroupName]="i">
+          <div class="clr-row">
+            <div class="clr-col-lg-12 clr-col-12">
+              <div class="card">
+                <div class="card-block">
+                  <h3 class="card-title">
+                    {{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.CA' | translate }} {{i + 1}} {{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.INFO' | translate }}
+                    <button class="btn btn-link btn-icon" (click)="deleteCA(i)">
+                      <clr-icon shape="window-close"></clr-icon>
+                    </button>
+                  </h3>
+                  <div class="card-text">
+                    <clr-textarea-container>
+                      <label class="required clr-col-md-2">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.CACONTEXT' | translate }}</label>
+                      <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.CACONTEXT-HELP' | translate }}</clr-control-helper>
+                      <textarea class="clr-col-md-9" clrTextarea formControlName="caCert" type="string" style="width: 150%; height: 200px;" placeholder="-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----">
+                      </textarea>
+                      <clr-control-error *clrIfError="'CAFormat'">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.CACONTEXT-ERROR1' | translate }}</clr-control-error>
+                    </clr-textarea-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+    <br>
+    <button class="btn btn-outline" (click)="addCA()">{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE2.ADDCA' | translate }}</button>
+  </clr-wizard-page>
+
+</clr-wizard>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGSVMclassDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGSClusterVMClassForm">
+        <clr-select-container>
+          <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="masterVMClass" required (change)="updateTKGSVMclassChanged=true;">
+            <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERTYPE-ERROR1' | translate }}</clr-control-error>
+        </clr-select-container>
+        <clr-select-container>
+          <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-HELP' | translate }}</clr-control-helper>
+          <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE' | translate }}</label>
+          <select class="clr-col-md-9" clrSelect formControlName="workerVMClass" required (change)="updateTKGSVMclassChanged=true;">
+            <option value="{{vmClass.name}}" *ngFor="let vmClass of tkcvmClassList">{{vmClass.name}} ({{vmClass.spec.hardware.cpus}}vCPU, {{vmClass.spec.hardware.memory}}, 16Gi)</option>
+          </select>
+          <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERTYPE-ERROR' | translate }}</clr-control-error>
+        </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGSVMclassDialog=false;updateTKGSClusterVMClassForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterVMClass();updateTKGSClusterVMClassForm.reset()" [disabled]="updateTKGSClusterVMClassForm.invalid || !updateTKGSVMclassChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGMVMclassDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERSMGMT.ACTIONS.TKGM-NODETYPE-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGMClusterVMClassForm">
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterCPU" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERMEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterRAM" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERDISK' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="masterDisk" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCPU' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerCPU" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERMEM' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerRAM" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+      <clr-input-container>
+        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK-HELP' | translate }}</clr-control-helper>
+        <label class="clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERDISK' | translate }}</label>
+        <input class="clr-col-md-9" clrInput formControlName="workerDisk" #stepInput type="number" min="1" (change)="updateTKGMVMclassChanged=true;"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGMVMclassDialog=false;updateTKGMClusterVMClassForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterVMClass();updateTKGMClusterVMClassForm.reset()" [disabled]="updateTKGMClusterVMClassForm.invalid || !updateTKGMVMclassChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateWorkerDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label>{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT-DESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGSClusterWorkerForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input clrInput  formControlName="workerCount" type="number" #stepInupt required size="20" (change)="updateWorkerChanged=true;"/>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR1' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'min'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR2' | translate }}</clr-control-error>
+        <clr-control-error *clrIfError="'max'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.WORKERCOUNT-ERROR3' | translate }}</clr-control-error>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateWorkerDialog=false;updateTKGSClusterWorkerForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterWorker(selectedClusterId, updateTKGSClusterWorkerForm.value.workerCount);updateTKGSClusterWorkerForm.reset()" [disabled]="updateTKGSClusterWorkerForm.invalid || !updateWorkerChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGSMasterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div class="alert alert-warning alert-sm" role="alert" *ngIf="!allowUpdateClusterMaster">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="warning-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="allowUpdateClusterMaster">
+      <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.PAGEDESC' | translate }}</span>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGSMasterDialog=false;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterMaster(selectedClusterId);" [disabled]="!allowUpdateClusterMaster">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateTKGMMasterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</h3>
+  <div class="modal-body">
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.TKGMPAGEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="updateTKGMClusterMasterForm">
+      <clr-select-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <select class="clr-col-md-9" clrSelect formControlName="masterCount" required type="number" (change)="updateWorkerChanged=true;">
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+        </select>
+        <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT-PAGE.MASTERCOUNT-ERROR1' | translate }}</clr-control-error>
+      </clr-select-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateTKGMMasterDialog=false;updateTKGMClusterMasterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterMaster(selectedClusterId);updateTKGMClusterMasterForm.reset()" [disabled]="updateTKGMClusterMasterForm.invalid || !updateWorkerChanged">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="showUpdateClusterDescDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</h3>
+  <div class="modal-body">
+    <form clrForm [formGroup]="updateClusterDescForm">
+      <clr-textarea-container>
+        <label class="clr-col-md-2">{{ 'SHARED.DATAGRID.DESC' | translate }}</label>
+        <textarea class="clr-col-md-10" clrTextarea formControlName="description" type="string" style="width: 150%;height: 100px;"></textarea>
+      </clr-textarea-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="showUpdateClusterDescDialog=false;updateClusterDescForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="doUpdateClusterDescription();updateClusterDescForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGEUPDATE' | translate }}</button>
+  </div>
+</clr-modal>
+
+
+<clr-modal [(clrModalOpen)]="deleteClusterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{selectedClusterName}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedClusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="deleteClusterDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="deleteClusterById(selectedClusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== selectedClusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="removeClusterDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{selectedClusterName}}</b> ?</p>
+    <div class="alert alert-info" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER-PAGE.PAGEALERT' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedClusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="removeClusterDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="removeClusterById(selectedClusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== selectedClusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<clr-modal [(clrModalOpen)]="forceDeleteDialog" [clrModalClosable]="false">
+  <h3 class="modal-title">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</h3>
+  <div class="modal-body">
+    <p>{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEDESC' | translate }} <b>{{selectedClusterName}}</b> ?</p>
+    <div class="alert alert-danger" role="alert">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEALERT1' | translate }}</span>
+        </div>
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <clr-icon class="alert-icon" shape="error-standard"></clr-icon>
+          </div>
+          <span class="alert-text">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER-PAGE.PAGEALERT2' | translate }}</span>
+        </div>
+      </div>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="start start" fxLayoutGap="8px">
+      <clr-input-container>
+        <label class="required">{{ 'SHARED.DELETE.DELETEDESC' | translate }}</label>
+      </clr-input-container>
+    </div>
+    <form clrForm [formGroup]="deleteClusterForm">
+      <clr-input-container style="margin-top: .2rem;">
+        <label style="max-width: 0px; display: none"></label>
+        <input fxFlex="1 1 auto" clrInput  formControlName="confirm" type="string" required placeholder="{{selectedClusterName}}" size="20"/>
+      </clr-input-container>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline" (click)="forceDeleteDialog=false;deleteClusterForm.reset()">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
+    <button type="button" class="btn btn-primary"
+      (click)="forceDeleteClusterById(selectedClusterId);deleteClusterForm.reset()" [disabled]="deleteClusterForm.invalid || deleteClusterForm.value.confirm !== selectedClusterName">{{ 'SHARED.PAGEACTIONS.PAGECOMFIRM' | translate }}</button>
+  </div>
+</clr-modal>
+
+<router-outlet></router-outlet>

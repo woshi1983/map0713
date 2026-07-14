@@ -1,0 +1,86 @@
+type BinaryImage {
+  name: String!
+  annotations: Map
+  labels: Map
+  spec: BinaryImageSpec!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  BinaryImage(cluster: ID!, name: String!): BinaryImage!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  BinaryImages(filters: [QueryFilter!] = []): [BinaryImage!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateBinaryImage(input: CreateBinaryImage!): BinaryImage!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateBinaryImage(input: UpdateBinaryImage!): BinaryImage!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteBinaryImage(input: DeleteBinaryImage!): BinaryImage!
+}
+
+type BinaryImageSpec {
+  baseImage: String!
+  distImage: String!
+  binaryDir: String!
+  url: URL!
+  processUID: Int!
+}
+
+input CreateBinaryImage {
+  name: String!
+  annotations: Map
+  spec: CreateBinaryImageSpec!
+  cluster: ID!
+}
+
+input UpdateBinaryImage {
+  name: String!
+  annotations: Map
+  spec: UpdateBinaryImageSpec
+  cluster: ID!
+}
+
+input DeleteBinaryImage {
+  name: String!
+  cluster: ID!
+}
+
+input CreateBinaryImageSpec {
+  baseImage: String!
+  distImage: String!
+  binaryDir: String!
+  url: URL!
+  processUID: Int = 0
+}
+
+input UpdateBinaryImageSpec {
+  baseImage: String
+  distImage: String
+  binaryDir: String
+  url: URL
+  processUID: Int
+}

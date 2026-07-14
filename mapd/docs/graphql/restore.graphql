@@ -1,0 +1,66 @@
+type Restore {
+  name: String!
+  labels: Map
+  spec: RestoreSpec!
+  status: RestoreStatus!
+  backup: Backup
+  location: BackupStorageLocation
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Restore(cluster: ID!, name: String!): Restore!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `location`
+
+  - `backup`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Restores(filters: [QueryFilter!] = []): [Restore!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateRestore(input: CreateRestore!): Restore!
+}
+
+type RestoreSpec {
+  includedNamespaces: [String!]
+  excludedNamespaces: [String!]
+  namespaceMapping: Map
+}
+
+enum RestoreStatus {
+  UNKNOWN
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILURE
+}
+
+input CreateRestore {
+  name: String!
+  spec: CreateRestoreSpec!
+  backup: String!
+  cluster: ID!
+}
+
+input CreateRestoreSpec {
+  includedNamespaces: [String!]
+  excludedNamespaces: [String!]
+  namespaceMapping: Map
+}

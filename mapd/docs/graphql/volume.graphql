@@ -1,0 +1,70 @@
+union Volume = HostPath | EmptyDir | ConfigMapVolume | SecretVolume | PersistentVolumeClaimVolume
+
+type HostPath {
+  path: String
+  type: String
+}
+
+type EmptyDir {
+  medium: String
+  size: String
+}
+
+type ConfigMapVolume {
+  name: String
+  ref: ConfigMap
+  items: [TemplateSpecVolumeKeyToPath!]
+  defaultMode: Int
+}
+
+type SecretVolume {
+  name: String
+  ref: Secret
+  items: [TemplateSpecVolumeKeyToPath!]
+  defaultMode: Int
+}
+
+type PersistentVolumeClaimVolume {
+  name: String
+  ref: PersistentVolumeClaim
+  readOnly: Boolean
+}
+
+type TemplateSpecVolumeKeyToPath {
+	key: String
+  path: String
+  mode: Int
+}
+
+input HostPathInput {
+  path: String!
+  type: String
+}
+
+input EmptyDirInput {
+  medium: String
+  size: String
+}
+
+input ConfigMapVolumeInput {
+  name: String!
+  items: [TemplateSpecVolumeKeyToPathInput!]
+  defaultMode: Int
+}
+
+input SecretVolumeInput {
+  name: String!
+  items: [TemplateSpecVolumeKeyToPathInput!]
+  defaultMode: Int
+}
+
+input PersistentVolumeClaimVolumeInput {
+  name: String!
+  readOnly: Boolean
+}
+
+input TemplateSpecVolumeKeyToPathInput {
+	key: String!
+  path: String!
+  mode: Int
+}

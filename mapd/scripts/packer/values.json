@@ -1,0 +1,20 @@
+{
+    "name": "vmware-tanzu-map",
+    "vcenter_server": "vcsa.example.org",
+    "username": "administrator@vsphere.local",
+    "password": "",
+    "template": "rocky-8-base",
+    "network": "VM Network",
+    "datacenter": "Datacenter",
+    "cluster": "",
+    "resource_pool": "",
+    "folder": "",
+    "host": "",
+    "datastore": "Datastore",
+    "ssh_username": "root",
+    "ssh_password": "vmware",
+    "docker_compose_download": "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-linux-x86_64",
+    "harbor_download": "https://github.com/goharbor/harbor/releases/download/v2.5.3/harbor-offline-installer-v2.5.3.tgz",
+    "cfssl_download": "https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssl_1.6.1_linux_amd64",
+    "cfssljson_download": "https://github.com/cloudflare/cfssl/releases/download/v1.6.1/cfssljson_1.6.1_linux_amd64"
+}

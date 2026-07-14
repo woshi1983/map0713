@@ -1,0 +1,94 @@
+type Instance {
+  id: ID!
+  name: String!
+  namespace: String!
+  autoRestart: Boolean!
+  manifest: [Any!]
+  status: InstanceStatus!
+  health: InstanceHealth!
+  services(filters: [QueryFilter!] = []): [Service!]
+  cluster: Cluster!
+  release: Release!
+  federation: InstanceFederation!
+  component: Component!
+  application: Application!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Instances {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: InstanceNodes!
+}
+
+extend type Query {
+  """
+  requires `read:instance` or above.
+  """
+  Instance(id: ID!): Instance!
+  """
+  requires `read:instance` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `cluster`
+
+  - `release`
+
+  - `federation`
+
+  - `component`
+
+  - `application`
+
+  - `organization`
+  """
+  Instances(page: QueryPage = {}, filters: [QueryFilter!] = []): Instances!
+}
+
+type InstanceNodes {
+  nodes: [Instance!]
+}
+
+type InstanceStatus {
+  state: InstanceState!
+  tasks: [InstanceStatusTask!]
+}
+
+enum InstanceState {
+  PENDING
+  PROVISIONING
+  SKIPPED
+  SUCCESS
+  FAILURE
+  DELETING
+}
+
+type InstanceStatusTask {
+  name: String!
+  namespace: String
+  kind: String!
+  state: InstanceState!
+  message: String!
+}
+
+type InstanceHealth {
+  available: Int!
+  ready: Int!
+  workloads: [InstanceWorkloadHealth!]
+}
+
+type InstanceWorkloadHealth {
+  name: String!
+  namespace: String
+  kind: String!
+  readyReplicas: Int!
+  replicas: Int!
+}

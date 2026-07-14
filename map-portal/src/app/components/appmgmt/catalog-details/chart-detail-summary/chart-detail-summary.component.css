@@ -1,0 +1,29 @@
+.content-wrapper {
+  margin-top: 20px;
+  padding: 0 0 0 15px;
+}
+.content-wrapper .md-container {
+  border: solid 1px;
+}
+.content-wrapper .summary-container {
+  padding: 0;
+}
+.content-wrapper .summary-container table {
+  margin-top: 0.5rem;
+}
+.content-wrapper .summary-container .content-group {
+  margin-bottom: 30px;
+}
+.content-wrapper .summary-container .content-icon {
+  margin-right: 6px;
+}
+.content-wrapper .summary-container .text-wrapper {
+  word-break: break-all;
+}
+.content-wrapper .cmd-title {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.content-wrapper .cmd-content {
+  width: 100%;
+}

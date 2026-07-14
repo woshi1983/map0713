@@ -1,0 +1,314 @@
+union ComponentTemplate = BasicComponentTemplate | HelmComponentTemplate | RAWComponentTemplate
+
+type Component {
+  id: ID!
+  name: String!
+  description: String!
+  type: ComponentType!
+  avatar: URL!
+  template: ComponentTemplate
+  application: Application!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Components {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ComponentNodes!
+}
+
+extend type Query {
+  """
+  requires `read:component` or above.
+  """
+  Component(id: ID!): Component!
+  """
+  requires `read:component` or above.
+
+  Filters:
+
+  - `name`
+
+  - `clusterBackupSchedule`
+
+  - `application`
+
+  - `organization`
+  """
+  Components(page: QueryPage = {}, filters: [QueryFilter!] = []): Components!
+}
+
+extend type Mutation {
+  """
+  requires `write:component` or above.
+  """
+  CreateComponent(input: CreateComponent!): Component!
+  """
+  requires `write:component` or above.
+  """
+  UpdateComponent(input: UpdateComponent!): Component!
+  """
+  requires `modify:component` or above.
+  """
+  DeleteComponent(input: DeleteComponent!): Component!
+}
+
+type ComponentNodes {
+  nodes: [Component!]
+}
+
+enum ComponentType {
+  BASIC
+  HELM
+  RAW
+}
+
+type BasicComponentTemplate {
+  deployments: [BasicComponentTemplateDeployment!]
+  services: [BasicComponentTemplateService!]
+  secrets: [BasicComponentTemplateSecret!]
+  configMaps: [BasicComponentTemplateConfigMap!]
+  persistentVolumeClaims: [BasicComponentTemplatePersistentVolumeClaim!]
+}
+
+type BasicComponentTemplateDeployment {
+  name: String!
+  labels: Map
+  spec: DeploymentSpec!
+  hpa: HorizontalPodAutoscalerSpec
+}
+
+type HorizontalPodAutoscalerSpec {
+  maxReplicas: Int
+  minReplicas: Int
+  targetCPUUtilizationPercentage: Int
+  targetMemoryUtilizationPercentage: Int
+}
+
+type BasicComponentTemplateService {
+  name: String!
+  labels: Map
+  spec: ServiceSpec!
+}
+
+union BasicComponentTemplateSecret = BasicComponentTemplateGenericSecret | BasicComponentTemplateDockerConfigJSONSecret | BasicComponentTemplateBasicAuthSecret | BasicComponentTemplateSSHAuthSecret | BasicComponentTemplateTLSSecret
+
+type BasicComponentTemplateGenericSecret {
+  name: String!
+  labels: Map
+  data: Map
+  type: String
+}
+
+type BasicComponentTemplateDockerConfigJSONSecret {
+  name: String!
+  labels: Map
+  endpoint: URL
+  authUser: String
+  email: String
+  type: String
+}
+
+type BasicComponentTemplateBasicAuthSecret {
+  name: String!
+  labels: Map
+  authUser: String
+  type: String
+}
+
+type BasicComponentTemplateSSHAuthSecret {
+  name: String!
+  labels: Map
+  type: String
+}
+
+type BasicComponentTemplateTLSSecret {
+  name: String!
+  labels: Map
+  cert: String
+  type: String
+}
+
+type BasicComponentTemplateConfigMap {
+  name: String!
+  labels: Map
+  data: Map
+}
+
+type BasicComponentTemplatePersistentVolumeClaim {
+  name: String!
+  labels: Map
+  spec: PersistentVolumeClaimSpec
+}
+
+type HelmComponentTemplate {
+  chart: ChartDetails
+  url: URL!
+  values: Any
+  extraInfo: Map
+}
+
+type RAWComponentTemplate {
+  raw: String!
+}
+
+input CreateComponent {
+  name: String!
+  description: String
+  avatar: URL
+  template: CreateComponentTemplate!
+  application: ID!
+}
+
+input UpdateComponent {
+  id: ID!
+  description: String
+  avatar: URL
+  template: UpdateComponentTemplate
+}
+
+input DeleteComponent {
+  id: ID!
+}
+
+input CreateComponentTemplate {
+  basic: CreateBasicComponentTemplate
+  helm: CreateHelmComponentTemplate
+  raw: String
+}
+
+input UpdateComponentTemplate {
+  """only allowed for BASIC component
+  """
+  basic: UpdateBasicComponentTemplate
+  """only allowed for HELM component
+  """
+  helm: UpdateHelmComponentTemplate
+  """only allowed for RAW component
+  """
+  raw: String
+}
+
+input CreateBasicComponentTemplate {
+  deployments: [AddBasicComponentTemplateDeployment!]
+  services: [AddBasicComponentTemplateService!]
+  secrets: [AddBasicComponentTemplateSecret!]
+  configMaps: [AddBasicComponentTemplateConfigMap!]
+  persistentVolumeClaims: [AddBasicComponentTemplatePersistentVolumeClaim!]
+}
+
+input AddBasicComponentTemplateDeployment {
+  name: String!
+  labels: Map
+  spec: CreateDeploymentSpec!
+  hpa: CreateHorizontalPodAutoscalerSpec
+}
+
+input RemoveBasicComponentTemplateDeployment {
+  name: String!
+}
+
+input CreateHorizontalPodAutoscalerSpec {
+  maxReplicas: Int
+  minReplicas: Int
+  targetCPUUtilizationPercentage: Int
+  targetMemoryUtilizationPercentage: Int
+}
+
+input AddBasicComponentTemplateService {
+  name: String!
+  labels: Map
+  spec: CreateServiceSpec!
+}
+
+input RemoveBasicComponentTemplateService {
+  name: String!
+}
+
+input AddBasicComponentTemplateSecret {
+  name: String!
+  labels: Map
+  generic: AddBasicComponentTemplateGenericSecret
+  dockerConfigJSON: AddBasicComponentTemplateDockerConfigJSONSecret
+  basicAuth: AddBasicComponentTemplateBasicAuthSecret
+  sshAuth: AddBasicComponentTemplateSSHAuthSecret
+  tls: AddBasicComponentTemplateTLSSecret
+}
+
+input RemoveBasicComponentTemplateSecret {
+  name: String!
+}
+
+input AddBasicComponentTemplateGenericSecret {
+  data: Map!
+  type: String! = "Opaque"
+}
+
+input AddBasicComponentTemplateDockerConfigJSONSecret {
+  endpoint: URL! = "https://index.docker.io/v1/"
+  authUser: String!
+  authPassword: String!
+  email: String
+}
+
+input AddBasicComponentTemplateBasicAuthSecret {
+  authUser: String!
+  authPassword: String!
+}
+
+input AddBasicComponentTemplateSSHAuthSecret {
+  privateKey: String!
+}
+
+input AddBasicComponentTemplateTLSSecret {
+  cert: String!
+  key: String!
+}
+
+input AddBasicComponentTemplateConfigMap {
+  name: String!
+  labels: Map
+  data: Map!
+}
+
+input RemoveBasicComponentTemplateConfigMap {
+  name: String!
+}
+
+input AddBasicComponentTemplatePersistentVolumeClaim {
+  name: String!
+  labels: Map
+  spec: CreatePersistentVolumeClaimSpec!
+}
+
+input RemoveBasicComponentTemplatePersistentVolumeClaim {
+  name: String!
+}
+
+input CreateHelmComponentTemplate {
+  url: URL!
+  values: Any
+  extraInfo: Map
+}
+
+input UpdateBasicComponentTemplate {
+  addDeployments: [AddBasicComponentTemplateDeployment!]
+  removeDeployments: [RemoveBasicComponentTemplateDeployment!]
+  addServices: [AddBasicComponentTemplateService!]
+  removeServices: [RemoveBasicComponentTemplateService!]
+  addSecrets: [AddBasicComponentTemplateSecret!]
+  removeSecrets: [RemoveBasicComponentTemplateSecret!]
+  addConfigMaps: [AddBasicComponentTemplateConfigMap!]
+  removeConfigMaps: [RemoveBasicComponentTemplateConfigMap!]
+  addPersistentVolumeClaims: [AddBasicComponentTemplatePersistentVolumeClaim!]
+  removePersistentVolumeClaims: [RemoveBasicComponentTemplatePersistentVolumeClaim!]
+}
+
+input UpdateHelmComponentTemplate {
+  url: URL
+  values: Any
+  extraInfo: Map
+}

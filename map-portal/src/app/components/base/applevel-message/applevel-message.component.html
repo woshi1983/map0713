@@ -1,0 +1,22 @@
+<div class="alert alert-app-level" [ngClass]="{'alert-warning': alertType == 1, 'alert-info': alertType == 2, 'alert-danger': alertType == 0}" role="alert" *ngIf="messages">
+    <div class="alert-items" style="align-items: center;">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper" [ngSwitch]="alertType">
+              <ng-template [ngSwitchCase]="0">
+                <clr-icon class="alert-icon" shape="exclamation-circle"></clr-icon>
+              </ng-template>
+              <ng-template [ngSwitchCase]="1">
+                <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
+              </ng-template>
+              <ng-template [ngSwitchCase]="2">
+                <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+              </ng-template>
+            </div>
+            <span class="alert-text" style="letter-spacing: 2px;white-space: nowrap;">{{messages.text}}</span>
+        </div>
+    </div>
+    <button type="button" class="close" aria-label="Close">
+        <clr-icon aria-hidden="true" shape="close" (click)="clearMsg()"></clr-icon>
+    </button>
+</div>
+

@@ -1,0 +1,134 @@
+type Backup {
+  name: String!
+  labels: Map
+  spec: BackupSpec!
+  status: BackupStatus!
+  instances: [BackupInstance!]
+  restores(filters: [QueryFilter!] = []): [Restore!]
+  location: BackupStorageLocation
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Backup(cluster: ID!, name: String!): Backup!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `location`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Backups(filters: [QueryFilter!] = []): [Backup!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateBackup(input: CreateBackup!): Backup!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteBackup(input: DeleteBackup!): Backup!
+}
+
+type BackupSpec {
+  useRestic: Boolean!
+  includedNamespaces: [String!]
+  excludedNamespaces: [String!]
+  includedResources: [String!]
+  excludedResources: [String!]
+  ttl: Duration!
+  includeClusterResources: Boolean
+}
+
+enum BackupStatus {
+  UNKNOWN
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILURE
+}
+
+type BackupInstance {
+  name: String!
+  namespace: String!
+}
+
+input CreateBackup {
+  name: String!
+  spec: CreateBackupSpec = {}
+  location: String!
+  cluster: ID!
+}
+
+input DeleteBackup {
+  name: String!
+  cluster: ID!
+}
+
+input CreateBackupSpec {
+  useRestic: Boolean = false
+  includedNamespaces: [String!]
+  """the following namespaces will be automatically excluded by default:
+
+  - `avi-system`
+
+  - `build-service`
+
+  - `cert-manager`
+
+  - `default`
+
+  - `kpack`
+
+  - `kube-node-lease`
+
+  - `kube-public`
+
+  - `kube-system`
+
+  - `stacks-operator-system`
+
+  - `tanzu-package-repo-global`
+
+  - `tanzu-system-dashboards`
+
+  - `tanzu-system-ingress`
+
+  - `tanzu-system-logging`
+
+  - `tanzu-system-monitoring`
+
+  - `tkg-system`
+
+  - `vmware-system-auth`
+
+  - `vmware-system-cloud-provider`
+
+  - `vmware-system-csi`
+
+  - `vmware-system-elasic`
+
+  - `vmware-system-map`
+
+  - `vmware-system-octant`
+  """
+  excludedNamespaces: [String!]
+  includedResources: [String!]
+  excludedResources: [String!]
+  components: [ID!]
+  ttl: Duration = "PT720H"
+  includeClusterResources: Boolean
+}

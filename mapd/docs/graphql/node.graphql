@@ -1,0 +1,151 @@
+type Node {
+  name: String!
+  labels: Map
+  spec: NodeSpec!
+  status: NodeStatus!
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Nodes(filters: [QueryFilter!] = []): [Node!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateNode(input: UpdateNode!): Node!
+}
+
+extend type Subscription {
+  """
+  requires `write:cluster_resource` or above.
+
+  DrainNode will run automatically at foreground. The progress will be terminated immediately
+  once the session is closed.
+  """
+  DrainNode(input: DrainNode!): DrainNodeEvent!
+}
+
+type NodeSpec {
+  unschedulable: Boolean!
+  taints: [NodeTaint!]
+}
+
+type NodeTaint {
+  key: String!
+  value: String!
+  effect: String!
+}
+
+type NodeStatus {
+  _name: String!
+  _cluster: ID!
+  kernelVersion: String!
+  os: String!
+  osImage: String!
+  """`usage`, `allocatable`, and `capacity` contains qualified metrics results.
+
+  suffixes:
+
+  - ``: 1
+
+  - `Ki`: 2^10
+
+  - `Mi`: 2^20
+
+  - `Gi`: 2^30
+
+  - `Ti`: 2^40
+
+  - `Pi`: 2^50
+
+  - `Ei`: 2^60
+
+  - `n`: 10^-9
+
+  - `u`: 10^-6
+
+  - `m`: 10^-3
+
+  - `k`: 10^3
+
+  - `M`: 10^6
+
+  - `G`: 10^9
+
+  - `T`: 10^12
+
+  - `P`: 10^15
+
+  - `E`: 10^18
+  """
+  usage: Map
+  allocated: NodeAllocatedResources!
+  allocatable: Map
+  capacity: Map
+  ready: Boolean
+  internalIP: [IP!]
+  externalIP: [IP!]
+}
+
+type NodeAllocatedResources {
+  limits: Map
+  requests: Map
+}
+
+type DrainNodeEvent {
+  evictedPods: Int!
+  totalPods: Int!
+  stdout: String!
+  stderr: String!
+  timestamp: Time!
+}
+
+input UpdateNode {
+  name: String!
+  labels: Map
+  spec: UpdateNodeSpec
+  cluster: ID!
+}
+
+input UpdateNodeSpec {
+  unschedulable: Boolean
+  addTaints: [AddNodeTaint!]
+  removeTaints: [RemoveNodeTaint!]
+}
+
+input AddNodeTaint {
+  """internal taint like `node.kubernetes.io/unschedulable` is not allowed
+  to be removed.
+  """
+  key: String!
+  value: String
+  effect: String!
+}
+
+input RemoveNodeTaint {
+  key: String!
+}
+
+input DrainNode {
+  name: String!
+  """negative value, zero value, or null value will use default timeout. Ignored
+  if the given timeout is less than 1m.
+  """
+  timeout: Duration = "PT15M"
+  cluster: ID!
+}

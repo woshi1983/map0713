@@ -1,0 +1,73 @@
+type Application {
+  id: ID!
+  name: String!
+  description: String!
+  avatar: URL!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type Applications {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ApplicationNodes!
+}
+
+extend type Query {
+  """Application can be queried with an ID or a keyword.
+
+  requires `read:application` or above.
+  """
+  Application(id: ID!): Application!
+  """
+  requires `read:application` or above.
+
+  Filters:
+
+  - `name`
+
+  - `organization`
+  """
+  Applications(page: QueryPage = {}, filters: [QueryFilter!] = []): Applications!
+}
+
+extend type Mutation {
+  """
+  requires `write:application` or above.
+  """
+  CreateApplication(input: CreateApplication!): Application!
+  """
+  requires `write:application` or above.
+  """
+  UpdateApplication(input: UpdateApplication!): Application!
+  """
+  requires `modify:application` or above.
+  """
+  DeleteApplication(input: DeleteApplication!): Application!
+}
+
+type ApplicationNodes {
+  nodes: [Application!]
+}
+
+input CreateApplication {
+  """name must match regex `^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]).$`
+  This field is global unique, and could be used while submitting workload.
+  """
+  name: String!
+  description: String
+  avatar: URL
+  organization: ID!
+}
+
+input UpdateApplication {
+  id: ID!
+  description: String
+  avatar: URL
+}
+
+input DeleteApplication {
+  id: ID!
+}

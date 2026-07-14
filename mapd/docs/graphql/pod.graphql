@@ -1,0 +1,357 @@
+type Pod {
+  name: String!
+  namespace: String!
+  labels: Map
+  spec: PodSpec!
+  status: PodStatus!
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Pod(cluster: ID!, namespace: String!, name: String!): Pod!
+  """
+  requires `read:cluster_resource` or above.
+  """
+  PodLog(cluster: ID!, namespace: String!, name: String!, container: String): PodLog!
+  """
+  requires `read:cluster_resource` or above.
+
+  Automatically determines a pod container to view at. If no container is available, it will be null.
+
+  `controller`: `job`, `binary_build`, `dockerfile_build`, `source_build`, or `deployment`.
+
+  `issuer`: equivalent to a kubernetes object's `metadata.name`.
+  """
+  SmartPodLog(cluster: ID!, namespace: String!, controller: String!, issuer: String!): PodLog
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `controller`: type of its parent, either of:
+    * `job`
+    * `binary_build`
+    * `dockerfile_build`
+    * `source_build`
+    * `deployment`
+    
+    Ignored unless `issuer` is specified.
+
+  - `issuer`: name of its parent. Ignored unless `controller` is specified.
+
+  - `cluster`
+
+  - `organization`
+  """
+  Pods(filters: [QueryFilter!] = []): [Pod!]
+}
+
+extend type Subscription {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  PodLog(cluster: ID!, namespace: String!, name: String!, container: String!): PodLog!
+  """
+  requires `modify:cluster_resource` or above.
+
+  Shell like `/bin/sh` is not supported. Please call command directly.
+  """
+  PodExec(cluster: ID!, namespace: String!, name: String!, container: String!, command: [String!]!): PodExec!
+}
+
+type PodTemplate {
+  labels: Map
+  spec: PodSpec!
+}
+
+type PodSpec {
+  initContainers: [PodSpecContainer!]
+  containers: [PodSpecContainer!]
+  dnsPolicy: String
+  restartPolicy: String
+  schedulerName: String
+  serviceAccount: String
+  terminationGracePeriodSeconds: Int
+  volumes: [PodSpecVolume!]
+  imagePullSecrets: [String!]
+}
+
+type PodStatus {
+  phase: String
+  message: String
+  reason: String
+  hostIP: String
+  podIPs: [String!]
+  initContainerStatuses: [PodStatusContainerStatus!]
+  containerStatuses: [PodStatusContainerStatus!]
+  qosClass: String
+}
+
+type PodStatusContainerStatus {
+  containerID: String
+  image: String
+  imageID: String
+  name: String
+  ready: Boolean
+  restartCount: Int
+  started: Boolean
+}
+
+type PodSpecContainer {
+  name: String!
+  image: String!
+  command: [String!]
+  args: [String!]
+  workingDir: String
+  ports: [PodSpecContainerPort!]
+  env: Map
+  resources: PodSpecContainerResources
+  volumeMounts: [PodSpecContainerVolumeMount!]
+  livenessProbe: PodSpecContainerProbe
+  readinessProbe: PodSpecContainerProbe
+  startupProbe: PodSpecContainerProbe
+  lifecycle: PodSpecContainerLifecycle
+  imagePullPolicy: String
+}
+
+type PodSpecContainerVolumeMount {
+  name: String
+  readOnly: Boolean
+  mountPath: String
+  subPath: String
+  subPathExpr: String
+  mountPropagation: String
+}
+
+type PodSpecContainerProbe {
+  exec: PodSpecContainerExecAction
+  httpGet: PodSpecContainerHTTPGetAction
+  tcpSocket: PodSpecContainerTCPSocketAction
+  initialDelaySeconds: Int
+  timeoutSeconds: Int
+  periodSeconds: Int
+  successThreshold: Int
+  failureThreshold: Int
+  terminationGracePeriodSeconds: Int
+}
+
+type PodSpecContainerLifecycle {
+  postStart: PodSpecContainerHandler
+  preStop: PodSpecContainerHandler
+}
+
+type PodSpecContainerHandler {
+  exec: PodSpecContainerExecAction
+  httpGet: PodSpecContainerHTTPGetAction
+  tcpSocket: PodSpecContainerTCPSocketAction
+}
+
+type PodSpecContainerExecAction {
+  command: [String!]
+}
+
+type PodSpecContainerHTTPGetAction {
+  path: String
+  port: IntOrString
+  host: String
+  scheme: String
+  httpHeaders: [PodSpecContainerHandlerHTTPGetActionHTTPHeader!]
+}
+
+type PodSpecContainerHandlerHTTPGetActionHTTPHeader {
+  name: String
+  value: String
+}
+
+type PodSpecContainerTCPSocketAction {
+  port: IntOrString
+  host: String
+}
+
+type PodSpecContainerPort {
+  name: String
+  hostPort: Int
+  containerPort: Int
+  protocol: String
+  hostIP: String
+}
+
+type PodSpecContainerResources {
+	limits: PodSpecContainerResourcesLimits
+	requests: PodSpecContainerResourcesRequests
+}
+
+type PodSpecContainerResourcesLimits {
+	cpu: String
+	memory: String
+}
+
+type PodSpecContainerResourcesRequests {
+	cpu: String
+	memory: String
+}
+
+type PodSpecVolume {
+  name: String
+  volume: Volume
+}
+
+type PodLog {
+  name: String!
+  namespace: String!
+  container: String!
+  message: String!
+  timestamp: Time!
+}
+
+type PodExec {
+  id: ID!
+  message: String!
+  timestamp: Time!
+}
+
+input CreatePodTemplate {
+  spec: CreatePodSpec!
+}
+
+input CreatePodSpec {
+  initContainers: [AddPodSpecContainer!]
+  containers: [AddPodSpecContainer!]
+  dnsPolicy: String
+  restartPolicy: String
+  schedulerName: String
+  serviceAccount: String
+  terminationGracePeriodSeconds: Int
+  volumes: [AddPodSpecVolume!]
+  imagePullSecrets: [String!] = ["vmware-system-map-registry"]
+}
+
+input AddPodSpecContainer {
+  name: String!
+  image: String!
+  command: [String!]
+  args: [String!]
+  workingDir: String
+  ports: [AddPodSpecContainerPort!]
+  env: Map
+  resources: AddPodSpecContainerResources
+  volumeMounts: [AddPodSpecContainerVolumeMount!]
+  livenessProbe: InputPodSpecContainerProbe
+  readinessProbe: InputPodSpecContainerProbe
+  startupProbe: InputPodSpecContainerProbe
+  lifecycle: InputPodSpecContainerLifecycle
+  imagePullPolicy: String
+}
+
+input AddPodSpecContainerResources {
+	limits: AddPodSpecContainerResourcesLimits
+	requests: AddPodSpecContainerResourcesRequests
+}
+
+input AddPodSpecContainerResourcesLimits {
+	cpu: String
+	memory: String
+}
+
+input AddPodSpecContainerResourcesRequests {
+	cpu: String
+	memory: String
+}
+
+input AddPodSpecContainerVolumeMount {
+  name: String!
+  readOnly: Boolean
+  mountPath: String!
+  subPath: String
+  subPathExpr: String
+  mountPropagation: String
+}
+
+input AddPodSpecVolume {
+  name: String!
+  hostPath: HostPathInput
+  emptyDir: EmptyDirInput
+  configMap: ConfigMapVolumeInput
+  secret: SecretVolumeInput
+  persistentVolumeClaim: PersistentVolumeClaimVolumeInput
+}
+
+input InputPodSpecContainerProbe {
+  exec: InputPodSpecContainerExecAction
+  httpGet: InputPodSpecContainerHTTPGetAction
+  tcpSocket: InputPodSpecContainerTCPSocketAction
+  initialDelaySeconds: Int
+  timeoutSeconds: Int
+  periodSeconds: Int
+  successThreshold: Int
+  failureThreshold: Int
+  terminationGracePeriodSeconds: Int
+}
+
+input InputPodSpecContainerLifecycle {
+  postStart: InputPodSpecContainerHandler
+  preStop: InputPodSpecContainerHandler
+}
+
+input InputPodSpecContainerHandler {
+  exec: InputPodSpecContainerExecAction
+  httpGet: InputPodSpecContainerHTTPGetAction
+  tcpSocket: InputPodSpecContainerTCPSocketAction
+}
+
+input InputPodSpecContainerExecAction {
+  command: [String!]
+}
+
+input InputPodSpecContainerHTTPGetAction {
+  path: String
+  port: IntOrString
+  host: String
+  scheme: String
+  httpHeaders: [InputPodSpecContainerHandlerHTTPGetActionHTTPHeader!]
+}
+
+input InputPodSpecContainerHandlerHTTPGetActionHTTPHeader {
+  name: String!
+  value: String!
+}
+
+input InputPodSpecContainerTCPSocketAction {
+  port: IntOrString
+  host: String
+}
+
+input AddPodSpecContainerPort {
+  """name will be auto-generated to 'protocol-containerPort' formation if it is omitted.
+  """
+  name: String
+  protocol: String = "TCP"
+  containerPort: Int!
+}
+
+input WritePodExec {
+  id: ID!
+  """the content to write to the session.
+
+  If the session is a TTY shell, then the content must ends with linebreak.
+  """
+  content: String!
+}

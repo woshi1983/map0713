@@ -1,0 +1,632 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# -*- mode: python -*-
+# vi: set ft=python :
+
+# Copyright (c) 2023 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+    This script retrieves information from guestInfo.ovfEnv and
+    initialize system with the OVF properties.
+"""
+
+import os, sys, socket, subprocess, shutil, argparse, traceback, json
+from pathlib import Path
+from xml.dom.minidom import parseString
+
+ovfenv_cmd = "vmtoolsd --cmd 'info-get guestinfo.ovfEnv'"
+installer_harbor = '/installer/harbor-offline-installer.tgz'
+installer_map = '/installer/map-offline-installer.tgz'
+harbor_root_dir = '/data/harbor'
+map_root_dir = '/data/map'
+ssl_root_dir = '/data/ssl'
+ssl_server_dir = '/data/ssl/server'
+generated_rootca = '/etc/pki/ca-trust/source/anchors/generated_rootca.crt'
+custom_rootca = '/etc/pki/ca-trust/source/anchors/custom_rootca.crt'
+
+class SystemBootstrap:
+
+    def __init__(self):
+        self.harbor_enable = False
+        self.harbor_admin_password = ''
+        self.harbor_database_password = ''
+        self.hardware_data_volume_size = 0
+        self.hardware_docker_volume_size = 0
+        self.map_admin_password = ''
+        self.map_database_password = ''
+        self.map_disable_local_user = False
+        self.http_client_timeout_secs = 0
+        self.networking_default_ipv4_gateway = ''
+        self.networking_domain_name = ''
+        self.networking_endpoints_use_domain_name = False
+        self.networking_ipv4_address = ''
+        self.networking_ipv4_dns_servers = []
+        self.networking_ipv4_netmask = 0
+        self.networking_timezone = ''
+        self.security_root_password = ''
+        self.security_ssl_cert = ''
+        self.security_ssl_key = ''
+        self.security_ssl_root_ca_cert = ''
+        self.security_enable_cross_client_token_sharing = False
+        self._ovfenv = get_ovfenv()
+
+        if len(self._ovfenv) == 0:
+            print('WARN: OVF environment is not assigned. Nothing will be changed.', file=sys.stderr)
+
+        if 'harbor.enable' in self._ovfenv:
+            harbor_enable = self._ovfenv['harbor.enable'].strip()
+            if harbor_enable and harbor_enable in ['1', 'true', 'True', 'y', 'yes']:
+                self.harbor_enable = True
+
+        if 'harbor.admin_password' in self._ovfenv:
+            harbor_admin_password = self._ovfenv['harbor.admin_password']
+            if harbor_admin_password:
+                self.harbor_admin_password = harbor_admin_password
+
+        if 'harbor.database_password' in self._ovfenv:
+            harbor_database_password = self._ovfenv['harbor.database_password']
+            if harbor_database_password:
+                self.harbor_database_password = harbor_database_password
+
+        if 'hardware.data.volume_size' in self._ovfenv:
+            hardware_data_volume_size = self._ovfenv['hardware.data.volume_size'].strip()
+            if hardware_data_volume_size:
+                self.hardware_data_volume_size = int(hardware_data_volume_size)
+
+        if 'hardware.docker.volume_size' in self._ovfenv:
+            hardware_docker_volume_size = self._ovfenv['hardware.docker.volume_size'].strip()
+            if hardware_docker_volume_size:
+                self.hardware_docker_volume_size = int(hardware_docker_volume_size)
+
+        if 'map.admin_password' in self._ovfenv:
+            map_admin_password = self._ovfenv['map.admin_password']
+            if map_admin_password:
+                self.map_admin_password = map_admin_password
+
+        if 'map.database_password' in self._ovfenv:
+            map_database_password = self._ovfenv['map.database_password']
+            if map_database_password:
+                self.map_database_password = map_database_password
+
+        if 'map.disable_local_user' in self._ovfenv:
+            map_disable_local_user = self._ovfenv['map.disable_local_user'].strip()
+            if map_disable_local_user and map_disable_local_user in ['1', 'true', 'True', 'y', 'yes']:
+                self.map_disable_local_user = True
+        
+        if 'map.http_client_timeout_secs' in self._ovfenv:
+            http_client_timeout_secs = self._ovfenv['map.http_client_timeout_secs'].strip()
+            if http_client_timeout_secs:
+                self.http_client_timeout_secs = int(http_client_timeout_secs)
+
+        if 'networking.default_ipv4_gateway' in self._ovfenv:
+            networking_default_ipv4_gateway = self._ovfenv['networking.default_ipv4_gateway'].strip()
+            if networking_default_ipv4_gateway:
+                self.networking_default_ipv4_gateway = networking_default_ipv4_gateway
+
+        if 'networking.domain_name' in self._ovfenv:
+            networking_domain_name = self._ovfenv['networking.domain_name'].strip()
+            if networking_domain_name:
+                self.networking_domain_name = networking_domain_name
+
+        if 'networking.endpoints_use_domain_name' in self._ovfenv:
+            networking_endpoints_use_domain_name = self._ovfenv['networking.endpoints_use_domain_name'].strip()
+            if networking_endpoints_use_domain_name and networking_endpoints_use_domain_name in ['1', 'true', 'True', 'y', 'yes']:
+                self.networking_endpoints_use_domain_name = True
+
+        if 'networking.ipv4_address' in self._ovfenv:
+            networking_ipv4_address = self._ovfenv['networking.ipv4_address'].strip()
+            if networking_ipv4_address:
+                self.networking_ipv4_address = networking_ipv4_address
+
+        if 'networking.ipv4_dns_servers' in self._ovfenv:
+            networking_ipv4_dns_servers = self._ovfenv['networking.ipv4_dns_servers'].strip()
+            if networking_ipv4_dns_servers:
+                ipv4_dns_servers = []
+                for s in networking_ipv4_dns_servers.split(','):
+                    if s:
+                        ipv4_dns_servers.append(s.strip())
+                self.networking_ipv4_dns_servers = ipv4_dns_servers
+
+        if 'networking.ipv4_netmask' in self._ovfenv:
+            networking_ipv4_netmask = self._ovfenv['networking.ipv4_netmask'].strip()
+            if networking_ipv4_netmask:
+                self.networking_ipv4_netmask = int(networking_ipv4_netmask)
+
+        if 'networking.timezone' in self._ovfenv:
+            networking_timezone = self._ovfenv['networking.timezone'].strip()
+            if networking_timezone:
+                self.networking_timezone = networking_timezone
+
+        if 'security.root_password' in self._ovfenv:
+            security_root_password = self._ovfenv['security.root_password']
+            if security_root_password:
+                self.security_root_password = security_root_password
+
+        if 'security.ssl_cert' in self._ovfenv:
+            security_ssl_cert = self._ovfenv['security.ssl_cert'].strip()
+            if security_ssl_cert:
+                self.security_ssl_cert = security_ssl_cert.replace(' ', '\n').replace('\nCERTIFICATE-----', ' CERTIFICATE-----')
+
+        if 'security.ssl_key' in self._ovfenv:
+            security_ssl_key = self._ovfenv['security.ssl_key'].strip()
+            if security_ssl_key:
+                self.security_ssl_key = security_ssl_key.replace(' ', '\n').replace('\nRSA\nPRIVATE\nKEY-----', ' RSA PRIVATE KEY-----')
+
+        if 'security.ssl_root_ca_cert' in self._ovfenv:
+            security_ssl_root_ca_cert = self._ovfenv['security.ssl_root_ca_cert'].strip()
+            if security_ssl_root_ca_cert:
+                self.security_ssl_root_ca_cert = security_ssl_root_ca_cert.replace(' ', '\n').replace('\nCERTIFICATE-----', ' CERTIFICATE-----')
+
+        if 'security.enable_cross_client_token_sharing' in self._ovfenv:
+            security_enable_cross_client_token_sharing = self._ovfenv['security.enable_cross_client_token_sharing'].strip()
+            if security_enable_cross_client_token_sharing and security_enable_cross_client_token_sharing in ['1', 'true', 'True', 'y', 'yes']:
+                self.security_enable_cross_client_token_sharing = True
+        
+    def setup_networking(self):
+        if len(self._ovfenv) == 0:
+            return
+
+        if self.networking_domain_name:
+            subprocess.run(['hostnamectl', 'set-hostname', self.networking_domain_name], check=True)
+        
+        if self.networking_timezone:
+            subprocess.run(['timedatectl', 'set-timezone', self.networking_timezone], check=True)
+            
+        show_conn_name = subprocess.check_output(['nmcli', '-f', 'GENERAL.CONNECTION', 'device', 'show', 'eth0'])
+        conn_name = show_conn_name.decode('utf-8').split(':')[-1].strip()
+
+        if self.networking_ipv4_address:
+            subprocess.run(['nmcli', 'con', 'mod', conn_name, 'connection.autoconnect', 'yes'], check=True)
+            subprocess.run(['nmcli', 'con', 'mod', conn_name, 'ipv4.addresses', '%s/%d' % (self.networking_ipv4_address, self.networking_ipv4_netmask)], check=True)
+            subprocess.run(['nmcli', 'con', 'mod', conn_name, 'ipv4.method', 'manual'], check=True)
+            if self.networking_default_ipv4_gateway:
+                subprocess.run(['nmcli', 'con', 'mod', conn_name, 'ipv4.gateway', self.networking_default_ipv4_gateway], check=True)
+            if len(self.networking_ipv4_dns_servers) > 0:
+                dns1 = self.networking_ipv4_dns_servers[0]
+                subprocess.run(['nmcli', 'con', 'mod', conn_name, 'ipv4.dns', dns1], check=True)
+                if len(self.networking_ipv4_dns_servers) > 1:
+                    dns2 = self.networking_ipv4_dns_servers[1]
+                    subprocess.run(['nmcli', 'con', 'mod', conn_name, '+ipv4.dns', dns2], check=True)
+
+        else:
+            subprocess.run(['nmcli', 'con', 'mod', conn_name, 'connection.autoconnect', 'yes'], check=True)
+            subprocess.run(['nmcli', 'con', 'mod', conn_name, 'ipv4.method', 'auto'], check=True)
+        subprocess.run(['nmcli', 'con', 'down', conn_name], check=True)
+        subprocess.run(['nmcli', 'con', 'up', conn_name], check=True)
+    
+    def setup_security(self):
+        if len(self._ovfenv) == 0:
+            return
+        
+        if self.security_root_password:
+            subprocess.run(['sh', '-c', 'echo "%s" | passwd --stdin root' % self.security_root_password], check=True)
+
+        ssl_root = Path(ssl_root_dir)
+        if not ssl_root.exists():
+            os.makedirs(ssl_root_dir)
+        if self.security_ssl_cert and self.security_ssl_key:
+            server_dir = Path(ssl_server_dir)
+            if not server_dir.exists():
+                os.makedirs(ssl_server_dir)
+
+            with open('%s/server.pem' % ssl_server_dir, mode='w+') as f:
+                f.write(self.security_ssl_cert + '\n')
+
+            with open('%s/server-key.pem' % ssl_server_dir, mode='w+') as f:
+                f.write(self.security_ssl_key + '\n')
+
+        else:
+            rootca_csr = Path('%s/rootca-csr.json' % ssl_root_dir)
+            rootca_crt = Path('%s/rootca.pem' % ssl_root_dir)
+            rootca_key = Path('%s/rootca-key.pem' % ssl_root_dir)
+            if not rootca_csr.exists():
+                with open('%s/rootca-csr.json' % ssl_root_dir, mode='w+') as f:
+                    f.write("""{
+    "key": {
+        "algo": "rsa",
+        "size": 4096
+    },
+    "ca": {
+        "expiry": "175200h",
+        "pathlenzero": false
+    },
+    "names": [{
+        "C": "US",
+        "L": "Los Angeles",
+        "O": "Local CA",
+        "OU": "ICANN, Inc.",
+        "ST": "California"
+    }]
+}""")
+            if not rootca_crt.exists() or not rootca_key.exists():
+                subprocess.run(['sh', '-c', """pushd %s
+cfssl genkey -initca rootca-csr.json | cfssljson -bare rootca
+popd""" % ssl_root_dir], check=True)
+                shutil.copy2('%s/rootca.pem' % ssl_root_dir, generated_rootca)
+                subprocess.run(['update-ca-trust', 'extract'], check=True)
+
+            server_dir = Path(ssl_server_dir)
+            if not server_dir.exists():
+                os.makedirs(ssl_server_dir)
+            rootca_cfg = Path('%s/rootca-config.json' % ssl_server_dir)
+            server_csr = Path('%s/server-csr.json' % ssl_server_dir)
+            server_crt = Path('%s/server.pem' % ssl_server_dir)
+            server_key = Path('%s/server-key.pem' % ssl_server_dir)
+            if not rootca_cfg.exists():
+                with open('%s/rootca-config.json' % ssl_server_dir, mode='w+') as f:
+                    f.write("""{
+    "signing": {
+        "profiles": {
+            "server": {
+                "ca_constraint": {
+                    "is_ca": false
+                },
+                "expiry": "43800h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth",
+                    "client auth"
+                ]
+            }
+        },
+        "default": {
+            "expiry": "43800h"
+        }
+    }
+}""")
+            hostname = ''
+            if self.networking_domain_name:
+                hostname = self.networking_domain_name
+            else:
+                hostname = socket.gethostname()
+            ipaddr = ''
+            if self.networking_ipv4_address:
+                ipaddr = self.networking_ipv4_address
+            else:
+                ipaddr = get_ipv4_addr('eth0')
+            
+            with open('%s/server-csr.json' % ssl_server_dir, mode='w+') as f:
+                f.write("""{
+  "hosts": [
+    "%s",
+    "%s"
+  ],
+  "key": {
+    "algo": "rsa",
+    "size": 4096
+  },
+  "names": [{
+    "C":  "US",
+    "L":  "Palo Alto",
+    "O":  "Generic Server",
+    "OU": "VMware, Inc.",
+    "ST": "California"
+  }]
+}""" % (hostname, ipaddr))
+            subprocess.run(['sh', '-c', """pushd %s
+cfssl gencert -ca ../rootca.pem -ca-key ../rootca-key.pem -config=rootca-config.json -profile=server server-csr.json | cfssljson -bare server
+popd""" % ssl_server_dir], check=True)
+
+        if self.security_ssl_root_ca_cert:
+            with open(custom_rootca, mode='w+') as f:
+                f.write(self.security_ssl_root_ca_cert + '\n')
+            subprocess.run(['update-ca-trust', 'extract'], check=True)
+
+    def setup_harbor(self):
+        if len(self._ovfenv) == 0:
+            return
+        
+        installer_root = Path('%s/installer' % harbor_root_dir)
+
+        if not self.harbor_enable:
+            if installer_root.exists():
+                subprocess.run(['sh', '-c', 'pushd %s/installer/harbor; docker-compose down -v; popd' % harbor_root_dir])
+            return
+        
+        if not installer_root.exists():
+            os.makedirs('%s/installer' % harbor_root_dir)
+
+        installer_dir = Path('%s/installer/harbor' % harbor_root_dir)
+        if not installer_dir.exists():
+            subprocess.run(['tar', '-xvf', installer_harbor, '-C', '%s/installer' % harbor_root_dir], check=True)
+        
+        hostname = ''
+        if self.networking_endpoints_use_domain_name:
+            if self.networking_domain_name:
+                hostname = self.networking_domain_name
+            else:
+                hostname = socket.gethostname()
+            
+            if hostname.find('.') < 0:
+                print('WARN: domain name %s does not seem like a valid FQDN!' % hostname, file=sys.stderr)
+        else:
+            hostname = get_ipv4_addr('eth0')
+        ca_download_dir = Path('%s/ca_download' % harbor_root_dir)
+        if not ca_download_dir.exists():
+            os.makedirs('%s/ca_download' % harbor_root_dir)
+        harbor_ca_content = []
+        if self.security_ssl_root_ca_cert:
+            harbor_ca_content.append(self.security_ssl_root_ca_cert)
+        rootca = Path('%s/rootca.pem' % ssl_root_dir)
+        if rootca.exists() and (not self.security_ssl_cert or not self.security_ssl_key):
+            with open('%s/rootca.pem' % ssl_root_dir, mode='r') as f:
+                harbor_ca_content.append(str(f.read()))
+        harbor_ca = '%s/ca_download/ca.crt' % harbor_root_dir
+        if len(harbor_ca_content) > 0:
+            with open(harbor_ca, mode='w+') as f:
+                for each in harbor_ca_content:
+                    f.write(each + '\n')
+        log_dir = Path('/var/log/harbor')
+        if not log_dir.exists():
+            os.makedirs('/var/log/harbor', mode=0o0755)
+
+        with open('%s/installer/harbor/harbor.yml' % harbor_root_dir, 'w+') as f:
+            f.write("""hostname: %s
+http:
+  port: 80
+https:
+  port: 443
+  certificate: %s/server.pem
+  private_key: %s/server-key.pem
+harbor_admin_password: %s
+database:
+  password: %s
+  max_idle_conns: 128
+  max_open_conns: 1024
+data_volume: %s
+trivy:
+  ignore_unfixed: false
+  skip_update: false
+  offline_scan: false
+  insecure: false
+jobservice:
+  max_job_workers: 10
+notification:
+  webhook_job_max_retry: 10
+chart:
+  absolute_url: disabled
+log:
+  level: info
+  local:
+    rotate_count: 5
+    rotate_size: 256M
+    location: /var/log/harbor
+_version: 2.5.0
+proxy:
+  http_proxy:
+  https_proxy:
+  no_proxy:
+  components:
+    - core
+    - jobservice
+    - trivy
+upload_purging:
+  enabled: true
+  age: 168h
+  interval: 24h
+  dryrun: false
+""" % (hostname, ssl_server_dir, ssl_server_dir, self.harbor_admin_password, self.harbor_database_password, harbor_root_dir))
+        subprocess.run(['sh', '-c', 'pushd %s/installer/harbor; ./install.sh --with-trivy --with-chartmuseum; popd' % harbor_root_dir], check=True)
+
+    def setup_map(self):
+        if len(self._ovfenv) == 0:
+            return
+        
+        installer_root = Path('%s/installer' % map_root_dir)
+        if not installer_root.exists():
+            os.makedirs('%s/installer' % map_root_dir)
+
+        installer_dir = Path('%s/installer/map-offline-installer' % map_root_dir)
+        if not installer_dir.exists():
+            subprocess.run(['tar', '-xvf', installer_map, '-C', '%s/installer' % map_root_dir], check=True)
+        
+        hostname = ''
+        if self.networking_endpoints_use_domain_name:
+            if self.networking_domain_name:
+                hostname = self.networking_domain_name
+            else:
+                hostname = socket.gethostname()
+            
+            if hostname.find('.') < 0:
+                print('WARN: domain name %s does not seem like a valid FQDN!' % hostname, file=sys.stderr)
+        else:
+            hostname = get_ipv4_addr('eth0')
+        map_ca_content = []
+        if self.security_ssl_root_ca_cert:
+            map_ca_content.append(self.security_ssl_root_ca_cert)
+        rootca = Path('%s/rootca.pem' % ssl_root_dir)
+        if rootca.exists() and (not self.security_ssl_cert or not self.security_ssl_key):
+            with open('%s/rootca.pem' % ssl_root_dir, mode='r') as f:
+                map_ca_content.append(str(f.read()))
+        map_ca = '%s/rootca.pem' % map_root_dir
+        if len(map_ca_content) > 0:
+            with open(map_ca, mode='w+') as f:
+                for each in map_ca_content:
+                    f.write(each + '\n')
+        else:
+            map_ca = ''
+
+        with open('%s/installer/map-offline-installer/config.yml' % map_root_dir, 'w+') as f:
+            f.write("""# Configuration file of MAP
+
+# The IP address or hostname to access admin UI and registry service.
+# DO NOT use localhost or 127.0.0.1, because MAP needs to be accessed by external clients.
+hostname: %s
+
+# http related config
+http:
+  # The port for HTTP, default is 80. This port will redirect to https port.
+  port: 8080
+  # Global HTTP request timeout (in secs). This will be used as the maximum
+  # waiting time for all HTTP requests sent by MAP.
+  client_timeout: %ds
+
+# https related config
+https:
+  # The port for HTTPS, default is 443.
+  port: 8443
+  # The path of cert and key files for nginx
+  certificate: %s/server.pem
+  private_key: %s/server-key.pem
+  ca_certificate: %s
+
+# The initial password of MAP admin (admin@tanzu.local).
+map_admin_password: %s
+
+# Whether local managed users should be disabled. Do not set this to true on first
+# launch, otherwise you will not be able to login.
+map_disable_local_user: %s
+
+# If it is allowed to authorize with token that is issued to other IDP clients.
+# The server could be vulnerable when this is enabled. This is a client-side
+# mechanism that will not affect IDP server's behaviour.
+enable_cross_client_token_sharing: %s
+
+# Timezone of the running containers. For example: Asia/Shanghai.
+timezone: %s
+
+# MAP DB configuration
+database:
+  # The password for the root user of MAP DB. Change this before any production use.
+  password: %s
+  # The maximum number of connections in the idle connection pool.
+  max_idle_conns: 16
+  # The maximum number of open connections to the database.
+  max_open_conns: 128
+
+# The default data volume
+data_volume: %s
+
+# Logging configuration
+log:
+  # The logging level.
+  level: info
+  # Log files are rotated log_rotate_count times before being removed. If count is 0, old versions are removed rather than rotated.
+  rotate_count: 5
+  # Log files are rotated only if they grow bigger than log_rotate_size bytes. If size is followed by k, the size is assumed to be in kilobytes.
+  # If the M is used, the size is in megabytes, and if G is used, the size is in gigabytes. So size 100, size 100k, size 100M and size 100G
+  # are all valid.
+  rotate_size: 256M
+  # The directory on your host that store log.
+  location: /var/log/map
+
+#This attribute is for migrator to detect the version of the .cfg file, DO NOT MODIFY!
+_version: 0.11.1
+""" % (hostname, self.http_client_timeout_secs, ssl_server_dir, ssl_server_dir, map_ca, self.map_admin_password, str(self.map_disable_local_user).lower(), str(self.security_enable_cross_client_token_sharing).lower(), self.networking_timezone, self.map_database_password, map_root_dir))
+        subprocess.run(['sh', '-c', 'pushd %s/installer/map-offline-installer; ./installer.sh; popd' % map_root_dir], check=True)
+
+    def setup_hardware(self):
+        if len(self._ovfenv) == 0:
+            return
+        
+        lsblk = subprocess.check_output(['lsblk'])
+        if lsblk.find('sdb1'.encode('utf-8')) < 0 and lsblk.find('sdc1'.encode('utf-8')) < 0:
+            subprocess.run(['sh', '-c', """for i in sdb sdc; do
+sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\\1/' << EOF | fdisk /dev/${i}
+o # clear the in memory partition table
+n # new partition
+  # default, primary partition type
+  # default, primary number 1
+  # default, start immediately after preceeding partition
+  # default, extend partition to end of disk
+p # print the in-memory partition table
+w # write the partition table
+EOF
+done
+sleep 3
+mkfs.xfs /dev/sdb1
+mkfs.xfs /dev/sdc1
+sleep 3
+mkdir -p /var/lib/docker
+eval $(blkid /dev/sdb1 | awk '{print $2}')
+echo "UUID=${UUID} /var/lib/docker xfs defaults 0 0" >> /etc/fstab
+mkdir -p /data
+eval $(blkid /dev/sdc1 | awk '{print $2}')
+echo "UUID=${UUID} /data xfs defaults 0 0" >> /etc/fstab
+mount -a"""], check=True)
+
+
+def get_ovfenv():
+    """
+        Return a dict of OVF properties in the ovfenv
+    """
+    properties = {}
+    xml_parts = subprocess.Popen(ovfenv_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.read()
+    try:
+        raw_data = parseString(xml_parts)
+    except:
+        return properties
+    for property in raw_data.getElementsByTagName('Property'):
+        key, value = [ property.attributes['oe:key'].value, property.attributes['oe:value'].value ]
+        properties[key] = value
+    return properties
+
+def get_ipv4_addr(nic):
+    p = subprocess.check_output(['sh', '-c', "ifconfig %s | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | sed -n 1p" % nic])
+    return p.strip().decode(encoding='utf-8')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Bootstrap system from OVF environment.')
+    parser.add_argument('--debug', action='store_true', default=False, help='Print OVF env for debugging')
+    parser.add_argument('--harbor', action='store_true', default=False, help='Setup Harbor')
+    parser.add_argument('--map', action='store_true', default=False, help='Setup MAP')
+    parser.add_argument('--networking', action='store_true', default=False, help='Setup networking')
+    parser.add_argument('--security', action='store_true', default=False, help='Setup security')
+    parser.add_argument('--hardware', action='store_true', default=False, help='Setup hardware')
+    args = parser.parse_args()
+
+    bootstap = SystemBootstrap()
+    if args.debug:
+        p = json.dumps(bootstap._ovfenv, indent=2)
+        print(p, file=sys.stdout)
+    if args.hardware:
+        try:
+            bootstap.setup_hardware()
+        except Exception as err:
+            print('FATAL: failed to setup hardware due to a critical error: %s.' % str(err), file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+    if args.security:
+        try:
+            bootstap.setup_security()
+        except Exception as err:
+            print('FATAL: failed to setup security due to a critical error: %s.' % str(err), file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+    if args.networking:
+        try:
+            bootstap.setup_networking()
+        except Exception as err:
+            print('FATAL: failed to setup networking due to a critical error: %s.' % str(err), file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+    if args.harbor:
+        try:
+            bootstap.setup_harbor()
+        except Exception as err:
+            print('FATAL: failed to setup Harbor due to a critical error: %s.' % str(err), file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+    if args.map:
+        try:
+            bootstap.setup_map()
+        except Exception as err:
+            print('FATAL: failed to setup MAP due to a critical error: %s.' % str(err), file=sys.stderr)
+            traceback.print_exc()
+            sys.exit(1)
+
+    print('Done.', file=sys.stderr)

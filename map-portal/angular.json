@@ -1,0 +1,214 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "map-portal": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/map-portal",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": "src/polyfills.ts",
+            "tsConfig": "tsconfig.app.json",
+            "aot": true,
+            "assets": [
+              "src/favicon.ico",
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor",
+                "output": "./assets/monaco-editor"
+              }
+            ],
+            "styles": [
+              "node_modules/@clr/icons/clr-icons.min.css",
+              "node_modules/@clr/ui/clr-ui.min.css",
+              "node_modules/ngx-toastr/toastr.css",
+              "node_modules/prismjs/themes/prism-coy.css",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.css",
+              "src/styles.css"
+            ],
+            "scripts": [
+              "node_modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js",
+              "node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js",
+              "node_modules/@clr/icons/clr-icons.min.js",
+              "node_modules/marked/marked.min.js",
+              "node_modules/prismjs/prism.js",
+              "node_modules/prismjs/components/prism-yaml.min.js",
+              "node_modules/prismjs/plugins/line-numbers/prism-line-numbers.js"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": {
+                  "scripts": true,
+                  "styles": {
+                      "minify": true,
+                      "inlineCritical": false
+                  },
+                  "fonts": true
+              },
+              "outputHashing": "all",
+              "sourceMap": true,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "5mb",
+                  "maximumError": "10mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            },
+            "development": {
+              "aot": false,
+              "buildOptimizer": false,
+              "optimization": {
+                "scripts": false,
+                "styles": false,
+                "fonts": false
+              },
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "map-portal:build",
+            "proxyConfig": "proxy.config.json",
+            "host": "0.0.0.0",
+            "disableHostCheck": true
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "map-portal:build:production"
+            },
+            "development": {
+              "browserTarget": "map-portal:build:development"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "map-portal:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "src/test.ts",
+            "polyfills": "src/polyfills.ts",
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js",
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "node_modules/@clr/icons/clr-icons.min.css",
+              "node_modules/@clr/ui/clr-ui.min.css",
+              "node_modules/prismjs/themes/prism-solarizedlight.css",
+              "src/styles.css"
+            ],
+            "scripts": [
+              "node_modules/@clr/icons/clr-icons.min.js"
+            ]
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "tsconfig.app.json",
+              "tsconfig.spec.json",
+              "e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "e2e/protractor.conf.js",
+            "devServerTarget": "map-portal:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "map-portal:serve:production"
+            }
+          }
+        }
+      }
+    },
+    "map": {
+      "projectType": "library",
+      "root": "projects/map",
+      "sourceRoot": "projects/map/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "tsConfig": "projects/map/tsconfig.lib.json",
+            "project": "projects/map/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/map/tsconfig.lib.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/map/src/test.ts",
+            "tsConfig": "projects/map/tsconfig.spec.json",
+            "karmaConfig": "projects/map/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/map/tsconfig.lib.json",
+              "projects/map/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "defaultProject": "map-portal"
+}

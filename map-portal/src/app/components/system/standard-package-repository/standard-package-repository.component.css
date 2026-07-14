@@ -1,0 +1,8 @@
+.image-cell {
+  font-family: monospace;
+  word-break: break-all;
+}
+
+textarea {
+  min-height: 80px;
+}

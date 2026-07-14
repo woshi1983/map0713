@@ -1,0 +1,169 @@
+type Ingress {
+  name: String!
+  namespace: String!
+  annotations: Map
+  labels: Map
+  spec: IngressSpec!
+  status: IngressStatus!
+  instance: Instance
+  component: Component
+  application: Application
+  cluster: Cluster!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  Ingress(cluster: ID!, namespace: String!, name: String!): Ingress!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `namespace`
+
+  - `application`
+
+  - `component`
+
+  - `instance`
+
+  - `cluster`
+
+  - `organization`
+  """
+  Ingresses(filters: [QueryFilter!] = []): [Ingress!]
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateIngress(input: CreateIngress!): Ingress!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateIngress(input: UpdateIngress!): Ingress!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteIngress(input: DeleteIngress!): Ingress!
+}
+
+type IngressSpec {
+  ingressClass: String
+  tls: [IngressTLS!]
+  rules: [IngressRule!]
+}
+
+type IngressStatus {
+  ingress: [IngressStatusIngress!]
+}
+
+type IngressTLS {
+  hosts: [String!]
+  secret: String
+}
+
+type IngressRule {
+  host: String
+  http: HTTPIngressRuleValue
+}
+
+type HTTPIngressRuleValue {
+  paths: [HTTPIngressPath!]!
+}
+
+type HTTPIngressPath {
+  path: String
+  pathType: String
+  backend: IngressBackend!
+}
+
+type IngressBackend {
+  service: IngressServiceBackend
+}
+
+type IngressServiceBackend {
+  name: String!
+  port: ServiceBackendPort!
+}
+
+type ServiceBackendPort {
+  name: String
+  number: Int
+}
+
+type IngressStatusIngress {
+  ip: IP!
+  hostname: String
+}
+
+input CreateIngress {
+  name: String!
+  namespace: String!
+  annotations: Map
+  labels: Map
+  spec: IngressSpecInput!
+  cluster: ID!
+}
+
+input UpdateIngress {
+  name: String!
+  namespace: String!
+  annotations: Map
+  labels: Map
+  spec: IngressSpecInput!
+  cluster: ID!
+}
+
+input DeleteIngress {
+  name: String!
+  namespace: String!
+  cluster: ID!
+}
+
+input IngressSpecInput {
+  ingressClass: String
+  tls: [IngressTLSInput!]
+  rules: [IngressRuleInput!]
+}
+
+input IngressTLSInput {
+  hosts: [String!]
+  secret: String
+}
+
+input IngressRuleInput {
+  host: String
+  http: HTTPIngressRuleValueInput
+}
+
+input HTTPIngressRuleValueInput {
+  paths: [HTTPIngressPathInput!]!
+}
+
+input HTTPIngressPathInput {
+  path: String
+  pathType: String
+  backend: IngressBackendInput!
+}
+
+input IngressBackendInput {
+  service: IngressServiceBackendInput
+}
+
+input IngressServiceBackendInput {
+  name: String!
+  port: ServiceBackendPortInput!
+}
+
+input ServiceBackendPortInput {
+  name: String
+  number: Int
+}

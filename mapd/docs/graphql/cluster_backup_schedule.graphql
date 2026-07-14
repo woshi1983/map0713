@@ -1,0 +1,85 @@
+type ClusterBackupSchedule {
+  id: ID!
+  name: String!
+  spec: BackupSpec!
+  """the BackupStorageLocation this schedule rely on. The schedule will be
+  immediately cleaned up if the location cannot be found.
+  """
+  location: String!
+  schedule: String!
+  """last time the Backup was triggered, no matter it was succeeded or not.
+  """
+  lastFire: Time
+  """when the next Backup will be triggered.
+  """
+  nextFire: Time!
+  components(page: QueryPage = {}, filters: [QueryFilter!] = []): Components!
+  cluster: Cluster!
+  organization: Organization!
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type ClusterBackupSchedules {
+  page: PageInfo!
+  filters: [FilterInfo!]
+  totalCount: Int!
+  edge: ClusterBackupScheduleNodes!
+}
+
+extend type Query {
+  """
+  requires `read:cluster_resource` or above.
+  """
+  ClusterBackupSchedule(id: ID!): ClusterBackupSchedule!
+  """
+  requires `read:cluster_resource` or above.
+
+  Filters:
+
+  - `name`
+
+  - `location`
+
+  - `cluster`
+
+  - `organization`
+  """
+  ClusterBackupSchedules(page: QueryPage = {}, filters: [QueryFilter!] = []): ClusterBackupSchedules!
+}
+
+extend type Mutation {
+  """
+  requires `write:cluster_resource` or above.
+  """
+  CreateClusterBackupSchedule(input: CreateClusterBackupSchedule!): ClusterBackupSchedule!
+  """
+  requires `write:cluster_resource` or above.
+  """
+  UpdateClusterBackupSchedule(input: UpdateClusterBackupSchedule!): ClusterBackupSchedule!
+  """
+  requires `modify:cluster_resource` or above.
+  """
+  DeleteClusterBackupSchedule(input: DeleteClusterBackupSchedule!): ClusterBackupSchedule!
+}
+
+type ClusterBackupScheduleNodes {
+  nodes: [ClusterBackupSchedule!]
+}
+
+input CreateClusterBackupSchedule {
+  name: String!
+  spec: CreateBackupSpec = {}
+  location: String!
+  schedule: String!
+  cluster: ID!
+}
+
+input UpdateClusterBackupSchedule {
+  id: ID!
+  schedule: String
+}
+
+input DeleteClusterBackupSchedule {
+  id: ID!
+}
