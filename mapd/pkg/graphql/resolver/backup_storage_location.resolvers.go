@@ -263,6 +263,9 @@ LOOP:
 		if input.Spec.ObjectStorage.Bucket != nil {
 			location.Bucket = *input.Spec.ObjectStorage.Bucket
 		}
+		if input.Spec.ObjectStorage.Prefix != nil {
+			location.Prefix = *input.Spec.ObjectStorage.Prefix
+		}
 		if input.Spec.ObjectStorage.CaCert != nil {
 			b.WriteString(*input.Spec.ObjectStorage.CaCert)
 		}

@@ -578,7 +578,9 @@ func (r *mutationResolver) DeleteInstanceFederation(ctx context.Context, input m
 		}
 
 		var exists int64
-		if err := tx.Model(&model1.Route{}).Where("`federation_id` = ?", federation.ID).Count(&exists).Error; err != nil {
+		if err := tx.Model(&model1.Route{}).
+			Where("EXISTS (SELECT 1 FROM `route_backend` INNER JOIN `instance` ON `route_backend`.`instance_id` = `instance`.`id` WHERE `route_backend`.`route_id` = `route`.`id` AND `instance`.`federation_id` = ?)", federation.ID).
+			Count(&exists).Error; err != nil {
 			panic(&ErrDBConnection{err})
 		}
 		if exists > 0 {

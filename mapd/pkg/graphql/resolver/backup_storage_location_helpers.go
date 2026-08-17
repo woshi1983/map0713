@@ -66,6 +66,9 @@ func convertBackupStorageLocation(location *model.BackupStorageLocation, obj *ve
 		objStorage := &model.BackupStorageLocationSpecObjectStorage{
 			Bucket: obj.Spec.ObjectStorage.Bucket,
 		}
+		if obj.Spec.ObjectStorage.Prefix != "" {
+			objStorage.Prefix = util.StringPtr(obj.Spec.ObjectStorage.Prefix)
+		}
 		if obj.Spec.ObjectStorage.CACert != nil {
 			objStorage.CaCert = util.StringPtr(string(obj.Spec.ObjectStorage.CACert))
 		}

@@ -579,6 +579,17 @@ func (k *Kubernetes) provisionPostScripts(c *k8s.Kubernetes) error {
 			repoReady = true
 			break
 		}
+		if cond.Type == kappctrlv1alpha1.ReconcileFailed && cond.Status == corev1.ConditionTrue {
+			errMsg := strings.TrimSpace(repo.Status.UsefulErrorMessage)
+			if errMsg == "" {
+				errMsg = strings.TrimSpace(repo.Status.FriendlyDescription)
+			}
+			if errMsg == "" {
+				errMsg = "package repository reconcile failed"
+			}
+			k.log.Errorf("package repository %s/%s failed to reconcile on cluster %s: %s", repo.GetNamespace(), repo.GetName(), strconv.Quote(k.Cluster.Name), errMsg)
+			return &ErrCriticalFailure{fmt.Errorf("package repository %s/%s failed to reconcile: %s", repo.GetNamespace(), repo.GetName(), errMsg)}
+		}
 	}
 	if !repoReady {
 		k.log.Warnf("waiting for package repository %s/%s to be ready for proceeding provision of cluster %s.", repo.GetNamespace(), repo.GetName(), strconv.Quote(k.Cluster.Name))

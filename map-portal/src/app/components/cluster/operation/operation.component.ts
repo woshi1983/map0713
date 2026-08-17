@@ -93,18 +93,18 @@ export class OperationComponent implements OnInit {
   })
   esParamForm = new FormGroup({
     cluster: new FormControl('', Validators.required),
-    esDataNodeCount: new FormControl(3, Validators.min(1)),
-    esRequestCPU: new FormControl(2, Validators.min(1)),
-    esRequestMEM: new FormControl(8, Validators.min(2)),
-    esDataVolume: new FormControl(512, Validators.min(10)),
-    esLogsRetainDays: new FormControl(30, Validators.min(1)),
+    esDataNodeCount: new FormControl(1, Validators.min(1)),
+    esRequestCPU: new FormControl(1, Validators.min(1)),
+    esRequestMEM: new FormControl(2, Validators.min(2)),
+    esDataVolume: new FormControl(50, Validators.min(10)),
+    esLogsRetainDays: new FormControl(7, Validators.min(1)),
   });
   updateESParamForm = new FormGroup({
-    esDataNodeCount: new FormControl(3, Validators.min(1)),
-    esRequestCPU: new FormControl(2, Validators.min(1)),
-    esRequestMEM: new FormControl(8, Validators.min(2)),
-    esDataVolume: new FormControl(512, Validators.min(10)),
-    esLogsRetainDays: new FormControl(30, Validators.min(1)),
+    esDataNodeCount: new FormControl(1, Validators.min(1)),
+    esRequestCPU: new FormControl(1, Validators.min(1)),
+    esRequestMEM: new FormControl(2, Validators.min(2)),
+    esDataVolume: new FormControl(50, Validators.min(10)),
+    esLogsRetainDays: new FormControl(7, Validators.min(1)),
   });
   fluentbitParamForm = new FormGroup({
     cluster: new FormControl('', Validators.required),
@@ -358,14 +358,14 @@ export class OperationComponent implements OnInit {
         break;
       case 'ELASTICSEARCH':
         const esParamsMap: JSON = JSON.parse(JSON.stringify({}));
-        esParamsMap['ES_INSTANCE_REPLICAS'] = !!this.esParamForm.value.esDataNodeCount ? this.esParamForm.value.esDataNodeCount+'' : '3';
-        esParamsMap['ES_DATA_HEAPSIZE_GIB'] = !!this.esParamForm.value.esRequestMEM ? Math.round(this.esParamForm.value.esRequestMEM/2)+'' : '4';
-        esParamsMap['ES_RESOURCE_LIMIT_CPU'] = !!this.esParamForm.value.esRequestCPU ? this.esParamForm.value.esRequestCPU*2+'' : '4';
-        esParamsMap['ES_RESOURCE_LIMIT_MEMORY_GIB'] = !!this.esParamForm.value.esRequestMEM ? this.esParamForm.value.esRequestMEM*2+'' : '16';
-        esParamsMap['ES_RESOURCE_REQUEST_CPU'] = !!this.esParamForm.value.esRequestCPU ? this.esParamForm.value.esRequestCPU+'' : '2';
-        esParamsMap['ES_RESOURCE_REQUEST_MEMORY_GIB'] = !!this.esParamForm.value.esRequestMEM ? this.esParamForm.value.esRequestMEM+'' : '8';
-        esParamsMap['ES_DATASTORE_SIZE_GIB'] = !!this.esParamForm.value.esDataVolume ? this.esParamForm.value.esDataVolume+'' : '512';
-        esParamsMap['ES_PRESERVED_UNIT_COUNT'] = !!this.esParamForm.value.esLogsRetainDays ? this.esParamForm.value.esLogsRetainDays+'' : '30';
+        esParamsMap['ES_INSTANCE_REPLICAS'] = !!this.esParamForm.value.esDataNodeCount ? this.esParamForm.value.esDataNodeCount+'' : '1';
+        esParamsMap['ES_DATA_HEAPSIZE_GIB'] = !!this.esParamForm.value.esRequestMEM ? Math.round(this.esParamForm.value.esRequestMEM/2)+'' : '1';
+        esParamsMap['ES_RESOURCE_LIMIT_CPU'] = !!this.esParamForm.value.esRequestCPU ? this.esParamForm.value.esRequestCPU*2+'' : '2';
+        esParamsMap['ES_RESOURCE_LIMIT_MEMORY_GIB'] = !!this.esParamForm.value.esRequestMEM ? this.esParamForm.value.esRequestMEM*2+'' : '4';
+        esParamsMap['ES_RESOURCE_REQUEST_CPU'] = !!this.esParamForm.value.esRequestCPU ? this.esParamForm.value.esRequestCPU+'' : '1';
+        esParamsMap['ES_RESOURCE_REQUEST_MEMORY_GIB'] = !!this.esParamForm.value.esRequestMEM ? this.esParamForm.value.esRequestMEM+'' : '2';
+        esParamsMap['ES_DATASTORE_SIZE_GIB'] = !!this.esParamForm.value.esDataVolume ? this.esParamForm.value.esDataVolume+'' : '50';
+        esParamsMap['ES_PRESERVED_UNIT_COUNT'] = !!this.esParamForm.value.esLogsRetainDays ? this.esParamForm.value.esLogsRetainDays+'' : '7';
         const esParam: EnableClusterExtension = {
           name: 'ELASTICSEARCH',
           cluster: this.esParamForm.value.cluster,
@@ -436,11 +436,11 @@ export class OperationComponent implements OnInit {
     })
     this.esParamForm.reset();
     this.esParamForm.patchValue({
-      esDataNodeCount: 3,
-      esRequestCPU: 2,
-      esRequestMEM: 8,
-      esDataVolume: 512,
-      esLogsRetainDays: 30
+      esDataNodeCount: 1,
+      esRequestCPU: 1,
+      esRequestMEM: 2,
+      esDataVolume: 50,
+      esLogsRetainDays: 7
     })
     this.otherParamForm.reset();
   }
@@ -650,14 +650,14 @@ export class OperationComponent implements OnInit {
   doUpdateElasticsearchParams(): void {
     this.showEditElasticsearch = false;
     const paramsMap: JSON = JSON.parse(JSON.stringify({}));
-    paramsMap['ES_INSTANCE_REPLICAS'] = !!this.updateESParamForm.value.esDataNodeCount ? this.updateESParamForm.value.esDataNodeCount+'' : '3';
-    paramsMap['ES_DATA_HEAPSIZE_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? Math.round(this.updateESParamForm.value.esRequestMEM/2)+'' : '4';
-    paramsMap['ES_RESOURCE_LIMIT_CPU'] = !!this.updateESParamForm.value.esRequestCPU ? this.updateESParamForm.value.esRequestCPU*2+'' : '4';
-    paramsMap['ES_RESOURCE_LIMIT_MEMORY_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? this.updateESParamForm.value.esRequestMEM*2+'' : '16';
-    paramsMap['ES_RESOURCE_REQUEST_CPU'] = !!this.updateESParamForm.value.esRequestCPU ? this.updateESParamForm.value.esRequestCPU+'' : '2';
-    paramsMap['ES_RESOURCE_REQUEST_MEMORY_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? this.updateESParamForm.value.esRequestMEM+'' : '8';
-    paramsMap['ES_DATASTORE_SIZE_GIB'] = !!this.updateESParamForm.value.esDataVolume ? this.updateESParamForm.value.esDataVolume+'' : '512';
-    paramsMap['ES_PRESERVED_UNIT_COUNT'] = !!this.updateESParamForm.value.esLogsRetainDays ? this.updateESParamForm.value.esLogsRetainDays+'' : '30';
+    paramsMap['ES_INSTANCE_REPLICAS'] = !!this.updateESParamForm.value.esDataNodeCount ? this.updateESParamForm.value.esDataNodeCount+'' : '1';
+    paramsMap['ES_DATA_HEAPSIZE_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? Math.round(this.updateESParamForm.value.esRequestMEM/2)+'' : '1';
+    paramsMap['ES_RESOURCE_LIMIT_CPU'] = !!this.updateESParamForm.value.esRequestCPU ? this.updateESParamForm.value.esRequestCPU*2+'' : '2';
+    paramsMap['ES_RESOURCE_LIMIT_MEMORY_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? this.updateESParamForm.value.esRequestMEM*2+'' : '4';
+    paramsMap['ES_RESOURCE_REQUEST_CPU'] = !!this.updateESParamForm.value.esRequestCPU ? this.updateESParamForm.value.esRequestCPU+'' : '1';
+    paramsMap['ES_RESOURCE_REQUEST_MEMORY_GIB'] = !!this.updateESParamForm.value.esRequestMEM ? this.updateESParamForm.value.esRequestMEM+'' : '2';
+    paramsMap['ES_DATASTORE_SIZE_GIB'] = !!this.updateESParamForm.value.esDataVolume ? this.updateESParamForm.value.esDataVolume+'' : '50';
+    paramsMap['ES_PRESERVED_UNIT_COUNT'] = !!this.updateESParamForm.value.esLogsRetainDays ? this.updateESParamForm.value.esLogsRetainDays+'' : '7';
     const param: ModifyClusterExtension = {
       id: this.selectedExtensionId,
       spec: paramsMap

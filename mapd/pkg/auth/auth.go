@@ -761,14 +761,16 @@ func initDexClient(dex api.DexClient, cfg *oauth2.Config) error {
 		}
 	}
 
-	// Create the client, ignore "already exists" error for static clients
-	_, err = dex.CreateClient(ctx, &api.CreateClientReq{Client: client})
+	resp, err := dex.CreateClient(ctx, &api.CreateClientReq{Client: client})
 	if err != nil {
 		// If already exists, that's fine (for static clients)
 		if strings.Contains(err.Error(), "already exists") {
 			return nil
 		}
 		return errors.Wrap(err, "failed to create OIDC client")
+	}
+	if resp.GetAlreadyExists() {
+		return fmt.Errorf("failed to create OIDC client %q: client already exists after delete", cfg.ClientID)
 	}
 	return nil
 }

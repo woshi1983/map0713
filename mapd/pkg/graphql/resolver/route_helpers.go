@@ -109,7 +109,7 @@ func finalizeRouteQueryFilter(db *gorm.DB, filters ...*model.FilterInfo) *gorm.D
 				args  []interface{}
 			)
 			for _, val := range each.Value {
-				exprs = append(exprs, "`federation_id` = ?")
+				exprs = append(exprs, "EXISTS (SELECT 1 FROM `route_backend` INNER JOIN `instance` ON `route_backend`.`instance_id` = `instance`.`id` WHERE `route_backend`.`route_id` = `route`.`id` AND `instance`.`federation_id` = ?)")
 				args = append(args, val)
 			}
 			if len(args) > 0 {

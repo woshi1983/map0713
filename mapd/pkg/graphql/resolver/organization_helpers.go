@@ -54,27 +54,15 @@ func finalizeOrganizationQueryFilter(db *gorm.DB, filters ...*model.FilterInfo) 
 }
 
 func getOrganizationQuotaUsage(db *gorm.DB, id uuid.UUID) (cpus, memMi, storageGi int64) {
-	var count int64
-	if err := db.Model(&model1.OrganizationQuotaUsage{}).Where("`organization_id` = ?", id).Count(&count).Error; err != nil {
+	usage := &model1.OrganizationQuotaUsage{}
+	if err := db.Model(&model1.OrganizationQuotaUsage{}).
+		Select("COALESCE(SUM(organization_quota_usage.cpus), 0) AS cpus, COALESCE(SUM(organization_quota_usage.memory_mi), 0) AS memory_mi, COALESCE(SUM(organization_quota_usage.storage_gi), 0) AS storage_gi").
+		Joins("JOIN cluster_quota_usage ON cluster_quota_usage.usage_id = organization_quota_usage.id").
+		Where("organization_quota_usage.organization_id = ?", id).
+		Scan(usage).Error; err != nil {
 		panic(&ErrDBConnection{err})
 	}
-	n := count / 100
-	m := count % 100
-	if m > 0 {
-		n++
-	}
-	for i := int64(0); i < n; i++ {
-		us := []model1.OrganizationQuotaUsage{}
-		if err := db.Where("`organization_id` = ?", id).Offset(int(i) * 100).Limit(100).Find(&us).Error; err != nil {
-			panic(&ErrDBConnection{err})
-		}
-		for _, u := range us {
-			cpus += u.CPUs
-			memMi += u.MemoryMi
-			storageGi += u.StorageGi
-		}
-	}
-	return
+	return usage.CPUs, usage.MemoryMi, usage.StorageGi
 }
 
 func getOrganizationQuota(db *gorm.DB, id uuid.UUID) (cpus, memMi, storageGi int64) {
