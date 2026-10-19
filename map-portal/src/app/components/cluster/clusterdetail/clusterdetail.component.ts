@@ -431,16 +431,17 @@ export class ClusterdetailComponent implements OnInit {
           workerVMClass: this.cluster.spec.dataPlaneClass
         });
         break;
+      case 'TKG2M':
       case 'TKGM':
         this.showUpdateTKGMVMclassDialog = true;
         this.updateTKGMVMclassChanged = false;
         this.updateTKGMClusterVMClassForm.patchValue({
-          masterCPU: this.cluster.spec.ctlPlaneCPUs,
-          masterRAM: this.cluster.spec.ctlPlaneMemMi / 1024,
-          masterDisk: this.cluster.spec.ctlPlaneStorageCapGi,
-          workerCPU: this.cluster.spec.dataPlaneCPUs,
-          workerRAM: this.cluster.spec.dataPlaneMemMi / 1024,
-          workerDisk: this.cluster.spec.dataPlaneStorageCapGi
+          masterCPU: this.cluster.class === 'TKG2M' ? this.cluster.spec.ctlPlaneNumCpus : this.cluster.spec.ctlPlaneCPUs,
+          masterRAM: (this.cluster.class === 'TKG2M' ? this.cluster.spec.ctlPlaneMemMiB : this.cluster.spec.ctlPlaneMemMi) / 1024,
+          masterDisk: this.cluster.class === 'TKG2M' ? this.cluster.spec.ctlPlaneDiskGiB : this.cluster.spec.ctlPlaneStorageCapGi,
+          workerCPU: this.cluster.class === 'TKG2M' ? this.cluster.spec.workerNumCpus : this.cluster.spec.dataPlaneCPUs,
+          workerRAM: (this.cluster.class === 'TKG2M' ? this.cluster.spec.workerMemMiB : this.cluster.spec.dataPlaneMemMi) / 1024,
+          workerDisk: this.cluster.class === 'TKG2M' ? this.cluster.spec.workerDiskGiB : this.cluster.spec.dataPlaneStorageCapGi
         })
         break;
       default:
@@ -478,15 +479,29 @@ export class ClusterdetailComponent implements OnInit {
         })
         break;
       }
+      case 'TKG2M':
       case 'TKGM': {
         this.showUpdateTKGMVMclassDialog = false;
-        const oldCtlResourceSetting = this.cluster.spec.ctlPlaneCPUs + this.cluster.spec.ctlPlaneMemMi / 1024 + this.cluster.spec.ctlPlaneStorageCapGi;
-        const oldDataResourceSetting = this.cluster.spec.dataPlaneCPUs + this.cluster.spec.dataPlaneMemMi / 1024 + this.cluster.spec.dataPlaneStorageCapGi;
-        const newCtlResourceSetting = this.updateTKGMClusterMasterForm.value.masterCPU + this.updateTKGMClusterMasterForm.value.masterRAM + this.updateTKGMClusterMasterForm.value.masterDisk;
-        const newDataResourceSetting = this.updateTKGMClusterMasterForm.value.workerCPU + this.updateTKGMClusterMasterForm.value.workerRAM + this.updateTKGMClusterMasterForm.value.workerDisk;
+        const oldCtlResourceSetting = this.cluster.class === 'TKG2M'
+          ? this.cluster.spec.ctlPlaneNumCpus + this.cluster.spec.ctlPlaneMemMiB / 1024 + this.cluster.spec.ctlPlaneDiskGiB
+          : this.cluster.spec.ctlPlaneCPUs + this.cluster.spec.ctlPlaneMemMi / 1024 + this.cluster.spec.ctlPlaneStorageCapGi;
+        const oldDataResourceSetting = this.cluster.class === 'TKG2M'
+          ? this.cluster.spec.workerNumCpus + this.cluster.spec.workerMemMiB / 1024 + this.cluster.spec.workerDiskGiB
+          : this.cluster.spec.dataPlaneCPUs + this.cluster.spec.dataPlaneMemMi / 1024 + this.cluster.spec.dataPlaneStorageCapGi;
+        const newCtlResourceSetting = this.updateTKGMClusterVMClassForm.value.masterCPU + this.updateTKGMClusterVMClassForm.value.masterRAM + this.updateTKGMClusterVMClassForm.value.masterDisk;
+        const newDataResourceSetting = this.updateTKGMClusterVMClassForm.value.workerCPU + this.updateTKGMClusterVMClassForm.value.workerRAM + this.updateTKGMClusterVMClassForm.value.workerDisk;
         let input: UpdateCluster = {
           id: this.clusterId,
-          spec: {
+          spec: this.cluster.class === 'TKG2M' ? {
+            tkg2m: {
+              ctlPlaneNumCpus: oldCtlResourceSetting !== newCtlResourceSetting ? this.updateTKGMClusterVMClassForm.value.masterCPU : null,
+              ctlPlaneMemMiB: oldCtlResourceSetting !== newCtlResourceSetting ? this.updateTKGMClusterVMClassForm.value.masterRAM * 1024 : null,
+              ctlPlaneDiskGiB: oldCtlResourceSetting !== newCtlResourceSetting ? this.updateTKGMClusterVMClassForm.value.masterDisk : null,
+              workerNumCpus: oldDataResourceSetting !== newDataResourceSetting ? this.updateTKGMClusterVMClassForm.value.workerCPU : null,
+              workerMemMiB: oldDataResourceSetting !== newDataResourceSetting ? this.updateTKGMClusterVMClassForm.value.workerRAM * 1024 : null,
+              workerDiskGiB: oldDataResourceSetting !== newDataResourceSetting ? this.updateTKGMClusterVMClassForm.value.workerDisk : null
+            }
+          } : {
             tkgm: {
               ctlPlaneCPUs: oldCtlResourceSetting !== newCtlResourceSetting ? this.updateTKGMClusterVMClassForm.value.masterCPU : null,
               ctlPlaneMemMi: oldCtlResourceSetting !== newCtlResourceSetting ? this.updateTKGMClusterVMClassForm.value.masterRAM * 1024 : null,
