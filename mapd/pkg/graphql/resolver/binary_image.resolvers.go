@@ -401,7 +401,7 @@ func (r *queryResolver) BinaryImages(ctx context.Context, filters []*model.Query
 				args  []interface{}
 			)
 			for _, val := range each.Value {
-				exprs = append(exprs, "`cluster_id` = ?")
+				exprs = append(exprs, "`id` = ?")
 				args = append(args, val)
 			}
 			if len(args) > 0 {

@@ -5,7 +5,7 @@
   <br>
   <div class="clr-row" style="margin-left: 0px">
     <div class="clr-form">
-      <button (click)="showAddProvider()" class="btn btn-primary btn-outline">
+      <button *ngIf="authService.getUserInfo()?.admin" (click)="showAddProvider()" class="btn btn-primary btn-outline">
           <clr-icon shape="plus"></clr-icon>
           {{ 'PROVIDERMGMT.ADDPROVIDER' | translate }}
       </button>

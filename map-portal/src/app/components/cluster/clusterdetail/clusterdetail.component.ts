@@ -546,10 +546,11 @@ export class ClusterdetailComponent implements OnInit {
           this.allowUpdateClusterMaster = true;
         }
         break;
+      case 'TKG2M':
       case 'TKGM':
         this.showUpdateTKGMMasterDialog = true;
         this.updateTKGMClusterMasterForm.setValue({
-          masterCount: this.cluster.spec.ctlPlaneCount
+          masterCount: this.cluster.class === 'TKG2M' ? this.cluster.spec.ctlPlaneReplicas : this.cluster.spec.ctlPlaneCount
         })
         break;
       default:
@@ -577,9 +578,13 @@ export class ClusterdetailComponent implements OnInit {
         this.refresh();
         })
         break;
-      case 'TKGM':
+      case 'TKG2M':
+      case 'TKGM': {
         this.showUpdateTKGMMasterDialog = false;
-        this.clusterService.updateTKGMClusterMasterCount(this.clusterId, this.updateTKGMClusterMasterForm.value.masterCount).subscribe(data => {
+        const updateMaster = this.cluster.class === 'TKG2M'
+          ? this.clusterService.updateTKG2MClusterMasterCount(this.clusterId, this.updateTKGMClusterMasterForm.value.masterCount)
+          : this.clusterService.updateTKGMClusterMasterCount(this.clusterId, this.updateTKGMClusterMasterForm.value.masterCount);
+        updateMaster.subscribe(data => {
           if (!!data.errors){
             for (const each of data.errors){
                if(!!each.message){
@@ -594,6 +599,7 @@ export class ClusterdetailComponent implements OnInit {
         this.refresh();
         })
         break;
+      }
       default:
         console.log('not support')
     }
@@ -603,7 +609,9 @@ export class ClusterdetailComponent implements OnInit {
     this.showUpdateWorkerDialog = true;
     this.updateWorkerChanged = false;
     this.updateTKGSClusterWorkerForm.patchValue({
-      workerCount: this.cluster.spec.dataPlaneCount
+      workerCount: this.cluster.class === 'TKG2M'
+        ? this.cluster.spec.workerNodePool0Replicas
+        : this.cluster.spec.dataPlaneCount
     });
   }
 
@@ -628,6 +636,22 @@ export class ClusterdetailComponent implements OnInit {
         break;
       case 'TKGM':
          this.clusterService.updateTKGMClusterWorkerCount(this.clusterId, this.updateTKGSClusterWorkerForm.value.workerCount).subscribe(data => {
+           if (!!data.errors){
+              for (const each of data.errors){
+                 if(!!each.message){
+                   this.toast.show( this.translate.instant('MESSAGE.SHARED.UPDATEERROR')+` ${each.message} ${!!each.extensions?.reason ? ' : ' + each.extensions?.reason : '' }`, this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-WORKER-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0})
+                 }
+              }
+            }
+          if (!!data.data?.UpdateCluster){
+            this.toast.show(`${data.data.UpdateCluster.name} `+this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-MSG'), this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-SUCCESS'), {toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000})
+          }
+        }, (e) => this.toast.show( this.translate.instant('MESSAGE.SHARED.UNGET')+` ${e}`, this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-WORKER-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => {
+         this.refresh();
+         })
+        break;
+      case 'TKG2M':
+         this.clusterService.updateTKG2MClusterWorkerCount(this.clusterId, this.updateTKGSClusterWorkerForm.value.workerCount).subscribe(data => {
            if (!!data.errors){
               for (const each of data.errors){
                  if(!!each.message){

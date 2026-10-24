@@ -5,7 +5,7 @@
   <br>
   <div class="clr-row" style="margin-left: 0px">
     <div class="clr-form">
-      <button (click)="showAddRepo()" class="btn btn-primary btn-outline">
+      <button *ngIf="authService.getUserInfo()?.admin" (click)="showAddRepo()" class="btn btn-primary btn-outline">
           <clr-icon shape="plus"></clr-icon>
           {{ 'REGISTRYMGMT.ADDREGISTRY' | translate }}
       </button>

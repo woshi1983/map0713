@@ -1,0 +1,161 @@
+#!/bin/bash
+set -o pipefail
+
+# Arguments:
+# $1 env variable name to check
+# $2 default value if environemnt variable was not set
+function find_env() {
+  var=`printenv "$1"`
+
+  # If environment variable exists
+  if [ -n "$var" ]; then
+    echo $var
+  else
+    echo $2
+  fi
+}
+
+function build_binary() {
+  if [[ -n "${BINARY_FILE_URL}" ]]; then
+    URL="${BINARY_FILE_URL}"
+    curl --head --silent --fail --location --max-time 16 $URL > /dev/null
+    if [ $? != 0 ]; then
+      echo "[Error]: Could not access url: ${URL}"
+      exit 1
+    fi
+  else
+    echo "[Error]: Must provide URL should be download app binary. Set BINARY_URL!"
+    exit 1
+  fi
+  if [ ! -n "$BINARY_BUILD_BASE_IMAGE_NAME" ];then
+    echo "[Error]: Must provide base image to builder. Set BUILD_BASE_IMAGE_NAME!"
+    exit 1
+  fi
+
+  DEPLOY_DIR=$(find_env "BINARY_DEPLOY_DIR" "/deployment")
+  RUN_UID=$(find_env "BINARY_PROCESS_RUN_UID" "0")
+
+  PKG_NAME=`basename $URL`
+  echo ">> Downloading Binary [$PKG_NAME]"
+  curl --silent --max-time 5  $URL -o ${BUILD_DIR}/${PKG_NAME}
+  if [ $? != 0 ]; then
+    echo "[Error]: Trying to downloading Binary ${PKG_NAME} failed, please check!"
+    exit 1
+  else
+    echo "[Info]: Download Binary ${PKG_NAME} successful."
+  fi
+  dockerfile="FROM $BINARY_BUILD_BASE_IMAGE_NAME\nADD $PKG_NAME $DEPLOY_DIR/$PKG_NAME\nUSER 0\nRUN chown $RUN_UID:$RUN_UID $DEPLOY_DIR/$PKG_NAME && chmod +x $DEPLOY_DIR/$PKG_NAME\nUSER $RUN_UID"
+  echo -e "${dockerfile}" > Dockerfile
+
+}
+
+function build_dockerfile() {
+  if [[ ! -n "${DOCKERFILE_BUILD_CONTEXT_TYPE}" ]]; then
+      echo "[Error]: Must provide Context Type for dockerfile build. Set DOCKERFILE_BUILD_CONTEXT_TYPE!"
+      exit 1
+  fi
+  context_type=${DOCKERFILE_BUILD_CONTEXT_TYPE}
+  dockerfile_name=$(find_env "DOCKERFILE_BUILD_DOCKERFILE_NAME" "Dockerfile")
+  case $context_type in
+  "git")
+      if [[ -n "${DOCKERFILE_BUILD_CONTEXT_URL}" ]]; then
+        URL="${DOCKERFILE_BUILD_CONTEXT_URL}"
+        curl --head --silent --fail --location --max-time 16 $URL > /dev/null
+        if [ $? != 0 ]; then
+          echo "[Error]: Could not access git: ${URL}"
+          exit 1
+        fi
+
+        git_branch=$(find_env "DOCKERFILE_BUILD_GIT_BRANCH" "master")
+        git_subdir=$(find_env "DOCKERFILE_BUILD_GIT_SUBDIR" "/")
+        ## need add git user and password for private repo.
+        echo "[Info]: clone source form ${DOCKERFILE_BUILD_CONTEXT_URL} into ${PWD}"
+        git clone $URL  -b ${git_branch} ./
+
+        if [ "${git_subdir}" != "/" ]; then
+          echo "[Info]: change to subdir ${git_subdir}"
+          cd ./${git_subdir}
+        fi
+
+        if [ "${dockerfile_name}" != "Dockerfile" ]; then
+          cp ${dockerfile_name} Dockerfile
+        fi
+      fi
+     ;;
+  "tar.gz")
+      ## need do "tar -zcvf 2048-game.tar.gz -C 2048-game/ ." for tar,gz
+      if [[ -n "${DOCKERFILE_BUILD_CONTEXT_URL}" ]]; then
+        URL="${DOCKERFILE_BUILD_CONTEXT_URL}"
+        curl --head --silent --fail --location --max-time 16 $URL > /dev/null
+        if [ $? != 0 ]; then
+          echo "[Error]: Could not access url: ${URL}"
+          exit 1
+        fi
+        context_package_name=`basename $URL`
+        echo "[Info]: Download context..."
+        wget -P /tmp/ $URL
+        tar -zxf /tmp/${context_package_name} -C ${BUILD_DIR}/
+        if [ "${dockerfile_name}" != "Dockerfile" ]; then
+          cp ${dockerfile_name} Dockerfile
+        fi
+      fi
+      ;;
+  *)
+     echo "[Error]: Dockerfile build context URL only support git and tar.gz, input build type is ${context_type}, please check!"
+     exit 1
+     ;;
+  esac
+}
+
+#------main logic------------
+if [ ! -n "${OUTPUT_IMAGE_REGISTRY}" ]; then
+  echo "[Error]: Must provide registry the final image should be pushed to. Set OUTPUT_IMAGE_REGISTRY!"
+  exit 1
+fi
+
+if [ ! -n "${OUTPUT_IMAGE_REPO}" ]; then
+  echo "[Error]: Must provide project the final image pushed to. Set OUTPUT_IMAGE_REPO!"
+  exit 1
+fi
+
+if [ ! -n "${OUTPUT_IMAGE_NAME}" ]; then
+  echo "[Error]: Must provide name of the final image. Set OUTPUT_IMAGE_NAME!"
+  exit 1
+fi
+if [ -n "$INSECURE_BASE_IMAGE" ];then
+   build_args=${EXTERNAL_BUILD_ARGS}" --insecure-pull --skip-tls-verify-pull "
+fi
+if [ -n "$INSECURE_OUTPUT_IMAGE" ];then
+   build_args=${build_args}" --insecure --skip-tls-verify "
+fi
+
+BUILD_DIR=/workspace
+pushd "${BUILD_DIR}"
+
+case $BUILD_TYPE in
+  "Binary")
+     echo "[Info]: Start Binary Build..."
+     build_binary
+     ;;
+  "Dockerfile")
+     echo "[Info]: Start Dockerfile Build..."
+     build_dockerfile
+     ;;
+  *)
+     echo "[Error]: Only support Binary and Dockerfile build, input build type is ${$BUILD_TYPE}, please check!"
+     exit 1
+     ;;
+esac
+
+BUILD_ID=$(find_env "BUILD_NUM" "0")
+time=`date +%Y%m%d.%H%M%S`
+TAG="b"${BUILD_ID}"."$(find_env "OUTPUT_IMAGE_TAG" "$time")
+dest_name="--destination ${OUTPUT_IMAGE_REGISTRY}/${OUTPUT_IMAGE_REPO}/${OUTPUT_IMAGE_NAME}:latest --destination ${OUTPUT_IMAGE_REGISTRY}/${OUTPUT_IMAGE_REPO}/${OUTPUT_IMAGE_NAME}:${TAG}"
+
+/kaniko/executor ${dest_name} ${build_args}
+if [ $? != 0 ]; then
+  echo "[Error]: Build ${OUTPUT_IMAGE_REPO}/${OUTPUT_IMAGE_NAME} failed, please check!"
+  exit 1
+else
+  echo "[Info]: Build ${OUTPUT_IMAGE_REPO}/${OUTPUT_IMAGE_NAME} successful!"
+fi
