@@ -2,13 +2,14 @@
 
 This directory contains the `/kaniko/build` entrypoint extracted from
 `harbor.huaruicloud.cn/map/kaniko-builder:v0.12.0` (manifest digest pinned in
-the Dockerfile). The only behavior change is that a binary build's generated
-Dockerfile runs `chmod +x` on the downloaded binary after setting its owner.
+the Dockerfile). For binary builds, the entrypoint sets the downloaded file's
+execute bit in the build context before Kaniko processes `ADD`. Kaniko did not
+capture the prior `RUN chmod +x` change in the resulting image layer.
 
 Build the patched image with:
 
 ```sh
-docker build -t kaniko-builder:v0.12.0-execfix.1 mapd/scripts/kaniko-builder
+docker build -t kaniko-builder:v0.12.0-execfix.2 mapd/scripts/kaniko-builder
 ```
 
 MAPD v0.12.0 pulls `kaniko-builder:v0.12.0` with `Always` for build Jobs. A

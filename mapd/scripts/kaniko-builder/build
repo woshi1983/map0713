@@ -44,7 +44,10 @@ function build_binary() {
   else
     echo "[Info]: Download Binary ${PKG_NAME} successful."
   fi
-  dockerfile="FROM $BINARY_BUILD_BASE_IMAGE_NAME\nADD $PKG_NAME $DEPLOY_DIR/$PKG_NAME\nUSER 0\nRUN chown $RUN_UID:$RUN_UID $DEPLOY_DIR/$PKG_NAME && chmod +x $DEPLOY_DIR/$PKG_NAME\nUSER $RUN_UID"
+  # Kaniko snapshots the ADD layer before the RUN layer. Set the mode on the
+  # context file so the executable bit is present in the ADD layer itself.
+  chmod +x "${BUILD_DIR}/${PKG_NAME}" || exit 1
+  dockerfile="FROM $BINARY_BUILD_BASE_IMAGE_NAME\nADD $PKG_NAME $DEPLOY_DIR/$PKG_NAME\nUSER 0\nRUN chown $RUN_UID:$RUN_UID $DEPLOY_DIR/$PKG_NAME\nUSER $RUN_UID"
   echo -e "${dockerfile}" > Dockerfile
 
 }
