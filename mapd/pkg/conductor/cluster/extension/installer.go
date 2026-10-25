@@ -37,15 +37,16 @@ type GenericInstallerConfig struct {
 	ImageRegistry       *model.ImageRegistry
 	LoadBalancerEnabled bool
 
-	Cluster          string
-	ClusterClass     model.ClusterClass
-	JobNamespace     string
-	Job              string
-	ServiceNamespace string
-	Services         []string
-	Image            string
-	CACerts          []byte
-	UnmarshalEnvFunc func(ext *model.ClusterExtension, env map[string]string) error
+	Cluster            string
+	ClusterClass       model.ClusterClass
+	JobNamespace       string
+	Job                string
+	JobDeadlineSeconds int64
+	ServiceNamespace   string
+	Services           []string
+	Image              string
+	CACerts            []byte
+	UnmarshalEnvFunc   func(ext *model.ClusterExtension, env map[string]string) error
 }
 
 // GenericInstaller provides helpers for implementing a installer. It should be
@@ -183,6 +184,12 @@ func (k *GenericInstaller) GetEndpoints(defaultScheme string, mappingPortScheme 
 
 func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) error {
 	defer k.log.Sync()
+	jobDeadlineSeconds := int64(defJobDeadlineSecs)
+	graceDeadlineSeconds := int64(graceJobDeadlineSecs)
+	if k.JobDeadlineSeconds > 0 {
+		jobDeadlineSeconds = k.JobDeadlineSeconds
+		graceDeadlineSeconds = k.JobDeadlineSeconds + graceJobDeadlineSecs - defJobDeadlineSecs
+	}
 
 	if k.UnmarshalEnvFunc == nil {
 		panic(fmt.Errorf("UnmarshalEnvFunc must not be nil"))
@@ -243,7 +250,7 @@ func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) e
 				BackoffLimit:            util.Int32Ptr(2),
 				Completions:             util.Int32Ptr(1),
 				Parallelism:             util.Int32Ptr(1),
-				ActiveDeadlineSeconds:   util.Int64Ptr(defJobDeadlineSecs),
+				ActiveDeadlineSeconds:   util.Int64Ptr(jobDeadlineSeconds),
 				TTLSecondsAfterFinished: util.Int32Ptr(3600),
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
@@ -285,7 +292,7 @@ func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) e
 	}
 
 	oldEnv := make(map[string]string)
-	recreate := false
+	recreate := job.Spec.ActiveDeadlineSeconds == nil || *job.Spec.ActiveDeadlineSeconds != jobDeadlineSeconds
 LOOP:
 	for _, c := range job.Spec.Template.Spec.Containers {
 		for _, e := range c.Env {
@@ -316,7 +323,7 @@ LOOP:
 		}
 	}
 	if job.Status.Active > 0 {
-		if time.Since(job.Status.StartTime.Time) > time.Duration(graceJobDeadlineSecs)*time.Second {
+		if time.Since(job.Status.StartTime.Time) > time.Duration(graceDeadlineSeconds)*time.Second {
 			k.log.Errorf("job %s/%s timed out for some reason. For details, please check pod logs on cluster %s manually.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
 			return &ErrCriticalFailure{fmt.Errorf("job is failed")}
 		}
@@ -336,7 +343,7 @@ LOOP:
 	}
 	if job.Status.Succeeded < 1 {
 		// we wait for another 10 seconds to make sure the job is failed
-		if time.Since(job.CreationTimestamp.Time) < time.Second*time.Duration(graceJobDeadlineSecs) {
+		if time.Since(job.CreationTimestamp.Time) < time.Second*time.Duration(graceDeadlineSeconds) {
 			if recreate {
 				k.log.Warnf("job %s/%s requires recreation but it is still running. Pending update on cluster %s.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
 			}

@@ -1,8 +1,6 @@
-image,${IMAGE_REGISTRY}/bitnami/elasticsearch:7.15.2-debian-10-r10
-image,${IMAGE_REGISTRY}/bitnami/kibana:7.15.2-debian-10-r0
-image,${IMAGE_REGISTRY}/bitnami/elasticsearch-curator:5.8.4-debian-10-r190
-image,${IMAGE_REGISTRY}/bitnami/elasticsearch-exporter:1.3.0-debian-10-r31
-image,${IMAGE_REGISTRY}/bitnami/bitnami-shell:10-debian-10-r259
+image,${IMAGE_REGISTRY}/bitnami/elasticsearch:9.5.5
+image,${IMAGE_REGISTRY}/bitnami/kibana:9.5.5
+image,${IMAGE_REGISTRY}/bitnami/elasticsearch-exporter:1.11.0
 image,velero/velero:v1.9.6
 image,velero/velero-plugin-for-aws:v1.5.4
 image,velero/velero-restic-restore-helper:v1.9.6

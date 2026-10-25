@@ -36,6 +36,7 @@ func NewElasticSearch(opts *InstallerOptions) Installer {
 		ClusterClass:        opts.ClusterClass,
 		JobNamespace:        opts.Namespace,
 		Job:                 "cluster-extension-elasticsearch",
+		JobDeadlineSeconds:  2400,
 		ServiceNamespace:    "vmware-system-elastic",
 		Services:            []string{"elasticsearch-kibana", "elasticsearch-coordinating-only"},
 		Image:               fmt.Sprintf("cluster-extension-elasticsearch:%s", imageTag),
