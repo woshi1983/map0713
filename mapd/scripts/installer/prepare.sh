@@ -16,7 +16,7 @@
 
 set -e
 
-MAP_PUBLIC_IMAGE_REGISTRY="registry-stg.eng.vmware.com"
+MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"harbor.huaruicloud.cn"}
 
 # If compiling source code this dir is MAP's make dir.
 # If installing MAP via package, this dir is MAP's root dir.

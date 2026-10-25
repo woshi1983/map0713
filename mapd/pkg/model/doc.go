@@ -185,7 +185,7 @@ const minVersionRequirement = "v0.11.0"
 
 func checkMinimumVersionRequirement(db *gorm.DB, ver *semver.Version) (*semver.Version, error) {
 	if ver == nil {
-		// Extract just the version part (e.g., "v0.12.0" from "v0.12.0 (revision@branch)")
+		// Extract just the version part (e.g., "v0.13.0" from "v0.13.0 (revision@branch)")
 		fullVer := strings.TrimSpace(mapd.Version)
 		if idx := strings.Index(fullVer, " "); idx > 0 {
 			fullVer = fullVer[:idx]
@@ -205,6 +205,7 @@ var Upgrader = NewUpgraderRegistry(checkMinimumVersionRequirement)
 func init() {
 	Upgrader.Register(semver.MustParse("v0.11.0"), upgrader0_11_0To0_11_1)
 	Upgrader.Register(semver.MustParse("v0.11.1"), upgrader0_11_1To0_12_0)
+	Upgrader.Register(semver.MustParse("v0.12.0"), upgrader0_12_0To0_13_0)
 }
 
 // upgrader0_11_0To0_11_1 upgrades v0.11.0 to v0.11.1
@@ -240,4 +241,9 @@ func upgrader0_11_0To0_11_1(db *gorm.DB, ver *semver.Version) (*semver.Version, 
 // upgrader0_11_1To0_12_0 upgrades v0.11.1 to v0.12.0
 func upgrader0_11_1To0_12_0(db *gorm.DB, ver *semver.Version) (*semver.Version, error) {
 	return semver.MustParse("v0.12.0"), nil
+}
+
+// upgrader0_12_0To0_13_0 advances the database version for the v0.13.0 release.
+func upgrader0_12_0To0_13_0(db *gorm.DB, ver *semver.Version) (*semver.Version, error) {
+	return semver.MustParse("v0.13.0"), nil
 }

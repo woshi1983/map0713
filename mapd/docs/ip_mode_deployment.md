@@ -33,15 +33,15 @@ Default ports:
 Default images:
 
 ```text
-registry-stg.eng.vmware.com/map/map-console:v0.12.0
-registry-stg.eng.vmware.com/map/mapd:v0.12.0
+harbor.huaruicloud.cn/map/map-console:v0.13.0
+harbor.huaruicloud.cn/map/mapd:v0.13.0
 ```
 
 Override images when needed:
 
 ```bash
-MAP_CONSOLE_IMAGE=registry-stg.eng.vmware.com/map/map-console:v0.12.0 \
-MAPD_IMAGE=registry-stg.eng.vmware.com/map/mapd:v0.12.0 \
+MAP_CONSOLE_IMAGE=harbor.huaruicloud.cn/map/map-console:v0.13.0 \
+MAPD_IMAGE=harbor.huaruicloud.cn/map/mapd:v0.13.0 \
 MAP_HOST_IP=<host-ip> \
 scripts/deploy-ip-mode.sh
 ```

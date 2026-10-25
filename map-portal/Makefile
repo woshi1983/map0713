@@ -29,7 +29,7 @@
 #    example: make clean_image -e IMAGEREGISTRY=registry.example.com -e IMAGEREPO=map
 
 
-IMAGEREGISTRY?=harbor.ocplab.cn
+IMAGEREGISTRY?=harbor.huaruicloud.cn
 IMAGEREPO?=map
 YARN_REGISTRY?=https://mirrors.cloud.tencent.com/npm/
 # used for run console in local

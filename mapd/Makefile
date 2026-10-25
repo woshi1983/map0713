@@ -4,7 +4,7 @@ build_path = $(project_root)/bin
 platform = $(shell uname -s)
 
 TANZU_STANDARD_REPO_VERSION = v2.1.0
-IMAGE_REGISTRY ?= registry-stg.eng.vmware.com
+IMAGE_REGISTRY ?= harbor.huaruicloud.cn
 GOPRIVATE = gitlab.eng.vmware.com
 
 LDFLAGS := -s -w

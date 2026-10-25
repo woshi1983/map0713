@@ -17,7 +17,7 @@
 set -e
 
 
-MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"registry-stg.eng.vmware.com"}
+MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"harbor.huaruicloud.cn"}
 MAP_VERSION=${MAP_VERSION:-"latest"}
 
 ROOTDIR=$(cd $(dirname $0); pwd -P)

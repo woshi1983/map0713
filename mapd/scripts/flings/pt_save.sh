@@ -18,7 +18,7 @@ set -e
 set -o noglob
 
 ROOTDIR=$(cd $(dirname $0); pwd)
-IMAGE_REGISTRY=${1:-registry-stg.eng.vmware.com}
+IMAGE_REGISTRY=${1:-harbor.huaruicloud.cn}
 IMAGE_REPO=${IMAGE_REPO:-map}
 VERSION=$(cat "${ROOTDIR}/../../VERSION")
 

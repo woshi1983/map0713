@@ -1,6 +1,6 @@
 # Cluster initiator without default Velero installation
 
-MAPD v0.12.0 starts `cluster-initiator:v0.12.0` as a Job when a cluster is
+MAPD v0.13.0 starts `cluster-initiator:v0.13.0` as a Job when a cluster is
 created or attached. The original image installs Velero and Restic at the end
 of `/usr/bin/entrypoint.sh`, even when no backup storage location exists.
 
@@ -12,9 +12,9 @@ instead of changing an unexpected upstream script.
 Build with:
 
 ```sh
-docker build -t cluster-initiator:v0.12.0-no-default-velero mapd/scripts/cluster-initiator
+docker build -t cluster-initiator:v0.13.0-no-default-velero mapd/scripts/cluster-initiator
 ```
 
-Back up the current Harbor `v0.12.0` tag before replacing it. MAPD uses image
+Back up the current Harbor `v0.13.0` tag before replacing it. MAPD uses image
 pull policy `Always`, so new cluster initialization Jobs will pull the updated
 image. This change does not remove Velero from existing clusters.
