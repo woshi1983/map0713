@@ -89,7 +89,6 @@ export class ClusterdetailComponent implements OnInit {
   });
 
   terminalExtension: ClusterExtension;
-  tbsExtension: ClusterExtension;
   contourExtension: ClusterExtension;
   changeExtensionStatus: boolean;
   showUpdateExtensionDialog: string;
@@ -156,7 +155,6 @@ export class ClusterdetailComponent implements OnInit {
     this.showNewCLusterVersionAlert = false;
     this.cluster = null;
     this.contourExtension = null;
-    this.tbsExtension = null;
     this.tkcVersionList = [];
     this.contourIpList = [];
     this.contourPortList = [];
@@ -174,7 +172,6 @@ export class ClusterdetailComponent implements OnInit {
           this.showUnableGetResourceAlert = true
         }
         if(!!this.cluster.extensions?.edge?.nodes){
-          this.tbsExtension = !!this.cluster.extensions.edge.nodes.find(x => x.name === 'TBS') ? this.cluster.extensions.edge.nodes.find(x => x.name === 'TBS') : null;
           this.contourExtension = !!this.cluster.extensions.edge.nodes.find(x => x.name === 'CONTOUR') ? this.cluster.extensions.edge.nodes.find(x => x.name === 'CONTOUR') : null;
           if(!!this.contourExtension?.endpoints){
             const endpoints = this.contourExtension?.endpoints;
@@ -717,7 +714,7 @@ export class ClusterdetailComponent implements OnInit {
      })
     } else {
       // disable
-      const id = this.showUpdateExtensionDialog === 'TBS' ? this.tbsExtension?.id : this.contourExtension?.id;
+      const id = this.contourExtension?.id;
       this.clusterExtensionsService.disableClusterExtensions(id).subscribe( data => {
         if (!!data.errors){
           for (const each of data.errors){

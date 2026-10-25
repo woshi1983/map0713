@@ -180,13 +180,6 @@
         </clr-toggle-wrapper>
         <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLECONTOUR-HELP' | translate }}</clr-control-helper>
       </clr-toggle-container>
-      <clr-toggle-container *featureToggle="featureGates.appBuild">
-        <clr-toggle-wrapper>
-          <label>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLETBS' | translate }}</label>
-          <input type="checkbox" clrToggle formControlName="enableTBS" name="enableTBS"/>
-        </clr-toggle-wrapper>
-        <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE1.ENABLETBS-HELP' | translate }}</clr-control-helper>
-      </clr-toggle-container>
     </form>
   </clr-wizard-page>
 
@@ -540,10 +533,6 @@
                     <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.ENABLECONTOUR' | translate }}</span>
                     <span>{{basicClusterForm.value.enableContour}}</span>
                   </div>
-                  <div *featureToggle="featureGates.appBuild">
-                    <span class="validateTitle">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE3.ENABLETBS' | translate }}</span>
-                    <span>{{basicClusterForm.value.enableTBS}}</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -872,13 +861,6 @@
                 <input type="checkbox" clrToggle formControlName="enableContour" name="enableContour"/>
               </clr-toggle-wrapper>
               <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLECONTOUR-HELP' | translate }}</clr-control-helper>
-            </clr-toggle-container>
-            <clr-toggle-container *featureToggle="featureGates.appBuild">
-              <clr-toggle-wrapper>
-                <label>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLETBS' | translate }}</label>
-                <input type="checkbox" clrToggle formControlName="enableTBS" name="enableTBS"/>
-              </clr-toggle-wrapper>
-              <clr-control-helper>{{ 'CLUSTERSMGMT.ATTACHCLUSTER-PAGE1.ENABLETBS-HELP' | translate }}</clr-control-helper>
             </clr-toggle-container>
         </form>
     </clr-wizard-page>

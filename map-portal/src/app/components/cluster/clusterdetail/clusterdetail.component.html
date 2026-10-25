@@ -137,40 +137,6 @@
                     </button>
                   </div>
                 </div>
-                <div class="clr-col-md-2" style="text-align: center" *featureToggle="featureGates.appBuild">
-                  <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.ENABLETBS' | translate }}</b></h4>
-                  <div style="margin-top: 5px" *ngIf="!!tbsExtension">
-                    <p *ngIf="tbsExtension.state === 'ENABLED'">
-                      <clr-icon class="is-solid" shape="success-standard" role="none" size="16" style="width: 16px; height: 16px; color: #60b515"></clr-icon>
-                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLED' | translate }}</b>
-                    </p>
-                    <p *ngIf="tbsExtension.state != 'ENABLED'">
-                       <clr-spinner [clrInline]="true" *ngIf="tbsExtension.state === 'ENABLING'|| tbsExtension.state === 'DISABLING'">Loading ...</clr-spinner>
-                       <b *ngIf="tbsExtension.state === 'ENABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLING' | translate }}<span class="UNHEALTHY" *ngIf="tbsExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
-                       <b *ngIf="tbsExtension.state === 'DISABLING'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLING' | translate }}<span class="UNHEALTHY" *ngIf="tbsExtension.status === 'FAILED'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.FAILED' | translate }} </span></b>
-                       <clr-icon shape="error-standard" role="none" size="16" style="width: 16px; height: 16px; color: #0072a3" *ngIf="tbsExtension.state === 'UNKNOWN'"></clr-icon>
-                       <b *ngIf="tbsExtension.state === 'UNKNOWN'"> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.UNKNOWN' | translate }}</b>
-                    </p>
-                  </div>
-                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!!tbsExtension">
-                    <button (click)="showUpdateExtensionStatus('TBS',false)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="tbsExtension.status != 'PROVISIONED' && tbsExtension.status != 'FAILED' || cluster.status != 'HEALTHY' || !canWrite">
-                      <clr-icon shape="times-circle"></clr-icon>
-                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE' | translate }}
-                    </button>
-                  </div>
-                  <div style="margin-top: 5px" *ngIf="!tbsExtension">
-                    <p>
-                      <clr-icon class="is-solid" shape="warning-standard" role="none" size="16" style="width: 16px; height: 16px; color: #c9a30d"></clr-icon>
-                         <b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLED' | translate }}</b>
-                    </p>
-                  </div>
-                  <div style="margin-top: 10px; margin-bottom: 10px" *ngIf="!tbsExtension">
-                    <button (click)="showUpdateExtensionStatus('TBS',true)" class="btn-sm btn btn-primary btn-outline custom-align" [disabled]="cluster.status != 'HEALTHY' || !canWrite">
-                      <clr-icon shape="play"></clr-icon>
-                        {{ 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' | translate }}
-                    </button>
-                  </div>
-                </div>
                 <div class="clr-col-md-2" style="text-align: center">
                   <h4><b>{{ 'CLUSTERDETAILS.CLUSTERSTATUS.ENABLEINGRESS' | translate }}</b></h4>
                   <div style="margin-top: 5px" *ngIf="!!contourExtension">
@@ -580,9 +546,9 @@
 </clr-modal>
 
 <clr-modal [(clrModalOpen)]="!!showUpdateExtensionDialog" [clrModalClosable]="false">
-  <h3 class="modal-title">{{(showUpdateExtensionDialog === 'TBS' ? 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGETITLE1' : 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGETITLE2') | translate }}</h3>
+  <h3 class="modal-title">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGETITLE2' | translate }}</h3>
   <div class="modal-body">
-      <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC1' | translate }} <b>{{(changeExtensionStatus ? 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' : 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE') | translate }}</b> {{(showUpdateExtensionDialog === 'TBS' ? 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC2' : 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC3') | translate }}</span>
+      <span class="alert-text">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC1' | translate }} <b>{{(changeExtensionStatus ? 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.ENABLE' : 'CLUSTERDETAILS.CLUSTERSTATUS.EXTENSION-STATUS.DISABLE') | translate }}</b> {{ 'CLUSTERDETAILS.CLUSTERSTATUS.UPDATEEXTENSION-PAGE.PAGEDESC3' | translate }}</span>
   </div>
   <div class="modal-footer">
     <button type="button" class="btn btn-outline" (click)="showUpdateExtensionDialog=null;changeExtensionStatus=null;">{{ 'SHARED.PAGEACTIONS.PAGECANCEL' | translate }}</button>
