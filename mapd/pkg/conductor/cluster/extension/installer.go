@@ -292,7 +292,7 @@ func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) e
 	}
 
 	oldEnv := make(map[string]string)
-	recreate := job.Spec.ActiveDeadlineSeconds == nil || *job.Spec.ActiveDeadlineSeconds != jobDeadlineSeconds
+	recreate := false
 LOOP:
 	for _, c := range job.Spec.Template.Spec.Containers {
 		for _, e := range c.Env {
