@@ -109,9 +109,7 @@ export class ClusterdetailComponent implements OnInit {
     'computeActive': false,
     'namespaceActive': false,
     'instanceActive': false,
-    'workloadActive': false,
-    'backupActive': false,
-    'locationActive': false
+    'workloadActive': false
   }
 
   ingressExample = 'apiVersion: networking.k8s.io/v1\n' +

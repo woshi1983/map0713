@@ -30,8 +30,6 @@ import { BinaryImageComponent } from './components/appbuild/binary/binary-image/
 import { BinaryImageDetailsComponent } from './components/appbuild/binary/build-image-details/binary-image-details.component';
 import { DockerfileImageComponent } from './components/appbuild/dockerfile/dockerfile-image/dockerfile-image.component';
 import { DockerfileImageDetailsComponent } from './components/appbuild/dockerfile/dockerfile-image-details/dockerfile-image-details.component';
-import { SourceImageComponent } from './components/appbuild/sources/source-image/source-image.component';
-import { SourceImageDetailsComponent } from './components/appbuild/sources/source-image-details/source-image-details.component';
 
 import { ProviderComponent } from './components/system/provider/provider.component';
 import { ProviderdetailComponent } from './components/system/providerdetail/providerdetail.component';
@@ -218,11 +216,12 @@ const routes: Routes = [
           },
           {
             path: 'source-image',
-            component: SourceImageComponent
+            redirectTo: 'binary-image',
+            pathMatch: 'full'
           },
           {
             path: 'source-image/:id/:name',
-            component: SourceImageDetailsComponent
+            redirectTo: 'binary-image'
           }
         ]
       },

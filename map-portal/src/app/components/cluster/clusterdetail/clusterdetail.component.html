@@ -264,22 +264,6 @@
                 </clr-tab-content>
               </ng-template>
           </clr-tab>
-          <clr-tab>
-              <button clrTabLink id="backups-restores-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.BACKUPRESTORE' | translate }}</button>
-              <ng-template [(clrIfActive)]="tabLinkStatusList.backupActive">
-                <clr-tab-content id="backups-restores-content" *clrIfActive>
-                  <app-cluster-backups [clusterId]="clusterId"></app-cluster-backups>
-                </clr-tab-content>
-              </ng-template>
-          </clr-tab>
-          <clr-tab>
-              <button clrTabLink id="data-protection-link" routerLinkActive="active" type="button" style="outline: none;">{{ 'CLUSTERDETAILS.CLUSTERSTATUS.TABS.DATA-PROTECTION' | translate }}</button>
-              <ng-template [(clrIfActive)]="tabLinkStatusList.locationActive">
-                <clr-tab-content id="data-protection-content" *clrIfActive>
-                  <app-cluster-data-protection [clusterId]="clusterId" [clusterStatus]="cluster.status"></app-cluster-data-protection>
-                </clr-tab-content>
-              </ng-template>
-          </clr-tab>
         </clr-tabs>
     </div>
   </div>
