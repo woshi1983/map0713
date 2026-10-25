@@ -17,6 +17,7 @@
 set -e
 
 MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"harbor.huaruicloud.cn"}
+MAP_VERSION=${MAP_VERSION:-"v0.13.0"}
 
 # If compiling source code this dir is MAP's make dir.
 # If installing MAP via package, this dir is MAP's root dir.
@@ -35,4 +36,4 @@ fi
 # Run prepare script
 docker run --rm -v $map_prepare_path:/config \
     --privileged \
-    ${MAP_PUBLIC_IMAGE_REGISTRY}/map/map-prepare:latest config setup -f /config/config.yml -o /config $@
+    ${MAP_PUBLIC_IMAGE_REGISTRY}/map/map-prepare:${MAP_VERSION} config setup -f /config/config.yml -o /config $@

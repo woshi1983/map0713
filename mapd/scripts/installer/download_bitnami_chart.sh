@@ -18,7 +18,7 @@ set -e
 
 
 MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"harbor.huaruicloud.cn"}
-MAP_VERSION=${MAP_VERSION:-"latest"}
+MAP_VERSION=${MAP_VERSION:-"v0.13.0"}
 
 ROOTDIR=$(cd $(dirname $0); pwd -P)
 DOWNLOAD_CHART_IMAGE=${DOWNLOAD_CHART_IMAGE:-true}

@@ -17,7 +17,7 @@
 set -e
 
 MAP_PUBLIC_IMAGE_REGISTRY=${MAP_PUBLIC_IMAGE_REGISTRY:-"harbor.huaruicloud.cn"}
-MAP_VERSION=${MAP_VERSION:-"latest"}
+MAP_VERSION=${MAP_VERSION:-"v0.13.0"}
 
 function version() {
     if [ -z "$(docker images ${MAP_PUBLIC_IMAGE_REGISTRY}/map/map-prepare:${MAP_VERSION} -q)" ]; then
