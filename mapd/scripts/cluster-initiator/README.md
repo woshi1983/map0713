@@ -12,7 +12,7 @@ instead of changing an unexpected upstream script.
 Build with:
 
 ```sh
-docker build -t cluster-initiator:v0.13.0-no-default-velero mapd/scripts/cluster-initiator
+docker build -t harbor.huaruicloud.cn/map/cluster-initiator:v0.13.0 mapd/scripts/cluster-initiator
 ```
 
 Back up the current Harbor `v0.13.0` tag before replacing it. MAPD uses image
