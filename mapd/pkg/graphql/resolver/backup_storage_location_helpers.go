@@ -192,6 +192,18 @@ func getClusterWithTrustedCACertsForCreateBackupStorageLocation(ctx context.Cont
 				}
 				caCerts = buf.Bytes()
 
+			case model1.ClusterClassVKS:
+				spec := &model1.ClusterProviderVKSSpec{}
+				if err := json.Unmarshal(provider.Spec, spec); err != nil {
+					return errInvalidRequest(ctx, "provider.spec", "invalid VKS provider configuration")
+				}
+				var buf bytes.Buffer
+				for _, each := range spec.TrustedCAs {
+					buf.Write(bytes.TrimSpace(each.Data))
+					buf.WriteString("\n")
+				}
+				caCerts = buf.Bytes()
+
 			case model1.ClusterClassTKG2M:
 				spec := &model1.ClusterTKG2MSpec{}
 				if err := json.Unmarshal(c.Spec, spec); err != nil {

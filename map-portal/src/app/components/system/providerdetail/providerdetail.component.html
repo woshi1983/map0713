@@ -96,6 +96,7 @@
               <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE' | translate }}</label>
               <select class="clr-col-md-9" clrSelect formControlName="type" required disabled>
                 <option value="TKGS">vSphere with Tanzu(TKGS)</option>
+                <option value="VKS">vSphere Kubernetes Service (VKS)</option>
                 <option value="TKGM">Tanzu Kubernetes Grid(TKGM)</option>
               </select>
               <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-ERROR' | translate }}</clr-control-error>
@@ -139,8 +140,8 @@
         </form>
     </clr-wizard-page>
 
-    <clr-wizard-page [clrWizardPageNextDisabled]="editTanzuKubernetesClusterParam.invalid" *ngIf="editProviderForm.value.type === 'TKGS'">
-        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE' | translate }}</ng-template>
+    <clr-wizard-page [clrWizardPageNextDisabled]="editTanzuKubernetesClusterParam.invalid" *ngIf="editProviderForm.value.type === 'TKGS' || editProviderForm.value.type === 'VKS'">
+        <ng-template clrPageTitle>{{ (editProviderForm.value.type === 'VKS' ? 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGETITLE' : 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE') | translate }}</ng-template>
         <div class="alert alert-warning alert-sm" role="alert">
           <div class="alert-items">
             <div class="alert-item static">
@@ -151,7 +152,7 @@
             </div>
           </div>
         </div>
-        {{ 'PROVIDERMGMT.ACTION.TKGSEDITPAGEDESC' | translate }}
+        {{ (editProviderForm.value.type === 'VKS' ? 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGEDESC' : 'PROVIDERMGMT.ACTION.TKGSEDITPAGEDESC') | translate }}
         <br>
 
         <form clrForm [formGroup]="editTanzuKubernetesClusterParam">
@@ -417,7 +418,7 @@
         </div>
     </div>
 
-    <div class="clr-row" *ngIf="editProviderForm.value.type === 'TKGS'">
+    <div class="clr-row" *ngIf="editProviderForm.value.type === 'TKGS' || editProviderForm.value.type === 'VKS'">
         <div class="clr-col-lg-12 clr-col-12">
             <div class="card">
               <div class="card-header">

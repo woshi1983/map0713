@@ -64,6 +64,8 @@ extend type Mutation {
   requires `write:cluster_provider` or above.
   """
   CreateTKG2SClusterProvider(input: CreateTKG2SClusterProvider!): ClusterProvider!
+  """Creates a vSphere Kubernetes Service Supervisor provider."""
+  CreateVKSClusterProvider(input: CreateVKSClusterProvider!): ClusterProvider!
   """
   requires `write:cluster_provider` or above.
   """
@@ -80,6 +82,8 @@ extend type Mutation {
   requires `write:cluster_provider` or above.
   """
   UpdateTKG2SClusterProvider(input: UpdateTKG2SClusterProvider!): ClusterProvider!
+  """Updates a vSphere Kubernetes Service Supervisor provider."""
+  UpdateVKSClusterProvider(input: UpdateVKSClusterProvider!): ClusterProvider!
   """
   requires `write:cluster_provider` or above.
   """
@@ -94,7 +98,7 @@ type ClusterProviderNodes {
   nodes: [ClusterProvider!]
 }
 
-union ClusterProviderSpec = TKGSClusterProviderSpec | TKGMClusterProviderSpec | TKG2SClusterProviderSpec | TKG2MClusterProviderSpec
+union ClusterProviderSpec = TKGSClusterProviderSpec | TKGMClusterProviderSpec | TKG2SClusterProviderSpec | TKG2MClusterProviderSpec | VKSClusterProviderSpec
 
 type TKGSClusterProviderSpec {
   _id: ID!
@@ -166,6 +170,29 @@ type TKG2SClusterProviderSpecNamespace {
   name: String!
   labels: Map
   storageClasses: [ClusterProviderStorageClass!]
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type VKSClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  authUser: String!
+  defaultNamespace: String!
+  vmClasses: [VMClass!]
+  clusterReleases: [Version!]
+  clusterClasses: [String!]
+  namespaces(filters: [QueryFilter!] = []): [VKSClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type VKSClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  storages: [String!]
   createdAt: Time!
   lastModified: Time!
 }
@@ -264,6 +291,16 @@ input CreateTKG2SClusterProvider {
   validate: Boolean
 }
 
+input CreateVKSClusterProvider {
+  name: String!
+  description: String
+  spec: CreateVKSClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
 input CreateTKG2MClusterProvider {
   name: String!
   description: String
@@ -300,6 +337,17 @@ input UpdateTKG2SClusterProvider {
   id: ID!
   description: String
   spec: UpdateTKG2SClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateVKSClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateVKSClusterProviderSpec
   addImageRegistries: [AddClusterProviderImageRegistry!]
   removeImageRegistries: [RemoveClusterProviderImageRegistry!]
   loadBalancer: ID
@@ -356,6 +404,16 @@ input CreateTKG2SClusterProviderSpec {
   trustedCAs: [AddClusterProviderTrustedCA!]
 }
 
+input CreateVKSClusterProviderSpec {
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String!
+  authPassword: String!
+  defaultNamespace: String!
+  trustedCAs: [AddClusterProviderTrustedCA!]
+}
+
 input CreateTKG2MClusterProviderSpec {
   kubeConfig: String!
   defaultNamespace: String!
@@ -391,6 +449,17 @@ input UpdateTKGMClusterProviderSpec {
 }
 
 input UpdateTKG2SClusterProviderSpec {
+  endpoint: URL
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String
+  authPassword: String
+  defaultNamespace: String
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+}
+
+input UpdateVKSClusterProviderSpec {
   endpoint: URL
   caCert: String
   insecureSkipTLSVerify: Boolean

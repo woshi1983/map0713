@@ -536,6 +536,20 @@ models:
         resolver: true
       namespaces:
         resolver: true
+  VKSClusterProviderSpec:
+    fields:
+      vmClasses:
+        resolver: true
+      clusterReleases:
+        resolver: true
+      clusterClasses:
+        resolver: true
+      namespaces:
+        resolver: true
+  VKSClusterProviderSpecNamespace:
+    fields:
+      storages:
+        resolver: true
   TKG2MClusterProviderSpec:
     fields:
       tanzuKubernetesReleases:

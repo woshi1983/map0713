@@ -10,7 +10,9 @@ import {
   CreateTKGMClusterProvider,
   UpdateTKGMClusterProvider,
   CreateTKG2MClusterProvider,
-  UpdateTKG2MClusterProvider
+  UpdateTKG2MClusterProvider,
+  CreateVKSClusterProvider,
+  UpdateVKSClusterProvider
 } from '../classes';
 
 @Injectable({
@@ -35,6 +37,13 @@ export class ProviderService {
                 spec {
                 __typename
                   ... on TKGSClusterProviderSpec {
+                    endpoint
+                    caCert
+                    insecureSkipTLSVerify
+                    authUser
+                    defaultNamespace
+                  }
+                  ... on VKSClusterProviderSpec {
                     endpoint
                     caCert
                     insecureSkipTLSVerify
@@ -116,6 +125,13 @@ export class ProviderService {
                 insecureSkipTLSVerify
                 authUser
              }
+            ... on VKSClusterProviderSpec {
+                defaultNamespace
+                endpoint
+                caCert
+                insecureSkipTLSVerify
+                authUser
+             }
             ... on TKGMClusterProviderSpec {
                 defaultNamespace
                 defaultEnv
@@ -160,6 +176,28 @@ export class ProviderService {
           }
         }
       }`,
+      errorPolicy: 'all'
+    });
+  }
+
+  getVKSClusterProfileByProvider (id: string): Observable<any> {
+    return this.apollo.query<any>({
+      query: gql`
+      query($id: ID!) {
+        ClusterProvider(id: $id) {
+          spec {
+            __typename
+            ... on VKSClusterProviderSpec {
+              namespaces { name storages }
+              vmClasses { name spec }
+              clusterReleases
+              clusterClasses
+              defaultNamespace
+            }
+          }
+        }
+      }`,
+      variables: { id },
       errorPolicy: 'all'
     });
   }
@@ -267,6 +305,18 @@ export class ProviderService {
     });
   }
 
+  checkCreateVKSProviderConnection (input: CreateVKSClusterProvider): Observable<any> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($input: CreateVKSClusterProvider!){
+        CreateVKSClusterProvider(input: $input){
+          id name spec { __typename ... on VKSClusterProviderSpec { namespaces { name } } }
+        }
+      }`,
+      variables: { input },
+      errorPolicy: 'all'
+    });
+  }
+
   checkCreateTKGMProviderConnection (kubeconfig: string, registry: string): Observable<any> {
     const input: CreateTKG2MClusterProvider = {
       name: 'check-wsdertt',
@@ -326,6 +376,18 @@ export class ProviderService {
     });
   }
 
+  checkUpdateVKSProviderConnection (input: UpdateVKSClusterProvider): Observable<any> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($input: UpdateVKSClusterProvider!){
+        UpdateVKSClusterProvider(input: $input){
+          id name spec { __typename ... on VKSClusterProviderSpec { namespaces { name } } }
+        }
+      }`,
+      variables: { input },
+      errorPolicy: 'all'
+    });
+  }
+
   checkUpdateTKGMProviderConnection (id: string, kubeconfig: string): Observable<any> {
     const input: UpdateTKG2MClusterProvider = {
       id: id,
@@ -370,6 +432,16 @@ export class ProviderService {
       variables: {
         input
       },
+      errorPolicy: 'all'
+    });
+  }
+
+  createVKSProvider (input: CreateVKSClusterProvider): Observable<any> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($input: CreateVKSClusterProvider!){
+        CreateVKSClusterProvider(input: $input){ id name createdAt lastModified }
+      }`,
+      variables: { input },
       errorPolicy: 'all'
     });
   }
@@ -422,6 +494,16 @@ export class ProviderService {
       variables: {
         input
       },
+      errorPolicy: 'all'
+    });
+  }
+
+  updateVKSProvider (input: UpdateVKSClusterProvider): Observable<any> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($input: UpdateVKSClusterProvider!){
+        UpdateVKSClusterProvider(input: $input){ id name createdAt lastModified }
+      }`,
+      variables: { input },
       errorPolicy: 'all'
     });
   }

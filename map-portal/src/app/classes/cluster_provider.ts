@@ -80,6 +80,10 @@ export class TKGSClusterProviderSpec {
   trustedCAs: ClusterProviderSpecTrustedCA[];
 }
 
+export class VKSClusterProviderSpec extends TKGSClusterProviderSpec {
+  clusterClasses?: string[];
+}
+
 export class TKGMClusterProviderSpecNamespace {
   _clusterProvider: string;
   name: string;
@@ -113,6 +117,8 @@ export class CreateTKGSClusterProviderSpec {
   trustedCAs?: AddClusterProviderTrustedCA[];
 }
 
+export class CreateVKSClusterProviderSpec extends CreateTKGSClusterProviderSpec {}
+
 export class CreateTKGMClusterProviderSpec {
   kubeConfig: string;
   defaultNamespace?: string;
@@ -141,6 +147,10 @@ export class CreateTKGSClusterProvider {
   loadBalancer?: string;
   dryrun?: boolean;
   validate?: boolean;
+}
+
+export class CreateVKSClusterProvider extends CreateTKGSClusterProvider {
+  spec: CreateVKSClusterProviderSpec;
 }
 
 export class CreateTKGMClusterProvider {
@@ -191,6 +201,8 @@ export class UpdateTKGSClusterProviderSpec {
   removeTrustedCAs?: RemoveClusterProviderTrustedCA[];
 }
 
+export class UpdateVKSClusterProviderSpec extends UpdateTKGSClusterProviderSpec {}
+
 export class UpdateTKGMClusterProviderSpec {
   kubeConfig?: string;
   defaultNamespace?: string;
@@ -212,6 +224,10 @@ export class UpdateTKGSClusterProvider {
   loadBalancer?: string;
   dryrun?: boolean;
   validate?: boolean;
+}
+
+export class UpdateVKSClusterProvider extends UpdateTKGSClusterProvider {
+  spec?: UpdateVKSClusterProviderSpec;
 }
 
 export class UpdateTKGMClusterProvider {

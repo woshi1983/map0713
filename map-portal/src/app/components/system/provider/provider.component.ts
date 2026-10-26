@@ -349,7 +349,7 @@ export class ProviderComponent {
     const desc = this.basicProviderForm.value.description;
     const type = this.basicProviderForm.value.type;
     switch (type) {
-      case 'TKGS': {
+      case 'VKS': {
         const addTKGSImageRegistry: AddClusterProviderImageRegistry[] = [];
         for (const registry of this.basicProviderForm.value.registry) {
           if (registry.id !== this.basicProviderForm.value.defaultRegistry) {
@@ -378,7 +378,7 @@ export class ProviderComponent {
           imageRegistries: addTKGSImageRegistry,
           loadBalancer: this.basicProviderForm.value.enableGlobalLB ? this.basicProviderForm.value.loadBalancerId : null
         }
-        this.providerService.createTKGSProvider(tkgsParam).subscribe(data => {
+        this.providerService.createVKSProvider(tkgsParam).subscribe(data => {
           if (data.errors) {
             for (const each of data.errors) {
               if (each.message) {
@@ -386,8 +386,8 @@ export class ProviderComponent {
               }
             }
           }
-          if (data.data?.CreateTKGSClusterProvider) {
-            this.toast.show(`${data.data.CreateTKGSClusterProvider.name} ` + this.translate.instant('MESSAGE.PROVIDER.ADD-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.ADD-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
+          if (data.data?.CreateVKSClusterProvider) {
+            this.toast.show(`${data.data.CreateVKSClusterProvider.name} ` + this.translate.instant('MESSAGE.PROVIDER.ADD-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.ADD-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
           }
         }, (e) => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`, this.translate.instant('MESSAGE.PROVIDER.ADD-PROVIDER-FAILED'), { toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0 }), () => {
           this.doProviderReset();
@@ -480,7 +480,7 @@ export class ProviderComponent {
       validate: true,
       dryrun: true
     };
-    this.providerService.checkCreateTKGSProviderConnection(input).subscribe(data => {
+    this.providerService.checkCreateVKSProviderConnection(input).subscribe(data => {
       if (data.errors) {
         for (const each of data.errors) {
           if (each.message) {
@@ -488,10 +488,10 @@ export class ProviderComponent {
           }
         }
       }
-      if (data.data?.CreateTKGSClusterProvider?.spec?.namespaces) {
+      if (data.data?.CreateVKSClusterProvider?.spec?.namespaces) {
         this.checkStatus.checkSuccess = true;
-        this.namespaceList = prividerNamespacediffset(data.data.CreateTKGSClusterProvider.spec.namespaces);
-        this.noSupervisorNSAlert = !data.data.CreateTKGSClusterProvider.spec.namespaces;
+        this.namespaceList = prividerNamespacediffset(data.data.CreateVKSClusterProvider.spec.namespaces);
+        this.noSupervisorNSAlert = !data.data.CreateVKSClusterProvider.spec.namespaces;
       } else {
         this.checkStatus.checkSuccess = false;
         this.namespaceList = [];
@@ -592,6 +592,7 @@ export class ProviderComponent {
     this.selectedProvider = provider;
     const type = provider.class;
     switch (type) {
+      case 'VKS':
       case 'TKGS': {
         const selectedTKGSRegistryList: ImageRegistry[] = [];
         for (const providerRegistry of provider.imageRegistries.edge.nodes) {
@@ -752,6 +753,7 @@ export class ProviderComponent {
   public doEditProviderFinish (): void {
     const type = this.editProviderForm.value.type;
     switch (type) {
+      case 'VKS':
       case 'TKGS': {
         const addTKGSImageRegistry: AddClusterProviderImageRegistry[] = [];
         for (const registry of this.editProviderForm.value.registry) {
@@ -784,7 +786,10 @@ export class ProviderComponent {
         if (this.editTanzuKubernetesClusterParam.value.password) {
           tkgsParam.spec.authPassword = this.editTanzuKubernetesClusterParam.value.password
         }
-        this.providerService.updateTKGSProvider(tkgsParam).subscribe(data => {
+        const updateRequest = type === 'VKS'
+          ? this.providerService.updateVKSProvider(tkgsParam)
+          : this.providerService.updateTKGSProvider(tkgsParam);
+        updateRequest.subscribe(data => {
           if (data.errors) {
             for (const each of data.errors) {
               if (each.message) {
@@ -792,8 +797,9 @@ export class ProviderComponent {
               }
             }
           }
-          if (data.data?.UpdateTKGSClusterProvider) {
-            this.toast.show(`${data.data.UpdateTKGSClusterProvider.name} ` + this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
+          const updated = data.data?.UpdateVKSClusterProvider || data.data?.UpdateTKGSClusterProvider;
+          if (updated) {
+            this.toast.show(`${updated.name} ` + this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
           }
         }, (e) => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`, this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-FAILED'), { toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0 }), () => {
           this.doEditProviderReset();
@@ -905,7 +911,10 @@ export class ProviderComponent {
       validate: true,
       dryrun: true
     };
-    this.providerService.checkUpdateTKGSProviderConnection(input).subscribe(data => {
+    const checkRequest = this.selectedProvider?.class === 'VKS'
+      ? this.providerService.checkUpdateVKSProviderConnection(input)
+      : this.providerService.checkUpdateTKGSProviderConnection(input);
+    checkRequest.subscribe(data => {
       if (data.errors) {
         for (const each of data.errors) {
           if (each.message) {
@@ -913,9 +922,10 @@ export class ProviderComponent {
           }
         }
       }
-      if (data.data?.UpdateTKGSClusterProvider?.spec?.namespaces) {
+      const updated = data.data?.UpdateVKSClusterProvider || data.data?.UpdateTKGSClusterProvider;
+      if (updated?.spec?.namespaces) {
         this.checkStatus.checkSuccess = true;
-        this.namespaceList = prividerNamespacediffset(data.data.UpdateTKGSClusterProvider.spec.namespaces);
+        this.namespaceList = prividerNamespacediffset(updated.spec.namespaces);
         if (!this.namespaceList.find(x => x.name === this.selectedProvider.spec.defaultNamespace)) {
           this.selectedNsUnexist = true;
         }

@@ -167,7 +167,7 @@
               <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-HELP' | translate }}</clr-control-helper>
               <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE' | translate }}</label>
               <select class="clr-col-md-9" clrSelect formControlName="type" required>
-                <option value="TKGS">vSphere with Tanzu (TKGS)</option>
+                <option value="VKS">VMware vSphere Kubernetes Service (VKS)</option>
                 <option value="TKGM">Tanzu Kubernetes Grid (TKGM)</option>
               </select>
               <clr-control-error *clrIfError="'required'">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-ERROR' | translate }}</clr-control-error>
@@ -212,8 +212,8 @@
         </form>
     </clr-wizard-page>
 
-    <clr-wizard-page [clrWizardPageNextDisabled]="tanzuKubernetesClusterParam.invalid || !(checkStatus.checked && checkStatus.checkSuccess)" *ngIf="basicProviderForm.value.type === 'TKGS'">
-        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE' | translate }}</ng-template>
+    <clr-wizard-page [clrWizardPageNextDisabled]="tanzuKubernetesClusterParam.invalid || !(checkStatus.checked && checkStatus.checkSuccess)" *ngIf="basicProviderForm.value.type === 'VKS'">
+        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGETITLE' | translate }}</ng-template>
         <div class="alert alert-warning alert-sm" role="alert">
           <div class="alert-items">
             <div class="alert-item static">
@@ -224,7 +224,7 @@
             </div>
           </div>
         </div>
-        {{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGEDESC' | translate }}
+        {{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGEDESC' | translate }}
         <br>
 
         <form clrForm [formGroup]="tanzuKubernetesClusterParam">
@@ -503,7 +503,7 @@
         </div>
     </div>
 
-    <div class="clr-row" *ngIf="basicProviderForm.value.type === 'TKGS'">
+    <div class="clr-row" *ngIf="basicProviderForm.value.type === 'VKS'">
         <div class="clr-col-lg-12 clr-col-12">
             <div class="card">
               <div class="card-header">
@@ -637,6 +637,7 @@
               <clr-control-helper>{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE-HELP' | translate }}</clr-control-helper>
               <label class="required clr-col-md-3">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE1.TYPE' | translate }}</label>
               <select class="clr-col-md-9" clrSelect formControlName="type" required disabled>
+                <option value="VKS">VMware vSphere Kubernetes Service (VKS)</option>
                 <option value="TKGS">vSphere with Tanzu (TKGS)</option>
                 <option value="TKGM">Tanzu Kubernetes Grid (TKGM)</option>
               </select>
@@ -682,8 +683,8 @@
         </form>
     </clr-wizard-page>
 
-    <clr-wizard-page [clrWizardPageNextDisabled]="editTanzuKubernetesClusterParam.invalid || editTanzuKubernetesClusterParam.value.password ? !(checkStatus.checked && checkStatus.checkSuccess) : false" *ngIf="editProviderForm.value.type === 'TKGS'">
-        <ng-template clrPageTitle>{{ 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE' | translate }}</ng-template>
+    <clr-wizard-page [clrWizardPageNextDisabled]="editTanzuKubernetesClusterParam.invalid || (!!editTanzuKubernetesClusterParam.value.password && !(checkStatus.checked && checkStatus.checkSuccess))" *ngIf="editProviderForm.value.type === 'VKS' || editProviderForm.value.type === 'TKGS'">
+        <ng-template clrPageTitle>{{ (editProviderForm.value.type === 'VKS' ? 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGETITLE' : 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.PAGETITLE') | translate }}</ng-template>
         <div class="alert alert-warning alert-sm" role="alert">
           <div class="alert-items">
             <div class="alert-item static">
@@ -694,7 +695,7 @@
             </div>
           </div>
         </div>
-        {{ 'PROVIDERMGMT.ACTION.TKGSEDITPAGEDESC' | translate }}
+        {{ (editProviderForm.value.type === 'VKS' ? 'PROVIDERMGMT.ADDPROVIDER-TKGS-PAGE.VKS-PAGEDESC' : 'PROVIDERMGMT.ACTION.TKGSEDITPAGEDESC') | translate }}
         <br>
 
         <form clrForm [formGroup]="editTanzuKubernetesClusterParam">
@@ -963,7 +964,7 @@
         </div>
     </div>
 
-    <div class="clr-row" *ngIf="editProviderForm.value.type === 'TKGS'">
+    <div class="clr-row" *ngIf="editProviderForm.value.type === 'VKS' || editProviderForm.value.type === 'TKGS'">
         <div class="clr-col-lg-12 clr-col-12">
             <div class="card">
               <div class="card-header">

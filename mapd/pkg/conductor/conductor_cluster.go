@@ -90,6 +90,8 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			}
 
 			switch provider.Class {
+			case model.ClusterClassVKS:
+				handler = cluster.NewVKSKubernetes(obj, registries, provider, log)
 			case model.ClusterClassTKGS:
 				handler = cluster.NewTKGSKubernetes(obj, registries, provider, log)
 			case model.ClusterClassTKGM:
@@ -141,7 +143,15 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			}
 
 			endpoint, state, caCert, err := handler.ProvisionKubernetes()
+			if obj.Class == model.ClusterClassVKS {
+				updates["spec"] = obj.Spec
+			}
 			if err != nil {
+				if obj.Class == model.ClusterClassVKS {
+					if saveErr := tx.Model(obj).Updates(map[string]interface{}{"spec": obj.Spec, "last_error": err.Error()}).Error; saveErr != nil {
+						return saveErr
+					}
+				}
 				if cluster.IsCriticalError(err) {
 					updates["state"] = model.ClusterStateFailed
 					if err := tx.Model(obj).Updates(updates).Error; err != nil {
@@ -152,6 +162,9 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				return nil
 			}
 			updates["state"] = state
+			if obj.Class == model.ClusterClassVKS && state == model.ClusterStateRunning {
+				updates["last_error"] = ""
+			}
 			if state == model.ClusterStateRunning && endpoint != "" {
 				defer log.Infof("cluster %s is spawned and running. Pending next phase...", strconv.Quote(obj.Name))
 

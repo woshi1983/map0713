@@ -143,5 +143,20 @@
       </div>
     </div>
   </div>
+  <div class="clr-col-md-12" *ngIf="cluster && cluster.class === 'VKS' && cluster.spec">
+    <div class="header-context">VKS topology</div>
+    <div class="clr-col-md-12" fxLayout="flex">
+      <div class="summary-left clr-col-md-6">
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">Namespace</h5><ul class="list-unstyled"><li>{{cluster.spec.namespace}}</li></ul></div>
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">ClusterClass</h5><ul class="list-unstyled"><li>{{cluster.spec.classNamespace}}/{{cluster.spec.clusterClass}}</li></ul></div>
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">Control plane</h5><ul class="list-unstyled"><li>{{cluster.spec.ctlPlaneReplicas}} × {{cluster.spec.ctlPlaneVmClass}}</li></ul></div>
+      </div>
+      <div class="summary-right clr-col-md-6">
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">Worker pool</h5><ul class="list-unstyled"><li>{{cluster.spec.workerReplicas}} × {{cluster.spec.workerVmClass}}</li></ul></div>
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">Storage</h5><ul class="list-unstyled"><li>{{cluster.spec.storageClass}}</li></ul></div>
+        <div class="display-flex summary pt-05"><h5 class="mt-0 width-9-5">OS</h5><ul class="list-unstyled"><li>{{cluster.spec.osName}} {{cluster.spec.osVersion}}</li></ul></div>
+      </div>
+    </div>
+  </div>
 </div>
 <router-outlet></router-outlet>

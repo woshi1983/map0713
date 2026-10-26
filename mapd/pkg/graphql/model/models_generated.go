@@ -627,6 +627,7 @@ type Cluster struct {
 	TLSCertChain          []*X509Certificate      `json:"tlsCertChain"`
 	Version               *semver.Version         `json:"version"`
 	Status                ClusterStatus           `json:"status"`
+	ErrorReason           *string                 `json:"errorReason"`
 	State                 ClusterState            `json:"state"`
 	Spec                  ClusterSpec             `json:"spec"`
 	KubeConfig            *string                 `json:"kubeConfig"`
@@ -1060,6 +1061,7 @@ type CreateClusterSpec struct {
 	Tkgm  *CreateTKGMClusterSpec  `json:"tkgm"`
 	Tkg2s *CreateTKG2SClusterSpec `json:"tkg2s"`
 	Tkg2m *CreateTKG2MClusterSpec `json:"tkg2m"`
+	Vks   *CreateVKSClusterSpec   `json:"vks"`
 }
 
 type CreateComponent struct {
@@ -1587,6 +1589,46 @@ type CreateUser struct {
 	// only admins are able to grant admin.
 	Admin    *bool   `json:"admin"`
 	Password *string `json:"password"`
+}
+
+type CreateVKSClusterProvider struct {
+	Name            string                             `json:"name"`
+	Description     *string                            `json:"description"`
+	Spec            *CreateVKSClusterProviderSpec      `json:"spec"`
+	ImageRegistries []*AddClusterProviderImageRegistry `json:"imageRegistries"`
+	LoadBalancer    *uuid.UUID                         `json:"loadBalancer"`
+	Dryrun          *bool                              `json:"dryrun"`
+	Validate        *bool                              `json:"validate"`
+}
+
+type CreateVKSClusterProviderSpec struct {
+	Endpoint              *url.URL                       `json:"endpoint"`
+	CaCert                *string                        `json:"caCert"`
+	InsecureSkipTLSVerify *bool                          `json:"insecureSkipTLSVerify"`
+	AuthUser              string                         `json:"authUser"`
+	AuthPassword          string                         `json:"authPassword"`
+	DefaultNamespace      string                         `json:"defaultNamespace"`
+	TrustedCAs            []*AddClusterProviderTrustedCa `json:"trustedCAs"`
+}
+
+// VKS creation uses one worker pool and reuses the existing Supervisor form.
+type CreateVKSClusterSpec struct {
+	Namespace                    *string    `json:"namespace"`
+	ClusterClass                 *string    `json:"clusterClass"`
+	ClassNamespace               *string    `json:"classNamespace"`
+	OsName                       *string    `json:"osName"`
+	OsVersion                    *string    `json:"osVersion"`
+	Cni                          *string    `json:"cni"`
+	PodCidr                      *net.IPNet `json:"podCIDR"`
+	SvcCidr                      *net.IPNet `json:"svcCIDR"`
+	SvcDomain                    *string    `json:"svcDomain"`
+	StorageClass                 string     `json:"storageClass"`
+	CtlPlaneVMClass              string     `json:"ctlPlaneVmClass"`
+	CtlPlaneReplicas             *int64     `json:"ctlPlaneReplicas"`
+	CtlPlaneEtcdVolumeSizeGi     *int64     `json:"ctlPlaneEtcdVolumeSizeGi"`
+	WorkerVMClass                string     `json:"workerVmClass"`
+	WorkerReplicas               *int64     `json:"workerReplicas"`
+	WorkerContainerdVolumeSizeGi *int64     `json:"workerContainerdVolumeSizeGi"`
 }
 
 type CreatedUser struct {
@@ -3659,6 +3701,28 @@ type UpdateUser struct {
 	Password    *string `json:"password"`
 }
 
+type UpdateVKSClusterProvider struct {
+	ID                    uuid.UUID                             `json:"id"`
+	Description           *string                               `json:"description"`
+	Spec                  *UpdateVKSClusterProviderSpec         `json:"spec"`
+	AddImageRegistries    []*AddClusterProviderImageRegistry    `json:"addImageRegistries"`
+	RemoveImageRegistries []*RemoveClusterProviderImageRegistry `json:"removeImageRegistries"`
+	LoadBalancer          *uuid.UUID                            `json:"loadBalancer"`
+	Dryrun                *bool                                 `json:"dryrun"`
+	Validate              *bool                                 `json:"validate"`
+}
+
+type UpdateVKSClusterProviderSpec struct {
+	Endpoint              *url.URL                          `json:"endpoint"`
+	CaCert                *string                           `json:"caCert"`
+	InsecureSkipTLSVerify *bool                             `json:"insecureSkipTLSVerify"`
+	AuthUser              *string                           `json:"authUser"`
+	AuthPassword          *string                           `json:"authPassword"`
+	DefaultNamespace      *string                           `json:"defaultNamespace"`
+	AddTrustedCAs         []*AddClusterProviderTrustedCa    `json:"addTrustedCAs"`
+	RemoveTrustedCAs      []*RemoveClusterProviderTrustedCa `json:"removeTrustedCAs"`
+}
+
 type User struct {
 	ID           uuid.UUID     `json:"id"`
 	Name         string        `json:"name"`
@@ -3682,6 +3746,54 @@ type Users struct {
 	TotalCount int64         `json:"totalCount"`
 	Edge       *UserNodes    `json:"edge"`
 }
+
+type VKSClusterProviderSpec struct {
+	ID                    uuid.UUID                          `json:"_id"`
+	Endpoint              *url.URL                           `json:"endpoint"`
+	CaCert                string                             `json:"caCert"`
+	InsecureSkipTLSVerify bool                               `json:"insecureSkipTLSVerify"`
+	AuthUser              string                             `json:"authUser"`
+	DefaultNamespace      string                             `json:"defaultNamespace"`
+	VMClasses             []*VMClass                         `json:"vmClasses"`
+	ClusterReleases       []*semver.Version                  `json:"clusterReleases"`
+	ClusterClasses        []string                           `json:"clusterClasses"`
+	Namespaces            []*VKSClusterProviderSpecNamespace `json:"namespaces"`
+	TrustedCAs            []*ClusterProviderSpecTrustedCa    `json:"trustedCAs"`
+}
+
+func (VKSClusterProviderSpec) IsClusterProviderSpec() {}
+
+type VKSClusterProviderSpecNamespace struct {
+	ClusterProvider uuid.UUID         `json:"_clusterProvider"`
+	Name            string            `json:"name"`
+	Labels          map[string]string `json:"labels"`
+	Storages        []string          `json:"storages"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	LastModified    time.Time         `json:"lastModified"`
+}
+
+// A VKS workload cluster provisioned through a vSphere Supervisor.
+type VKSClusterSpec struct {
+	Namespace                    string     `json:"namespace"`
+	ClusterClass                 string     `json:"clusterClass"`
+	ClassNamespace               string     `json:"classNamespace"`
+	OsName                       string     `json:"osName"`
+	OsVersion                    string     `json:"osVersion"`
+	Cni                          string     `json:"cni"`
+	PodCidr                      *net.IPNet `json:"podCIDR"`
+	SvcCidr                      *net.IPNet `json:"svcCIDR"`
+	SvcDomain                    string     `json:"svcDomain"`
+	StorageClass                 string     `json:"storageClass"`
+	CtlPlaneVMClass              string     `json:"ctlPlaneVmClass"`
+	CtlPlaneReplicas             int64      `json:"ctlPlaneReplicas"`
+	CtlPlaneEtcdVolumeSizeGi     int64      `json:"ctlPlaneEtcdVolumeSizeGi"`
+	WorkerVMClass                string     `json:"workerVmClass"`
+	WorkerReplicas               int64      `json:"workerReplicas"`
+	WorkerContainerdVolumeSizeGi int64      `json:"workerContainerdVolumeSizeGi"`
+	RemoteUID                    string     `json:"remoteUID"`
+}
+
+func (VKSClusterSpec) IsClusterSpec() {}
 
 type VMClass struct {
 	Name string          `json:"name"`
@@ -3862,6 +3974,7 @@ const (
 	ClusterClassTkgm    ClusterClass = "TKGM"
 	ClusterClassTkg2s   ClusterClass = "TKG2S"
 	ClusterClassTkg2m   ClusterClass = "TKG2M"
+	ClusterClassVks     ClusterClass = "VKS"
 )
 
 var AllClusterClass = []ClusterClass{
@@ -3870,11 +3983,12 @@ var AllClusterClass = []ClusterClass{
 	ClusterClassTkgm,
 	ClusterClassTkg2s,
 	ClusterClassTkg2m,
+	ClusterClassVks,
 }
 
 func (e ClusterClass) IsValid() bool {
 	switch e {
-	case ClusterClassUnknown, ClusterClassTkgs, ClusterClassTkgm, ClusterClassTkg2s, ClusterClassTkg2m:
+	case ClusterClassUnknown, ClusterClassTkgs, ClusterClassTkgm, ClusterClassTkg2s, ClusterClassTkg2m, ClusterClassVks:
 		return true
 	}
 	return false

@@ -127,6 +127,8 @@ type ResolverRoot interface {
 	TKGSClusterProviderSpecNamespace() TKGSClusterProviderSpecNamespaceResolver
 	User() UserResolver
 	Users() UsersResolver
+	VKSClusterProviderSpec() VKSClusterProviderSpecResolver
+	VKSClusterProviderSpecNamespace() VKSClusterProviderSpecNamespaceResolver
 }
 
 type DirectiveRoot struct {
@@ -463,6 +465,7 @@ type ComplexityRoot struct {
 		CreatedAt             func(childComplexity int) int
 		Description           func(childComplexity int) int
 		Endpoint              func(childComplexity int) int
+		ErrorReason           func(childComplexity int) int
 		Extensions            func(childComplexity int, page *model.QueryPage, filters []*model.QueryFilter) int
 		ID                    func(childComplexity int) int
 		ImageRegistries       func(childComplexity int, page *model.QueryPage, filters []*model.QueryFilter) int
@@ -1067,6 +1070,7 @@ type ComplexityRoot struct {
 		CreateTKGMClusterProvider           func(childComplexity int, input model.CreateTKGMClusterProvider) int
 		CreateTKGSClusterProvider           func(childComplexity int, input model.CreateTKGSClusterProvider) int
 		CreateUser                          func(childComplexity int, input model.CreateUser) int
+		CreateVKSClusterProvider            func(childComplexity int, input model.CreateVKSClusterProvider) int
 		DeleteApplication                   func(childComplexity int, input model.DeleteApplication) int
 		DeleteBackup                        func(childComplexity int, input model.DeleteBackup) int
 		DeleteBackupStorageLocation         func(childComplexity int, input model.DeleteBackupStorageLocation) int
@@ -1127,6 +1131,7 @@ type ComplexityRoot struct {
 		UpdateTKGMClusterProvider           func(childComplexity int, input model.UpdateTKGMClusterProvider) int
 		UpdateTKGSClusterProvider           func(childComplexity int, input model.UpdateTKGSClusterProvider) int
 		UpdateUser                          func(childComplexity int, input model.UpdateUser) int
+		UpdateVKSClusterProvider            func(childComplexity int, input model.UpdateVKSClusterProvider) int
 	}
 
 	Namespace struct {
@@ -2044,6 +2049,49 @@ type ComplexityRoot struct {
 		TotalCount func(childComplexity int) int
 	}
 
+	VKSClusterProviderSpec struct {
+		AuthUser              func(childComplexity int) int
+		CaCert                func(childComplexity int) int
+		ClusterClasses        func(childComplexity int) int
+		ClusterReleases       func(childComplexity int) int
+		DefaultNamespace      func(childComplexity int) int
+		Endpoint              func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		InsecureSkipTLSVerify func(childComplexity int) int
+		Namespaces            func(childComplexity int, filters []*model.QueryFilter) int
+		TrustedCAs            func(childComplexity int) int
+		VMClasses             func(childComplexity int) int
+	}
+
+	VKSClusterProviderSpecNamespace struct {
+		ClusterProvider func(childComplexity int) int
+		CreatedAt       func(childComplexity int) int
+		Labels          func(childComplexity int) int
+		LastModified    func(childComplexity int) int
+		Name            func(childComplexity int) int
+		Storages        func(childComplexity int) int
+	}
+
+	VKSClusterSpec struct {
+		ClassNamespace               func(childComplexity int) int
+		ClusterClass                 func(childComplexity int) int
+		Cni                          func(childComplexity int) int
+		CtlPlaneEtcdVolumeSizeGi     func(childComplexity int) int
+		CtlPlaneReplicas             func(childComplexity int) int
+		CtlPlaneVMClass              func(childComplexity int) int
+		Namespace                    func(childComplexity int) int
+		OsName                       func(childComplexity int) int
+		OsVersion                    func(childComplexity int) int
+		PodCidr                      func(childComplexity int) int
+		RemoteUID                    func(childComplexity int) int
+		StorageClass                 func(childComplexity int) int
+		SvcCidr                      func(childComplexity int) int
+		SvcDomain                    func(childComplexity int) int
+		WorkerContainerdVolumeSizeGi func(childComplexity int) int
+		WorkerReplicas               func(childComplexity int) int
+		WorkerVMClass                func(childComplexity int) int
+	}
+
 	VMClass struct {
 		Name func(childComplexity int) int
 		Spec func(childComplexity int) int
@@ -2294,10 +2342,12 @@ type MutationResolver interface {
 	CreateTKGSClusterProvider(ctx context.Context, input model.CreateTKGSClusterProvider) (*model.ClusterProvider, error)
 	CreateTKGMClusterProvider(ctx context.Context, input model.CreateTKGMClusterProvider) (*model.ClusterProvider, error)
 	CreateTKG2SClusterProvider(ctx context.Context, input model.CreateTKG2SClusterProvider) (*model.ClusterProvider, error)
+	CreateVKSClusterProvider(ctx context.Context, input model.CreateVKSClusterProvider) (*model.ClusterProvider, error)
 	CreateTKG2MClusterProvider(ctx context.Context, input model.CreateTKG2MClusterProvider) (*model.ClusterProvider, error)
 	UpdateTKGSClusterProvider(ctx context.Context, input model.UpdateTKGSClusterProvider) (*model.ClusterProvider, error)
 	UpdateTKGMClusterProvider(ctx context.Context, input model.UpdateTKGMClusterProvider) (*model.ClusterProvider, error)
 	UpdateTKG2SClusterProvider(ctx context.Context, input model.UpdateTKG2SClusterProvider) (*model.ClusterProvider, error)
+	UpdateVKSClusterProvider(ctx context.Context, input model.UpdateVKSClusterProvider) (*model.ClusterProvider, error)
 	UpdateTKG2MClusterProvider(ctx context.Context, input model.UpdateTKG2MClusterProvider) (*model.ClusterProvider, error)
 	DeleteClusterProvider(ctx context.Context, input model.DeleteClusterProvider) (*model.ClusterProvider, error)
 	CreateComponent(ctx context.Context, input model.CreateComponent) (*model.Component, error)
@@ -2592,6 +2642,15 @@ type UserResolver interface {
 }
 type UsersResolver interface {
 	Edge(ctx context.Context, obj *model.Users) (*model.UserNodes, error)
+}
+type VKSClusterProviderSpecResolver interface {
+	VMClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VMClass, error)
+	ClusterReleases(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*semver.Version, error)
+	ClusterClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]string, error)
+	Namespaces(ctx context.Context, obj *model.VKSClusterProviderSpec, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error)
+}
+type VKSClusterProviderSpecNamespaceResolver interface {
+	Storages(ctx context.Context, obj *model.VKSClusterProviderSpecNamespace) ([]string, error)
 }
 
 type executableSchema struct {
@@ -4064,6 +4123,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Cluster.Endpoint(childComplexity), true
+
+	case "Cluster.errorReason":
+		if e.complexity.Cluster.ErrorReason == nil {
+			break
+		}
+
+		return e.complexity.Cluster.ErrorReason(childComplexity), true
 
 	case "Cluster.extensions":
 		if e.complexity.Cluster.Extensions == nil {
@@ -6986,6 +7052,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.CreateUser)), true
 
+	case "Mutation.CreateVKSClusterProvider":
+		if e.complexity.Mutation.CreateVKSClusterProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_CreateVKSClusterProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateVKSClusterProvider(childComplexity, args["input"].(model.CreateVKSClusterProvider)), true
+
 	case "Mutation.DeleteApplication":
 		if e.complexity.Mutation.DeleteApplication == nil {
 			break
@@ -7700,6 +7778,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(model.UpdateUser)), true
+
+	case "Mutation.UpdateVKSClusterProvider":
+		if e.complexity.Mutation.UpdateVKSClusterProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UpdateVKSClusterProvider_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateVKSClusterProvider(childComplexity, args["input"].(model.UpdateVKSClusterProvider)), true
 
 	case "Namespace.cluster":
 		if e.complexity.Namespace.Cluster == nil {
@@ -12414,6 +12504,249 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Users.TotalCount(childComplexity), true
 
+	case "VKSClusterProviderSpec.authUser":
+		if e.complexity.VKSClusterProviderSpec.AuthUser == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.AuthUser(childComplexity), true
+
+	case "VKSClusterProviderSpec.caCert":
+		if e.complexity.VKSClusterProviderSpec.CaCert == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.CaCert(childComplexity), true
+
+	case "VKSClusterProviderSpec.clusterClasses":
+		if e.complexity.VKSClusterProviderSpec.ClusterClasses == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.ClusterClasses(childComplexity), true
+
+	case "VKSClusterProviderSpec.clusterReleases":
+		if e.complexity.VKSClusterProviderSpec.ClusterReleases == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.ClusterReleases(childComplexity), true
+
+	case "VKSClusterProviderSpec.defaultNamespace":
+		if e.complexity.VKSClusterProviderSpec.DefaultNamespace == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.DefaultNamespace(childComplexity), true
+
+	case "VKSClusterProviderSpec.endpoint":
+		if e.complexity.VKSClusterProviderSpec.Endpoint == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.Endpoint(childComplexity), true
+
+	case "VKSClusterProviderSpec._id":
+		if e.complexity.VKSClusterProviderSpec.ID == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.ID(childComplexity), true
+
+	case "VKSClusterProviderSpec.insecureSkipTLSVerify":
+		if e.complexity.VKSClusterProviderSpec.InsecureSkipTLSVerify == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.InsecureSkipTLSVerify(childComplexity), true
+
+	case "VKSClusterProviderSpec.namespaces":
+		if e.complexity.VKSClusterProviderSpec.Namespaces == nil {
+			break
+		}
+
+		args, err := ec.field_VKSClusterProviderSpec_namespaces_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.VKSClusterProviderSpec.Namespaces(childComplexity, args["filters"].([]*model.QueryFilter)), true
+
+	case "VKSClusterProviderSpec.trustedCAs":
+		if e.complexity.VKSClusterProviderSpec.TrustedCAs == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.TrustedCAs(childComplexity), true
+
+	case "VKSClusterProviderSpec.vmClasses":
+		if e.complexity.VKSClusterProviderSpec.VMClasses == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.VMClasses(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace._clusterProvider":
+		if e.complexity.VKSClusterProviderSpecNamespace.ClusterProvider == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.ClusterProvider(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace.createdAt":
+		if e.complexity.VKSClusterProviderSpecNamespace.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.CreatedAt(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace.labels":
+		if e.complexity.VKSClusterProviderSpecNamespace.Labels == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.Labels(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace.lastModified":
+		if e.complexity.VKSClusterProviderSpecNamespace.LastModified == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.LastModified(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace.name":
+		if e.complexity.VKSClusterProviderSpecNamespace.Name == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.Name(childComplexity), true
+
+	case "VKSClusterProviderSpecNamespace.storages":
+		if e.complexity.VKSClusterProviderSpecNamespace.Storages == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpecNamespace.Storages(childComplexity), true
+
+	case "VKSClusterSpec.classNamespace":
+		if e.complexity.VKSClusterSpec.ClassNamespace == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.ClassNamespace(childComplexity), true
+
+	case "VKSClusterSpec.clusterClass":
+		if e.complexity.VKSClusterSpec.ClusterClass == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.ClusterClass(childComplexity), true
+
+	case "VKSClusterSpec.cni":
+		if e.complexity.VKSClusterSpec.Cni == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.Cni(childComplexity), true
+
+	case "VKSClusterSpec.ctlPlaneEtcdVolumeSizeGi":
+		if e.complexity.VKSClusterSpec.CtlPlaneEtcdVolumeSizeGi == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.CtlPlaneEtcdVolumeSizeGi(childComplexity), true
+
+	case "VKSClusterSpec.ctlPlaneReplicas":
+		if e.complexity.VKSClusterSpec.CtlPlaneReplicas == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.CtlPlaneReplicas(childComplexity), true
+
+	case "VKSClusterSpec.ctlPlaneVmClass":
+		if e.complexity.VKSClusterSpec.CtlPlaneVMClass == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.CtlPlaneVMClass(childComplexity), true
+
+	case "VKSClusterSpec.namespace":
+		if e.complexity.VKSClusterSpec.Namespace == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.Namespace(childComplexity), true
+
+	case "VKSClusterSpec.osName":
+		if e.complexity.VKSClusterSpec.OsName == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.OsName(childComplexity), true
+
+	case "VKSClusterSpec.osVersion":
+		if e.complexity.VKSClusterSpec.OsVersion == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.OsVersion(childComplexity), true
+
+	case "VKSClusterSpec.podCIDR":
+		if e.complexity.VKSClusterSpec.PodCidr == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.PodCidr(childComplexity), true
+
+	case "VKSClusterSpec.remoteUID":
+		if e.complexity.VKSClusterSpec.RemoteUID == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.RemoteUID(childComplexity), true
+
+	case "VKSClusterSpec.storageClass":
+		if e.complexity.VKSClusterSpec.StorageClass == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.StorageClass(childComplexity), true
+
+	case "VKSClusterSpec.svcCIDR":
+		if e.complexity.VKSClusterSpec.SvcCidr == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.SvcCidr(childComplexity), true
+
+	case "VKSClusterSpec.svcDomain":
+		if e.complexity.VKSClusterSpec.SvcDomain == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.SvcDomain(childComplexity), true
+
+	case "VKSClusterSpec.workerContainerdVolumeSizeGi":
+		if e.complexity.VKSClusterSpec.WorkerContainerdVolumeSizeGi == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.WorkerContainerdVolumeSizeGi(childComplexity), true
+
+	case "VKSClusterSpec.workerReplicas":
+		if e.complexity.VKSClusterSpec.WorkerReplicas == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.WorkerReplicas(childComplexity), true
+
+	case "VKSClusterSpec.workerVmClass":
+		if e.complexity.VKSClusterSpec.WorkerVMClass == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterSpec.WorkerVMClass(childComplexity), true
+
 	case "VMClass.name":
 		if e.complexity.VMClass.Name == nil {
 			break
@@ -12662,6 +12995,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateTKGSClusterProviderSpec,
 		ec.unmarshalInputCreateTKGSClusterSpec,
 		ec.unmarshalInputCreateUser,
+		ec.unmarshalInputCreateVKSClusterProvider,
+		ec.unmarshalInputCreateVKSClusterProviderSpec,
+		ec.unmarshalInputCreateVKSClusterSpec,
 		ec.unmarshalInputDeleteApplication,
 		ec.unmarshalInputDeleteBackup,
 		ec.unmarshalInputDeleteBackupStorageLocation,
@@ -12784,6 +13120,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateTKGSClusterProviderSpec,
 		ec.unmarshalInputUpdateTKGSClusterSpec,
 		ec.unmarshalInputUpdateUser,
+		ec.unmarshalInputUpdateVKSClusterProvider,
+		ec.unmarshalInputUpdateVKSClusterProviderSpec,
 		ec.unmarshalInputWritePodExec,
 	)
 	first := true
@@ -13433,6 +13771,7 @@ input UpdateBinaryImageSpec {
   tlsCertChain: [X509Certificate!]
   version: Version
   status: ClusterStatus!
+  errorReason: String
   state: ClusterState!
   spec: ClusterSpec
   kubeConfig: String
@@ -13529,9 +13868,31 @@ enum ClusterClass {
   TKGM
   TKG2S
   TKG2M
+  VKS
 }
 
-union ClusterSpec = TKGSClusterSpec | TKGMClusterSpec | TKG2SClusterSpec | TKG2MClusterSpec
+union ClusterSpec = TKGSClusterSpec | TKGMClusterSpec | TKG2SClusterSpec | TKG2MClusterSpec | VKSClusterSpec
+
+"""A VKS workload cluster provisioned through a vSphere Supervisor."""
+type VKSClusterSpec {
+  namespace: String!
+  clusterClass: String!
+  classNamespace: String!
+  osName: String!
+  osVersion: String!
+  cni: String!
+  podCIDR: CIDR
+  svcCIDR: CIDR
+  svcDomain: String!
+  storageClass: String!
+  ctlPlaneVmClass: String!
+  ctlPlaneReplicas: Int!
+  ctlPlaneEtcdVolumeSizeGi: Int!
+  workerVmClass: String!
+  workerReplicas: Int!
+  workerContainerdVolumeSizeGi: Int!
+  remoteUID: String!
+}
 
 type TKGSClusterSpec {
   namespace: String!
@@ -13718,6 +14079,27 @@ input CreateClusterSpec {
   tkgm: CreateTKGMClusterSpec
   tkg2s: CreateTKG2SClusterSpec
   tkg2m: CreateTKG2MClusterSpec
+  vks: CreateVKSClusterSpec
+}
+
+"""VKS creation uses one worker pool and reuses the existing Supervisor form."""
+input CreateVKSClusterSpec {
+  namespace: String
+  clusterClass: String
+  classNamespace: String
+  osName: String
+  osVersion: String
+  cni: String = "antrea"
+  podCIDR: CIDR = "192.168.0.0/16"
+  svcCIDR: CIDR = "10.96.0.0/12"
+  svcDomain: String = "cluster.local"
+  storageClass: String!
+  ctlPlaneVmClass: String!
+  ctlPlaneReplicas: Int = 3
+  ctlPlaneEtcdVolumeSizeGi: Int = 10
+  workerVmClass: String!
+  workerReplicas: Int = 1
+  workerContainerdVolumeSizeGi: Int = 50
 }
 
 input CreateTKGSClusterSpec {
@@ -13958,7 +14340,8 @@ input AddClusterExtension {
   those do not, this has no effect.
   """
   related: [ID!]
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 	{Name: "../../docs/graphql/cluster_backup_schedule.graphql", Input: `type ClusterBackupSchedule {
   id: ID!
   name: String!
@@ -14220,6 +14603,8 @@ extend type Mutation {
   requires ` + "`" + `write:cluster_provider` + "`" + ` or above.
   """
   CreateTKG2SClusterProvider(input: CreateTKG2SClusterProvider!): ClusterProvider!
+  """Creates a vSphere Kubernetes Service Supervisor provider."""
+  CreateVKSClusterProvider(input: CreateVKSClusterProvider!): ClusterProvider!
   """
   requires ` + "`" + `write:cluster_provider` + "`" + ` or above.
   """
@@ -14236,6 +14621,8 @@ extend type Mutation {
   requires ` + "`" + `write:cluster_provider` + "`" + ` or above.
   """
   UpdateTKG2SClusterProvider(input: UpdateTKG2SClusterProvider!): ClusterProvider!
+  """Updates a vSphere Kubernetes Service Supervisor provider."""
+  UpdateVKSClusterProvider(input: UpdateVKSClusterProvider!): ClusterProvider!
   """
   requires ` + "`" + `write:cluster_provider` + "`" + ` or above.
   """
@@ -14250,7 +14637,7 @@ type ClusterProviderNodes {
   nodes: [ClusterProvider!]
 }
 
-union ClusterProviderSpec = TKGSClusterProviderSpec | TKGMClusterProviderSpec | TKG2SClusterProviderSpec | TKG2MClusterProviderSpec
+union ClusterProviderSpec = TKGSClusterProviderSpec | TKGMClusterProviderSpec | TKG2SClusterProviderSpec | TKG2MClusterProviderSpec | VKSClusterProviderSpec
 
 type TKGSClusterProviderSpec {
   _id: ID!
@@ -14322,6 +14709,29 @@ type TKG2SClusterProviderSpecNamespace {
   name: String!
   labels: Map
   storageClasses: [ClusterProviderStorageClass!]
+  createdAt: Time!
+  lastModified: Time!
+}
+
+type VKSClusterProviderSpec {
+  _id: ID!
+  endpoint: URL!
+  caCert: String!
+  insecureSkipTLSVerify: Boolean!
+  authUser: String!
+  defaultNamespace: String!
+  vmClasses: [VMClass!]
+  clusterReleases: [Version!]
+  clusterClasses: [String!]
+  namespaces(filters: [QueryFilter!] = []): [VKSClusterProviderSpecNamespace!]
+  trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type VKSClusterProviderSpecNamespace {
+  _clusterProvider: ID!
+  name: String!
+  labels: Map
+  storages: [String!]
   createdAt: Time!
   lastModified: Time!
 }
@@ -14420,6 +14830,16 @@ input CreateTKG2SClusterProvider {
   validate: Boolean
 }
 
+input CreateVKSClusterProvider {
+  name: String!
+  description: String
+  spec: CreateVKSClusterProviderSpec!
+  imageRegistries: [AddClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
 input CreateTKG2MClusterProvider {
   name: String!
   description: String
@@ -14456,6 +14876,17 @@ input UpdateTKG2SClusterProvider {
   id: ID!
   description: String
   spec: UpdateTKG2SClusterProviderSpec
+  addImageRegistries: [AddClusterProviderImageRegistry!]
+  removeImageRegistries: [RemoveClusterProviderImageRegistry!]
+  loadBalancer: ID
+  dryrun: Boolean
+  validate: Boolean
+}
+
+input UpdateVKSClusterProvider {
+  id: ID!
+  description: String
+  spec: UpdateVKSClusterProviderSpec
   addImageRegistries: [AddClusterProviderImageRegistry!]
   removeImageRegistries: [RemoveClusterProviderImageRegistry!]
   loadBalancer: ID
@@ -14512,6 +14943,16 @@ input CreateTKG2SClusterProviderSpec {
   trustedCAs: [AddClusterProviderTrustedCA!]
 }
 
+input CreateVKSClusterProviderSpec {
+  endpoint: URL!
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String!
+  authPassword: String!
+  defaultNamespace: String!
+  trustedCAs: [AddClusterProviderTrustedCA!]
+}
+
 input CreateTKG2MClusterProviderSpec {
   kubeConfig: String!
   defaultNamespace: String!
@@ -14557,6 +14998,17 @@ input UpdateTKG2SClusterProviderSpec {
   removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
 }
 
+input UpdateVKSClusterProviderSpec {
+  endpoint: URL
+  caCert: String
+  insecureSkipTLSVerify: Boolean
+  authUser: String
+  authPassword: String
+  defaultNamespace: String
+  addTrustedCAs: [AddClusterProviderTrustedCA!]
+  removeTrustedCAs: [RemoveClusterProviderTrustedCA!]
+}
+
 input UpdateTKG2MClusterProviderSpec {
   kubeConfig: String
   defaultNamespace: String
@@ -14587,7 +15039,8 @@ input AddClusterProviderImageRegistry {
 
 input RemoveClusterProviderImageRegistry {
   id: ID!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 	{Name: "../../docs/graphql/component.graphql", Input: `union ComponentTemplate = BasicComponentTemplate | HelmComponentTemplate | RAWComponentTemplate
 
 type Component {
@@ -19008,6 +19461,21 @@ func (ec *executionContext) field_Mutation_CreateUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_CreateVKSClusterProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateVKSClusterProvider
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateVKSClusterProvider2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterProvider(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_DeleteApplication_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -19885,6 +20353,21 @@ func (ec *executionContext) field_Mutation_UpdateUser_args(ctx context.Context, 
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdateUser2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UpdateVKSClusterProvider_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateVKSClusterProvider
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateVKSClusterProvider2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterProvider(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -21867,6 +22350,21 @@ func (ec *executionContext) field_User_roleBindings_args(ctx context.Context, ra
 		}
 	}
 	args["filters"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_VKSClusterProviderSpec_namespaces_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []*model.QueryFilter
+	if tmp, ok := rawArgs["filters"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filters"))
+		arg0, err = ec.unmarshalOQueryFilter2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐQueryFilterᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filters"] = arg0
 	return args, nil
 }
 
@@ -25385,6 +25883,8 @@ func (ec *executionContext) fieldContext_Backup_cluster(ctx context.Context, fie
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -26275,6 +26775,8 @@ func (ec *executionContext) fieldContext_BackupStorageLocation_cluster(ctx conte
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -28800,6 +29302,8 @@ func (ec *executionContext) fieldContext_BinaryBuild_cluster(ctx context.Context
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -29566,6 +30070,8 @@ func (ec *executionContext) fieldContext_BinaryImage_cluster(ctx context.Context
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -31673,6 +32179,47 @@ func (ec *executionContext) fieldContext_Cluster_status(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Cluster_errorReason(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Cluster_errorReason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorReason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Cluster_errorReason(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Cluster",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Cluster_state(ctx context.Context, field graphql.CollectedField, obj *model.Cluster) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Cluster_state(ctx, field)
 	if err != nil {
@@ -32771,6 +33318,8 @@ func (ec *executionContext) fieldContext_ClusterBackupSchedule_cluster(ctx conte
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -33600,6 +34149,8 @@ func (ec *executionContext) fieldContext_ClusterExtension_cluster(ctx context.Co
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -34547,6 +35098,8 @@ func (ec *executionContext) fieldContext_ClusterNodes_nodes(ctx context.Context,
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -37437,6 +37990,8 @@ func (ec *executionContext) fieldContext_ConfigMap_cluster(ctx context.Context, 
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -38752,6 +39307,8 @@ func (ec *executionContext) fieldContext_Deployment_cluster(ctx context.Context,
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -39657,6 +40214,8 @@ func (ec *executionContext) fieldContext_DockerfileBuild_cluster(ctx context.Con
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -40466,6 +41025,8 @@ func (ec *executionContext) fieldContext_DockerfileImage_cluster(ctx context.Con
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -43417,6 +43978,8 @@ func (ec *executionContext) fieldContext_Ingress_cluster(ctx context.Context, fi
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -43924,6 +44487,8 @@ func (ec *executionContext) fieldContext_IngressClass_cluster(ctx context.Contex
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -45028,6 +45593,8 @@ func (ec *executionContext) fieldContext_Instance_cluster(ctx context.Context, f
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -47801,6 +48368,8 @@ func (ec *executionContext) fieldContext_Job_cluster(ctx context.Context, field 
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -50120,6 +50689,8 @@ func (ec *executionContext) fieldContext_Mutation_CreateCluster(ctx context.Cont
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -50223,6 +50794,8 @@ func (ec *executionContext) fieldContext_Mutation_AttachCluster(ctx context.Cont
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -50326,6 +50899,8 @@ func (ec *executionContext) fieldContext_Mutation_UpdateCluster(ctx context.Cont
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -50429,6 +51004,8 @@ func (ec *executionContext) fieldContext_Mutation_DeleteCluster(ctx context.Cont
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -51188,6 +51765,85 @@ func (ec *executionContext) fieldContext_Mutation_CreateTKG2SClusterProvider(ctx
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_CreateVKSClusterProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_CreateVKSClusterProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateVKSClusterProvider(rctx, fc.Args["input"].(model.CreateVKSClusterProvider))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ClusterProvider)
+	fc.Result = res
+	return ec.marshalNClusterProvider2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐClusterProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_CreateVKSClusterProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ClusterProvider_id(ctx, field)
+			case "name":
+				return ec.fieldContext_ClusterProvider_name(ctx, field)
+			case "description":
+				return ec.fieldContext_ClusterProvider_description(ctx, field)
+			case "class":
+				return ec.fieldContext_ClusterProvider_class(ctx, field)
+			case "spec":
+				return ec.fieldContext_ClusterProvider_spec(ctx, field)
+			case "tlsCertChain":
+				return ec.fieldContext_ClusterProvider_tlsCertChain(ctx, field)
+			case "imageRegistries":
+				return ec.fieldContext_ClusterProvider_imageRegistries(ctx, field)
+			case "loadBalancer":
+				return ec.fieldContext_ClusterProvider_loadBalancer(ctx, field)
+			case "organization":
+				return ec.fieldContext_ClusterProvider_organization(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ClusterProvider_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_ClusterProvider_lastModified(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ClusterProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_CreateVKSClusterProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_CreateTKG2MClusterProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_CreateTKG2MClusterProvider(ctx, field)
 	if err != nil {
@@ -51498,6 +52154,85 @@ func (ec *executionContext) fieldContext_Mutation_UpdateTKG2SClusterProvider(ctx
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_UpdateTKG2SClusterProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_UpdateVKSClusterProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_UpdateVKSClusterProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateVKSClusterProvider(rctx, fc.Args["input"].(model.UpdateVKSClusterProvider))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ClusterProvider)
+	fc.Result = res
+	return ec.marshalNClusterProvider2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐClusterProvider(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_UpdateVKSClusterProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ClusterProvider_id(ctx, field)
+			case "name":
+				return ec.fieldContext_ClusterProvider_name(ctx, field)
+			case "description":
+				return ec.fieldContext_ClusterProvider_description(ctx, field)
+			case "class":
+				return ec.fieldContext_ClusterProvider_class(ctx, field)
+			case "spec":
+				return ec.fieldContext_ClusterProvider_spec(ctx, field)
+			case "tlsCertChain":
+				return ec.fieldContext_ClusterProvider_tlsCertChain(ctx, field)
+			case "imageRegistries":
+				return ec.fieldContext_ClusterProvider_imageRegistries(ctx, field)
+			case "loadBalancer":
+				return ec.fieldContext_ClusterProvider_loadBalancer(ctx, field)
+			case "organization":
+				return ec.fieldContext_ClusterProvider_organization(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_ClusterProvider_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_ClusterProvider_lastModified(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ClusterProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_UpdateVKSClusterProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -56457,6 +57192,8 @@ func (ec *executionContext) fieldContext_Namespace_cluster(ctx context.Context, 
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -56842,6 +57579,8 @@ func (ec *executionContext) fieldContext_Node_cluster(ctx context.Context, field
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -59439,6 +60178,8 @@ func (ec *executionContext) fieldContext_PersistentVolumeClaim_cluster(ctx conte
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -60558,6 +61299,8 @@ func (ec *executionContext) fieldContext_Pod_cluster(ctx context.Context, field 
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -65858,6 +66601,8 @@ func (ec *executionContext) fieldContext_Query_Cluster(ctx context.Context, fiel
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -72136,6 +72881,8 @@ func (ec *executionContext) fieldContext_Restore_cluster(ctx context.Context, fi
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -74848,6 +75595,8 @@ func (ec *executionContext) fieldContext_Secret_cluster(ctx context.Context, fie
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -75654,6 +76403,8 @@ func (ec *executionContext) fieldContext_Service_cluster(ctx context.Context, fi
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -77325,6 +78076,8 @@ func (ec *executionContext) fieldContext_SourceBuild_cluster(ctx context.Context
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -78288,6 +79041,8 @@ func (ec *executionContext) fieldContext_SourceImage_cluster(ctx context.Context
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -80114,6 +80869,8 @@ func (ec *executionContext) fieldContext_StorageClass_cluster(ctx context.Contex
 				return ec.fieldContext_Cluster_version(ctx, field)
 			case "status":
 				return ec.fieldContext_Cluster_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Cluster_errorReason(ctx, field)
 			case "state":
 				return ec.fieldContext_Cluster_state(ctx, field)
 			case "spec":
@@ -87248,6 +88005,1512 @@ func (ec *executionContext) fieldContext_Users_edge(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _VKSClusterProviderSpec__id(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec__id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec__id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_endpoint(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_endpoint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Endpoint, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*url.URL)
+	fc.Result = res
+	return ec.marshalNURL2ᚖnetᚋurlᚐURL(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_endpoint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type URL does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_caCert(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_caCert(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CaCert, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_caCert(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_insecureSkipTLSVerify(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_insecureSkipTLSVerify(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.InsecureSkipTLSVerify, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_insecureSkipTLSVerify(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_authUser(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_authUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AuthUser, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_authUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_defaultNamespace(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_defaultNamespace(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DefaultNamespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_defaultNamespace(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_vmClasses(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_vmClasses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpec().VMClasses(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.VMClass)
+	fc.Result = res
+	return ec.marshalOVMClass2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVMClassᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_vmClasses(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_VMClass_name(ctx, field)
+			case "spec":
+				return ec.fieldContext_VMClass_spec(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VMClass", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_clusterReleases(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_clusterReleases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpec().ClusterReleases(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*semver.Version)
+	fc.Result = res
+	return ec.marshalOVersion2ᚕᚖgithubᚗcomᚋMastermindsᚋsemverᚋv3ᚐVersionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_clusterReleases(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Version does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_clusterClasses(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_clusterClasses(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpec().ClusterClasses(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_clusterClasses(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_namespaces(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_namespaces(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpec().Namespaces(rctx, obj, fc.Args["filters"].([]*model.QueryFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.VKSClusterProviderSpecNamespace)
+	fc.Result = res
+	return ec.marshalOVKSClusterProviderSpecNamespace2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSClusterProviderSpecNamespaceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_namespaces(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_clusterProvider":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace__clusterProvider(ctx, field)
+			case "name":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace_name(ctx, field)
+			case "labels":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace_labels(ctx, field)
+			case "storages":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace_storages(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace_createdAt(ctx, field)
+			case "lastModified":
+				return ec.fieldContext_VKSClusterProviderSpecNamespace_lastModified(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VKSClusterProviderSpecNamespace", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_VKSClusterProviderSpec_namespaces_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpec_trustedCAs(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_trustedCAs(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TrustedCAs, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ClusterProviderSpecTrustedCa)
+	fc.Result = res
+	return ec.marshalOClusterProviderSpecTrustedCA2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐClusterProviderSpecTrustedCaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_trustedCAs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_ClusterProviderSpecTrustedCA_name(ctx, field)
+			case "cert":
+				return ec.fieldContext_ClusterProviderSpecTrustedCA_cert(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ClusterProviderSpecTrustedCA", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace__clusterProvider(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace__clusterProvider(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClusterProvider, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace__clusterProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace_name(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace_labels(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace_labels(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Labels, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(map[string]string)
+	fc.Result = res
+	return ec.marshalOMap2map(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace_labels(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Map does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace_storages(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace_storages(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpecNamespace().Storages(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalOString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace_storages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace_createdAt(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace_lastModified(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpecNamespace) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpecNamespace_lastModified(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LastModified, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpecNamespace_lastModified(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpecNamespace",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_namespace(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_namespace(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Namespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_namespace(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_clusterClass(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_clusterClass(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClusterClass, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_clusterClass(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_classNamespace(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_classNamespace(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ClassNamespace, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_classNamespace(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_osName(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_osName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OsName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_osName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_osVersion(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_osVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OsVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_osVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_cni(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_cni(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cni, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_cni(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_podCIDR(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_podCIDR(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PodCidr, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*net.IPNet)
+	fc.Result = res
+	return ec.marshalOCIDR2ᚖnetᚐIPNet(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_podCIDR(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CIDR does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_svcCIDR(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_svcCIDR(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SvcCidr, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*net.IPNet)
+	fc.Result = res
+	return ec.marshalOCIDR2ᚖnetᚐIPNet(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_svcCIDR(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CIDR does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_svcDomain(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_svcDomain(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SvcDomain, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_svcDomain(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_storageClass(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_storageClass(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.StorageClass, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_storageClass(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_ctlPlaneVmClass(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_ctlPlaneVmClass(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CtlPlaneVMClass, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_ctlPlaneVmClass(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_ctlPlaneReplicas(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_ctlPlaneReplicas(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CtlPlaneReplicas, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_ctlPlaneReplicas(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_ctlPlaneEtcdVolumeSizeGi(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_ctlPlaneEtcdVolumeSizeGi(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CtlPlaneEtcdVolumeSizeGi, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_ctlPlaneEtcdVolumeSizeGi(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_workerVmClass(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_workerVmClass(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkerVMClass, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_workerVmClass(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_workerReplicas(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_workerReplicas(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkerReplicas, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_workerReplicas(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_workerContainerdVolumeSizeGi(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_workerContainerdVolumeSizeGi(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WorkerContainerdVolumeSizeGi, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_workerContainerdVolumeSizeGi(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSClusterSpec_remoteUID(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterSpec_remoteUID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RemoteUID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterSpec_remoteUID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _VMClass_name(ctx context.Context, field graphql.CollectedField, obj *model.VMClass) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_VMClass_name(ctx, field)
 	if err != nil {
@@ -92255,7 +94518,7 @@ func (ec *executionContext) unmarshalInputCreateClusterSpec(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"tkgs", "tkgm", "tkg2s", "tkg2m"}
+	fieldsInOrder := [...]string{"tkgs", "tkgm", "tkg2s", "tkg2m", "vks"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -92291,6 +94554,14 @@ func (ec *executionContext) unmarshalInputCreateClusterSpec(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tkg2m"))
 			it.Tkg2m, err = ec.unmarshalOCreateTKG2MClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateTKG2MClusterSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "vks":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vks"))
+			it.Vks, err = ec.unmarshalOCreateVKSClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterSpec(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -95907,6 +98178,331 @@ func (ec *executionContext) unmarshalInputCreateUser(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 			it.Password, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateVKSClusterProvider(ctx context.Context, obj interface{}) (model.CreateVKSClusterProvider, error) {
+	var it model.CreateVKSClusterProvider
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "description", "spec", "imageRegistries", "loadBalancer", "dryrun", "validate"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "spec":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spec"))
+			it.Spec, err = ec.unmarshalNCreateVKSClusterProviderSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterProviderSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "imageRegistries":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageRegistries"))
+			it.ImageRegistries, err = ec.unmarshalOAddClusterProviderImageRegistry2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐAddClusterProviderImageRegistryᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "loadBalancer":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("loadBalancer"))
+			it.LoadBalancer, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dryrun":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dryrun"))
+			it.Dryrun, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "validate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validate"))
+			it.Validate, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateVKSClusterProviderSpec(ctx context.Context, obj interface{}) (model.CreateVKSClusterProviderSpec, error) {
+	var it model.CreateVKSClusterProviderSpec
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"endpoint", "caCert", "insecureSkipTLSVerify", "authUser", "authPassword", "defaultNamespace", "trustedCAs"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "endpoint":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endpoint"))
+			it.Endpoint, err = ec.unmarshalNURL2ᚖnetᚋurlᚐURL(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "caCert":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("caCert"))
+			it.CaCert, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "insecureSkipTLSVerify":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("insecureSkipTLSVerify"))
+			it.InsecureSkipTLSVerify, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "authUser":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authUser"))
+			it.AuthUser, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "authPassword":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authPassword"))
+			it.AuthPassword, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "defaultNamespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultNamespace"))
+			it.DefaultNamespace, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "trustedCAs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("trustedCAs"))
+			it.TrustedCAs, err = ec.unmarshalOAddClusterProviderTrustedCA2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐAddClusterProviderTrustedCaᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateVKSClusterSpec(ctx context.Context, obj interface{}) (model.CreateVKSClusterSpec, error) {
+	var it model.CreateVKSClusterSpec
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	if _, present := asMap["cni"]; !present {
+		asMap["cni"] = "antrea"
+	}
+	if _, present := asMap["podCIDR"]; !present {
+		asMap["podCIDR"] = "192.168.0.0/16"
+	}
+	if _, present := asMap["svcCIDR"]; !present {
+		asMap["svcCIDR"] = "10.96.0.0/12"
+	}
+	if _, present := asMap["svcDomain"]; !present {
+		asMap["svcDomain"] = "cluster.local"
+	}
+	if _, present := asMap["ctlPlaneReplicas"]; !present {
+		asMap["ctlPlaneReplicas"] = 3
+	}
+	if _, present := asMap["ctlPlaneEtcdVolumeSizeGi"]; !present {
+		asMap["ctlPlaneEtcdVolumeSizeGi"] = 10
+	}
+	if _, present := asMap["workerReplicas"]; !present {
+		asMap["workerReplicas"] = 1
+	}
+	if _, present := asMap["workerContainerdVolumeSizeGi"]; !present {
+		asMap["workerContainerdVolumeSizeGi"] = 50
+	}
+
+	fieldsInOrder := [...]string{"namespace", "clusterClass", "classNamespace", "osName", "osVersion", "cni", "podCIDR", "svcCIDR", "svcDomain", "storageClass", "ctlPlaneVmClass", "ctlPlaneReplicas", "ctlPlaneEtcdVolumeSizeGi", "workerVmClass", "workerReplicas", "workerContainerdVolumeSizeGi"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "namespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("namespace"))
+			it.Namespace, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "clusterClass":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("clusterClass"))
+			it.ClusterClass, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "classNamespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("classNamespace"))
+			it.ClassNamespace, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "osName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("osName"))
+			it.OsName, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "osVersion":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("osVersion"))
+			it.OsVersion, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "cni":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cni"))
+			it.Cni, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "podCIDR":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("podCIDR"))
+			it.PodCidr, err = ec.unmarshalOCIDR2ᚖnetᚐIPNet(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "svcCIDR":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("svcCIDR"))
+			it.SvcCidr, err = ec.unmarshalOCIDR2ᚖnetᚐIPNet(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "svcDomain":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("svcDomain"))
+			it.SvcDomain, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "storageClass":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("storageClass"))
+			it.StorageClass, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ctlPlaneVmClass":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ctlPlaneVmClass"))
+			it.CtlPlaneVMClass, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ctlPlaneReplicas":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ctlPlaneReplicas"))
+			it.CtlPlaneReplicas, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "ctlPlaneEtcdVolumeSizeGi":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ctlPlaneEtcdVolumeSizeGi"))
+			it.CtlPlaneEtcdVolumeSizeGi, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "workerVmClass":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workerVmClass"))
+			it.WorkerVMClass, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "workerReplicas":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workerReplicas"))
+			it.WorkerReplicas, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "workerContainerdVolumeSizeGi":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workerContainerdVolumeSizeGi"))
+			it.WorkerContainerdVolumeSizeGi, err = ec.unmarshalOInt2ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -101655,6 +104251,174 @@ func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateVKSClusterProvider(ctx context.Context, obj interface{}) (model.UpdateVKSClusterProvider, error) {
+	var it model.UpdateVKSClusterProvider
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "description", "spec", "addImageRegistries", "removeImageRegistries", "loadBalancer", "dryrun", "validate"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "spec":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("spec"))
+			it.Spec, err = ec.unmarshalOUpdateVKSClusterProviderSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterProviderSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "addImageRegistries":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addImageRegistries"))
+			it.AddImageRegistries, err = ec.unmarshalOAddClusterProviderImageRegistry2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐAddClusterProviderImageRegistryᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeImageRegistries":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeImageRegistries"))
+			it.RemoveImageRegistries, err = ec.unmarshalORemoveClusterProviderImageRegistry2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐRemoveClusterProviderImageRegistryᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "loadBalancer":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("loadBalancer"))
+			it.LoadBalancer, err = ec.unmarshalOID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "dryrun":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dryrun"))
+			it.Dryrun, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "validate":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("validate"))
+			it.Validate, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateVKSClusterProviderSpec(ctx context.Context, obj interface{}) (model.UpdateVKSClusterProviderSpec, error) {
+	var it model.UpdateVKSClusterProviderSpec
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"endpoint", "caCert", "insecureSkipTLSVerify", "authUser", "authPassword", "defaultNamespace", "addTrustedCAs", "removeTrustedCAs"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "endpoint":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endpoint"))
+			it.Endpoint, err = ec.unmarshalOURL2ᚖnetᚋurlᚐURL(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "caCert":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("caCert"))
+			it.CaCert, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "insecureSkipTLSVerify":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("insecureSkipTLSVerify"))
+			it.InsecureSkipTLSVerify, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "authUser":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authUser"))
+			it.AuthUser, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "authPassword":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authPassword"))
+			it.AuthPassword, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "defaultNamespace":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("defaultNamespace"))
+			it.DefaultNamespace, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "addTrustedCAs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("addTrustedCAs"))
+			it.AddTrustedCAs, err = ec.unmarshalOAddClusterProviderTrustedCA2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐAddClusterProviderTrustedCaᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "removeTrustedCAs":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeTrustedCAs"))
+			it.RemoveTrustedCAs, err = ec.unmarshalORemoveClusterProviderTrustedCA2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐRemoveClusterProviderTrustedCaᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputWritePodExec(ctx context.Context, obj interface{}) (model.WritePodExec, error) {
 	var it model.WritePodExec
 	asMap := map[string]interface{}{}
@@ -101771,6 +104535,13 @@ func (ec *executionContext) _ClusterProviderSpec(ctx context.Context, sel ast.Se
 			return graphql.Null
 		}
 		return ec._TKG2MClusterProviderSpec(ctx, sel, obj)
+	case model.VKSClusterProviderSpec:
+		return ec._VKSClusterProviderSpec(ctx, sel, &obj)
+	case *model.VKSClusterProviderSpec:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._VKSClusterProviderSpec(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -101808,6 +104579,13 @@ func (ec *executionContext) _ClusterSpec(ctx context.Context, sel ast.SelectionS
 			return graphql.Null
 		}
 		return ec._TKG2MClusterSpec(ctx, sel, obj)
+	case model.VKSClusterSpec:
+		return ec._VKSClusterSpec(ctx, sel, &obj)
+	case *model.VKSClusterSpec:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._VKSClusterSpec(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -104310,6 +107088,10 @@ func (ec *executionContext) _Cluster(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "errorReason":
+
+			out.Values[i] = ec._Cluster_errorReason(ctx, field, obj)
+
 		case "state":
 
 			out.Values[i] = ec._Cluster_state(ctx, field, obj)
@@ -109123,6 +111905,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "CreateVKSClusterProvider":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_CreateVKSClusterProvider(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "CreateTKG2MClusterProvider":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -109154,6 +111945,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_UpdateTKG2SClusterProvider(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "UpdateVKSClusterProvider":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_UpdateVKSClusterProvider(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -117580,6 +120380,345 @@ func (ec *executionContext) _Users(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var vKSClusterProviderSpecImplementors = []string{"VKSClusterProviderSpec", "ClusterProviderSpec"}
+
+func (ec *executionContext) _VKSClusterProviderSpec(ctx context.Context, sel ast.SelectionSet, obj *model.VKSClusterProviderSpec) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, vKSClusterProviderSpecImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VKSClusterProviderSpec")
+		case "_id":
+
+			out.Values[i] = ec._VKSClusterProviderSpec__id(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "endpoint":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_endpoint(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "caCert":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_caCert(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "insecureSkipTLSVerify":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_insecureSkipTLSVerify(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "authUser":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_authUser(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "defaultNamespace":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_defaultNamespace(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "vmClasses":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpec_vmClasses(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "clusterReleases":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpec_clusterReleases(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "clusterClasses":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpec_clusterClasses(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "namespaces":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpec_namespaces(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "trustedCAs":
+
+			out.Values[i] = ec._VKSClusterProviderSpec_trustedCAs(ctx, field, obj)
+
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var vKSClusterProviderSpecNamespaceImplementors = []string{"VKSClusterProviderSpecNamespace"}
+
+func (ec *executionContext) _VKSClusterProviderSpecNamespace(ctx context.Context, sel ast.SelectionSet, obj *model.VKSClusterProviderSpecNamespace) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, vKSClusterProviderSpecNamespaceImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VKSClusterProviderSpecNamespace")
+		case "_clusterProvider":
+
+			out.Values[i] = ec._VKSClusterProviderSpecNamespace__clusterProvider(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+
+			out.Values[i] = ec._VKSClusterProviderSpecNamespace_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "labels":
+
+			out.Values[i] = ec._VKSClusterProviderSpecNamespace_labels(ctx, field, obj)
+
+		case "storages":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpecNamespace_storages(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "createdAt":
+
+			out.Values[i] = ec._VKSClusterProviderSpecNamespace_createdAt(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "lastModified":
+
+			out.Values[i] = ec._VKSClusterProviderSpecNamespace_lastModified(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var vKSClusterSpecImplementors = []string{"VKSClusterSpec", "ClusterSpec"}
+
+func (ec *executionContext) _VKSClusterSpec(ctx context.Context, sel ast.SelectionSet, obj *model.VKSClusterSpec) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, vKSClusterSpecImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VKSClusterSpec")
+		case "namespace":
+
+			out.Values[i] = ec._VKSClusterSpec_namespace(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "clusterClass":
+
+			out.Values[i] = ec._VKSClusterSpec_clusterClass(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "classNamespace":
+
+			out.Values[i] = ec._VKSClusterSpec_classNamespace(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "osName":
+
+			out.Values[i] = ec._VKSClusterSpec_osName(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "osVersion":
+
+			out.Values[i] = ec._VKSClusterSpec_osVersion(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cni":
+
+			out.Values[i] = ec._VKSClusterSpec_cni(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "podCIDR":
+
+			out.Values[i] = ec._VKSClusterSpec_podCIDR(ctx, field, obj)
+
+		case "svcCIDR":
+
+			out.Values[i] = ec._VKSClusterSpec_svcCIDR(ctx, field, obj)
+
+		case "svcDomain":
+
+			out.Values[i] = ec._VKSClusterSpec_svcDomain(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "storageClass":
+
+			out.Values[i] = ec._VKSClusterSpec_storageClass(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ctlPlaneVmClass":
+
+			out.Values[i] = ec._VKSClusterSpec_ctlPlaneVmClass(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ctlPlaneReplicas":
+
+			out.Values[i] = ec._VKSClusterSpec_ctlPlaneReplicas(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ctlPlaneEtcdVolumeSizeGi":
+
+			out.Values[i] = ec._VKSClusterSpec_ctlPlaneEtcdVolumeSizeGi(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workerVmClass":
+
+			out.Values[i] = ec._VKSClusterSpec_workerVmClass(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workerReplicas":
+
+			out.Values[i] = ec._VKSClusterSpec_workerReplicas(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "workerContainerdVolumeSizeGi":
+
+			out.Values[i] = ec._VKSClusterSpec_workerContainerdVolumeSizeGi(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "remoteUID":
+
+			out.Values[i] = ec._VKSClusterSpec_remoteUID(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var vMClassImplementors = []string{"VMClass"}
 
 func (ec *executionContext) _VMClass(ctx context.Context, sel ast.SelectionSet, obj *model.VMClass) graphql.Marshaler {
@@ -119351,6 +122490,16 @@ func (ec *executionContext) unmarshalNCreateTKGSClusterProviderSpec2ᚖgitlabᚗ
 func (ec *executionContext) unmarshalNCreateUser2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateUser(ctx context.Context, v interface{}) (model.CreateUser, error) {
 	res, err := ec.unmarshalInputCreateUser(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateVKSClusterProvider2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterProvider(ctx context.Context, v interface{}) (model.CreateVKSClusterProvider, error) {
+	res, err := ec.unmarshalInputCreateVKSClusterProvider(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateVKSClusterProviderSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterProviderSpec(ctx context.Context, v interface{}) (*model.CreateVKSClusterProviderSpec, error) {
+	res, err := ec.unmarshalInputCreateVKSClusterProviderSpec(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNCreatedUser2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreatedUser(ctx context.Context, sel ast.SelectionSet, v model.CreatedUser) graphql.Marshaler {
@@ -121358,6 +124507,11 @@ func (ec *executionContext) unmarshalNUpdateUser2gitlabᚗengᚗvmwareᚗcomᚋc
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdateVKSClusterProvider2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterProvider(ctx context.Context, v interface{}) (model.UpdateVKSClusterProvider, error) {
+	res, err := ec.unmarshalInputUpdateVKSClusterProvider(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNUser2gitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
@@ -121398,6 +124552,16 @@ func (ec *executionContext) marshalNUsers2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑ
 		return graphql.Null
 	}
 	return ec._Users(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVKSClusterProviderSpecNamespace2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSClusterProviderSpecNamespace(ctx context.Context, sel ast.SelectionSet, v *model.VKSClusterProviderSpecNamespace) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VKSClusterProviderSpecNamespace(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNVMClass2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVMClass(ctx context.Context, sel ast.SelectionSet, v *model.VMClass) graphql.Marshaler {
@@ -123943,6 +127107,14 @@ func (ec *executionContext) unmarshalOCreateTKGSClusterSpec2ᚖgitlabᚗengᚗvm
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateTKGSClusterSpec(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOCreateVKSClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐCreateVKSClusterSpec(ctx context.Context, v interface{}) (*model.CreateVKSClusterSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCreateVKSClusterSpec(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -127462,6 +130634,14 @@ func (ec *executionContext) unmarshalOUpdateTKGSClusterSpec2ᚖgitlabᚗengᚗvm
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalOUpdateVKSClusterProviderSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterProviderSpec(ctx context.Context, v interface{}) (*model.UpdateVKSClusterProviderSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUpdateVKSClusterProviderSpec(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOUser2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -127514,6 +130694,53 @@ func (ec *executionContext) marshalOUser2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑs
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOVKSClusterProviderSpecNamespace2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSClusterProviderSpecNamespaceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.VKSClusterProviderSpecNamespace) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNVKSClusterProviderSpecNamespace2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSClusterProviderSpecNamespace(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalOVMClass2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVMClassᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.VMClass) graphql.Marshaler {

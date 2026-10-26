@@ -191,6 +191,7 @@ export class ProviderdetailComponent implements OnInit {
     this.getAllNamespace(this.providerId, this.provider.spec.defaultNamespace);
     const type = this.provider.class;
     switch (type) {
+      case 'VKS':
       case 'TKGS':
         const selectedTKGSRegistryList: ImageRegistry[] = [];
         for (const providerRegistry of this.provider.imageRegistries.edge.nodes) {
@@ -362,6 +363,7 @@ export class ProviderdetailComponent implements OnInit {
   public doEditProviderFinish (): void {
     const type = this.provider.class;
     switch (type) {
+      case 'VKS':
       case 'TKGS':
         const addTKGSImageRegistry: AddClusterProviderImageRegistry[] = [];
         for (const registry of this.editProviderForm.value.registry) {
@@ -394,7 +396,7 @@ export class ProviderdetailComponent implements OnInit {
         if (this.editTanzuKubernetesClusterParam.value.password) {
           tkgsParam.spec.authPassword = this.editTanzuKubernetesClusterParam.value.password
         }
-        this.providerService.updateTKGSProvider(tkgsParam).subscribe(data => {
+        (type === 'VKS' ? this.providerService.updateVKSProvider(tkgsParam) : this.providerService.updateTKGSProvider(tkgsParam)).subscribe(data => {
           if (data.errors) {
             for (const each of data.errors) {
               if (each.message) {
@@ -402,8 +404,9 @@ export class ProviderdetailComponent implements OnInit {
               }
             }
           }
-          if (data.data?.UpdateTKGSClusterProvider) {
-            this.toast.show(`${data.data.UpdateTKGSClusterProvider.name} ` + this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
+          const updatedProvider = type === 'VKS' ? data.data?.UpdateVKSClusterProvider : data.data?.UpdateTKGSClusterProvider;
+          if (updatedProvider) {
+            this.toast.show(`${updatedProvider.name} ` + this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-MSG'), this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-SUCCESS'), { toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000 })
           }
         }, (e) => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`, this.translate.instant('MESSAGE.PROVIDER.UPDATE-PROVIDER-FAILED'), { toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0 }), () => {
           this.doEditProviderReset();
@@ -539,7 +542,7 @@ export class ProviderdetailComponent implements OnInit {
       validate: true,
       dryrun: true
     };
-    this.providerService.checkUpdateTKGSProviderConnection(input).subscribe(data => {
+    (this.provider.class === 'VKS' ? this.providerService.checkUpdateVKSProviderConnection(input) : this.providerService.checkUpdateTKGSProviderConnection(input)).subscribe(data => {
       if (data.errors) {
         for (const each of data.errors) {
           if (each.message) {

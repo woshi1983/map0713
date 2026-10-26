@@ -137,6 +137,8 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			}
 
 			switch provider.Class {
+			case model.ClusterClassVKS:
+				handler = cluster.NewVKSKubernetes(c, registries, provider, log)
 			case model.ClusterClassTKGS:
 				handler = cluster.NewTKGSKubernetes(c, registries, provider, log)
 			case model.ClusterClassTKGM:

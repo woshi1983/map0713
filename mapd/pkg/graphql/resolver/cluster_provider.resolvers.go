@@ -29,8 +29,11 @@ import (
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/k8s"
 	runv1alpha1 "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/k8s/apis/run.tanzu/v1alpha1"
 	tanzuv2 "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/tanzu/v2"
+	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/vks"
 	"gorm.io/gorm"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -47,6 +50,12 @@ func (r *clusterProviderResolver) TLSCertChain(ctx context.Context, obj *model.C
 			panic(&ErrDBConnection{err})
 		}
 		switch cp.Class {
+		case model1.ClusterClassVKS:
+			v := &model1.ClusterProviderVKSSpec{}
+			if err := json.Unmarshal(cp.Spec, v); err != nil {
+				panic(err)
+			}
+			uri, caCert, insecureSkipTLSVerify = v.Endpoint, v.CACert, v.InsecureSkipTLSVerify
 		case model1.ClusterClassTKGS:
 			v := &model1.ClusterProviderTKGSSpec{}
 			if err := json.Unmarshal(cp.Spec, v); err != nil {
@@ -197,6 +206,12 @@ func (r *clusterProvidersResolver) Edge(ctx context.Context, obj *model.ClusterP
 			for _, cp := range cps {
 				spec := interface{}(nil)
 				switch cp.Class {
+				case model1.ClusterClassVKS:
+					v := &model1.ClusterProviderVKSSpec{}
+					if err := json.Unmarshal(cp.Spec, v); err != nil {
+						panic(err)
+					}
+					spec = v
 				case model1.ClusterClassTKGS:
 					v := &model1.ClusterProviderTKGSSpec{}
 					if err := json.Unmarshal(cp.Spec, v); err != nil {
@@ -238,234 +253,9 @@ func (r *clusterProvidersResolver) Edge(ctx context.Context, obj *model.ClusterP
 	return nodes, nil
 }
 
-// CreateTKGSClusterProvider is the resolver for the CreateTKGSClusterProvider field.
+// CreateTKGSClusterProvider is retained in the schema for migration compatibility.
 func (r *mutationResolver) CreateTKGSClusterProvider(ctx context.Context, input model.CreateTKGSClusterProvider) (*model.ClusterProvider, error) {
-	sess, ok := auth.FromContext(ctx)
-	if !ok {
-		panic(ErrIdentityNotFound)
-	}
-
-	if !validateName(input.Name) {
-		return nil, errInvalidRequest(ctx, "input.name", fmt.Sprintf("regexp '%s' is not satisfied", regexpName.String()), input.Name)
-	}
-	for i, each := range input.Spec.TrustedCAs {
-		if !validateName(each.Name) {
-			return nil, errInvalidRequest(ctx, fmt.Sprintf("input.spec.trustedCAs.%d.name", i), fmt.Sprintf("regexp '%s' is not satisfied", regexpName.String()), each.Name)
-		}
-		rootcas := x509.NewCertPool()
-		if !rootcas.AppendCertsFromPEM([]byte(each.Cert)) {
-			return nil, errInvalidRequest(ctx, fmt.Sprintf("input.spec.trustedCAs.%d.cert", i), "invalid x509 certificate", each.Name)
-		}
-	}
-	cp := &model1.ClusterProvider{
-		ID:    uuid.New(),
-		Name:  input.Name,
-		Class: model1.ClusterClassTKGS,
-	}
-	if input.Description != nil {
-		cp.Description = *input.Description
-	}
-	if len(input.ImageRegistries) == 0 {
-		return nil, errInvalidRequest(ctx, "input.imageRegistries", "value cannot be empty")
-	}
-	var (
-		defaultImageRegistryIndex int
-		defaultImageRegistry      uuid.UUID
-	)
-	for i, each := range input.ImageRegistries {
-		if each.Default != nil && *each.Default {
-			if defaultImageRegistry == uuid.Nil {
-				defaultImageRegistry = each.ID
-				defaultImageRegistryIndex = i
-			} else {
-				each.Default = util.BoolPtr(false)
-			}
-		}
-	}
-	if defaultImageRegistry == uuid.Nil {
-		input.ImageRegistries[0].Default = util.BoolPtr(true)
-		defaultImageRegistry = input.ImageRegistries[0].ID
-		defaultImageRegistryIndex = 0
-	}
-	if input.LoadBalancer != nil {
-		cp.LoadBalancerID = model1.NewNullUUID(*input.LoadBalancer)
-	}
-	if input.Spec.DefaultNamespace == "" {
-		return nil, errInvalidRequest(ctx, "input.spec.defaultNamespace", "value cannot be empty")
-	}
-	spec := &model1.ClusterProviderTKGSSpec{
-		Endpoint:  input.Spec.Endpoint.String(),
-		AuthUser:  input.Spec.AuthUser,
-		DefaultNS: input.Spec.DefaultNamespace,
-	}
-	if input.Spec.CaCert != nil {
-		spec.CACert = []byte(*input.Spec.CaCert)
-	}
-	if input.Spec.InsecureSkipTLSVerify != nil {
-		spec.InsecureSkipTLSVerify = *input.Spec.InsecureSkipTLSVerify
-	}
-	block, err := cryptoutil.NewAESGCMCipher(cp.ID[:]) // AES-128
-	if err != nil {
-		panic(err)
-	}
-	spec.AuthPassword = block.Encrypt([]byte(input.Spec.AuthPassword))
-	cp.Spec, err = json.Marshal(spec)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		registry := &model1.ImageRegistry{ID: defaultImageRegistry}
-		if err := tx.Take(registry).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errObjectNotFound(ctx, fmt.Sprintf("input.imageRegistries.%d.id", defaultImageRegistryIndex), registry.ID.String())
-			}
-			panic(&ErrDBConnection{err})
-		}
-		if cp.LoadBalancerID.Valid {
-			loadBalancer := &model1.LoadBalancer{ID: cp.LoadBalancerID.UUID}
-			if err := tx.Take(loadBalancer).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return errObjectNotFound(ctx, "input.loadBalancer", loadBalancer.ID.String())
-				}
-				panic(&ErrDBConnection{err})
-			}
-			if registry.OrganizationID.String() != loadBalancer.OrganizationID.String() {
-				return errInvalidRequest(ctx, "input.loadBalancer", "different organization from default image registry", loadBalancer.ID.String())
-			}
-		}
-
-		if !IsGuardSilenced(ctx) && !sess.Can(model1.PermReadWrite, model1.PolicyObjectClusterProvider, registry.OrganizationID.UUID) {
-			return errInsufficientPrivileges(ctx)
-		}
-
-		cp.OrganizationID = registry.OrganizationID
-
-		var exists int64
-		if err := tx.Model(&model1.ClusterProvider{}).Where("`organization_id` = ? AND `name` = ?", cp.OrganizationID, cp.Name).Count(&exists).Error; err != nil {
-			panic(&ErrDBConnection{err})
-		}
-		if exists > 0 {
-			return errObjectDuplicated(ctx, "input.name", cp.Name)
-		}
-
-		if input.Validate != nil && *input.Validate {
-			client, err := k8s.NewTanzuKubernetesGridService(spec.Endpoint, spec.AuthUser, block.Decrypt(spec.AuthPassword), rest.TLSClientConfig{
-				Insecure: spec.InsecureSkipTLSVerify,
-				CAData:   spec.CACert,
-			})
-			if err != nil {
-				panic(err)
-			}
-
-			if err := client.PingContext(ctx); err != nil {
-				return errGatewayError(ctx, err)
-			}
-		}
-
-		if err := tx.Create(cp).Error; err != nil {
-			panic(&ErrDBConnection{err})
-		}
-		if err := tx.Take(cp).Error; err != nil {
-			panic(&ErrDBConnection{err})
-		}
-
-		for i, each := range input.ImageRegistries {
-			if each.Default == nil || !*each.Default {
-				r := &model1.ImageRegistry{ID: each.ID}
-				if err := tx.Take(r).Error; err != nil {
-					if errors.Is(err, gorm.ErrRecordNotFound) {
-						return errObjectNotFound(ctx, fmt.Sprintf("input.imageRegistries.%d.id", i), r.ID.String())
-					}
-					panic(&ErrDBConnection{err})
-				}
-			}
-
-			reg := &model1.ClusterProviderImageRegistry{
-				ID:              uuid.New(),
-				ProviderID:      model1.NewNullUUID(cp.ID),
-				ImageRegistryID: model1.NewNullUUID(each.ID),
-			}
-			if each.Default != nil && *each.Default {
-				reg.Default = true
-			}
-			if err := tx.Create(reg).Error; err != nil {
-				panic(&ErrDBConnection{err})
-			}
-		}
-
-		if input.Dryrun != nil && *input.Dryrun {
-			return errDryrun
-		}
-
-		if err := appendAuditLog(tx, "create", "ClusterProvider", cp.ID, cp.Name, sess.UserID, sess.UserName, cp.OrganizationID.UUID); err != nil {
-			panic(&ErrDBConnection{err})
-		}
-
-		if len(input.Spec.TrustedCAs) > 0 {
-			client, err := k8s.NewTanzuKubernetesGridService(spec.Endpoint, spec.AuthUser, block.Decrypt(spec.AuthPassword), rest.TLSClientConfig{
-				Insecure: spec.InsecureSkipTLSVerify,
-				CAData:   spec.CACert,
-			})
-			if err != nil {
-				panic(err)
-			}
-
-			cfg, err := client.GetTkgServiceConfiguration(defTkgServiceConfiguration)
-			if err != nil {
-				return errGatewayError(ctx, err)
-			}
-			if cfg.Spec.Trust == nil {
-				cfg.Spec.Trust = &runv1alpha1.TrustConfiguration{}
-			}
-			cert := make(map[string]string)
-			for _, each := range cfg.Spec.Trust.AdditionalTrustedCAs {
-				cert[each.Name] = each.Data
-			}
-			for _, each := range input.Spec.TrustedCAs {
-				cert[each.Name] = base64.StdEncoding.EncodeToString([]byte(each.Cert))
-			}
-			cfg.Spec.Trust.AdditionalTrustedCAs = cfg.Spec.Trust.AdditionalTrustedCAs[:0]
-			for name, data := range cert {
-				cfg.Spec.Trust.AdditionalTrustedCAs = append(cfg.Spec.Trust.AdditionalTrustedCAs, runv1alpha1.TLSCertificate{
-					Name: name,
-					Data: data,
-				})
-			}
-			if _, err := patchTkgServiceConfigurationAdditionalTrustedCAs(client, defTkgServiceConfiguration, cfg.Spec.Trust.AdditionalTrustedCAs); err != nil {
-				return errGatewayError(ctx, err)
-			}
-		}
-		return nil
-	}); err != nil && err != errDryrun {
-		if !IsGQLError(err) {
-			panic(err)
-		}
-		return nil, err
-	}
-	result := convertClusterProviderFromSQLModel(cp, spec)
-	if input.Dryrun != nil && *input.Dryrun {
-		fields := graphql.CollectFieldsCtx(ctx, []string{"ClusterProvider"})
-	LOOP:
-		for _, field := range fields {
-			if field.Name == "spec" {
-				oc := graphql.GetOperationContext(ctx)
-				fs := graphql.CollectFields(oc, field.Selections, []string{"TKGSClusterProviderSpec", "ClusterProviderSpec"})
-				for _, f := range fs {
-					if f.Name == "namespaces" {
-						ns, err := getTKGSClusterProviderNamespaces(ctx, cp.ID, spec.Endpoint, spec.InsecureSkipTLSVerify, spec.CACert, spec.AuthUser, block.Decrypt(spec.AuthPassword), []*model.QueryFilter{})
-						if err != nil {
-							return nil, err
-						}
-						result.Spec.(*model.TKGSClusterProviderSpec).Namespaces = ns
-						break LOOP
-					}
-				}
-				break
-			}
-		}
-	}
-	return result, nil
+	return nil, errNoLongerSupport(ctx, "TKGS provider creation has been replaced by VKS")
 }
 
 // CreateTKGMClusterProvider is the resolver for the CreateTKGMClusterProvider field.
@@ -473,11 +263,19 @@ func (r *mutationResolver) CreateTKGMClusterProvider(ctx context.Context, input 
 	return nil, errNoLongerSupport(ctx, "TKGm 1.X is no longer supported. Please consider to migrate your clusters to TKG 2.")
 }
 
-// CreateTKG2SClusterProvider is the resolver for the CreateTKG2SClusterProvider field.
+// CreateTKG2SClusterProvider is retained in the schema for migration compatibility.
 func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input model.CreateTKG2SClusterProvider) (*model.ClusterProvider, error) {
+	return nil, errNoLongerSupport(ctx, "TKG2S provider creation has been replaced by VKS")
+}
+
+// CreateVKSClusterProvider is the resolver for the CreateVKSClusterProvider field.
+func (r *mutationResolver) CreateVKSClusterProvider(ctx context.Context, input model.CreateVKSClusterProvider) (*model.ClusterProvider, error) {
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
+	}
+	if input.Spec == nil || input.Spec.Endpoint == nil || input.Spec.AuthUser == "" || input.Spec.AuthPassword == "" {
+		return nil, errInvalidRequest(ctx, "input.spec", "VKS endpoint and credentials are required")
 	}
 
 	if !validateName(input.Name) {
@@ -495,7 +293,7 @@ func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input
 	cp := &model1.ClusterProvider{
 		ID:    uuid.New(),
 		Name:  input.Name,
-		Class: model1.ClusterClassTKG2S,
+		Class: model1.ClusterClassVKS,
 	}
 	if input.Description != nil {
 		cp.Description = *input.Description
@@ -525,13 +323,13 @@ func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input
 	if input.LoadBalancer != nil {
 		cp.LoadBalancerID = model1.NewNullUUID(*input.LoadBalancer)
 	}
-	if tkg2sProviderProtectedNamespaces[input.Spec.DefaultNamespace] {
+	if protectedVKSNamespace(input.Spec.DefaultNamespace) {
 		return nil, errInvalidRequest(ctx, "input.spec.defaultNamespace", "cannot be a system namespace", input.Spec.DefaultNamespace)
 	}
 	if input.Spec.DefaultNamespace == "" {
 		return nil, errInvalidRequest(ctx, "input.spec.defaultNamespace", "value cannot be empty")
 	}
-	spec := &model1.ClusterProviderTKG2SSpec{
+	spec := &model1.ClusterProviderVKSSpec{
 		Endpoint:  input.Spec.Endpoint.String(),
 		AuthUser:  input.Spec.AuthUser,
 		DefaultNS: input.Spec.DefaultNamespace,
@@ -601,18 +399,16 @@ func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input
 		}
 
 		if input.Validate != nil && *input.Validate {
-			client, err := tanzuv2.NewVSphereWithTanzu(spec.Endpoint, spec.AuthUser, block.Decrypt(spec.AuthPassword), rest.TLSClientConfig{
-				Insecure: spec.InsecureSkipTLSVerify,
-				CAData:   spec.CACert,
-			})
+			_, supervisor, err := vks.NewClientFromProvider(cp.ID, spec)
 			if err != nil {
-				panic(err)
+				return errGatewayError(ctx, err)
 			}
-
-			ctx, cancel := context.WithTimeout(ctx, mapd.GlobalConfig.HTTPClientTimeout)
+			validationCtx, cancel := context.WithTimeout(ctx, mapd.GlobalConfig.HTTPClientTimeout)
 			defer cancel()
-
-			if err := client.PingContext(ctx); err != nil {
+			if err := supervisor.PingContext(validationCtx); err != nil {
+				return errGatewayError(ctx, err)
+			}
+			if _, err := supervisor.GetNamespacesContext(validationCtx); err != nil {
 				return errGatewayError(ctx, err)
 			}
 		}
@@ -632,6 +428,9 @@ func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input
 						return errObjectNotFound(ctx, fmt.Sprintf("input.imageRegistries.%d.id", i), r.ID.String())
 					}
 					panic(&ErrDBConnection{err})
+				}
+				if r.OrganizationID != cp.OrganizationID {
+					return errInvalidRequest(ctx, fmt.Sprintf("input.imageRegistries.%d.id", i), "image registry belongs to another organization", r.ID.String())
 				}
 			}
 
@@ -669,14 +468,14 @@ func (r *mutationResolver) CreateTKG2SClusterProvider(ctx context.Context, input
 		for _, field := range fields {
 			if field.Name == "spec" {
 				oc := graphql.GetOperationContext(ctx)
-				fs := graphql.CollectFields(oc, field.Selections, []string{"TKG2SClusterProviderSpec", "ClusterProviderSpec"})
+				fs := graphql.CollectFields(oc, field.Selections, []string{"VKSClusterProviderSpec", "ClusterProviderSpec"})
 				for _, f := range fs {
 					if f.Name == "namespaces" {
-						ns, err := getTKG2SClusterProviderNamespaces(ctx, cp.ID, spec.Endpoint, spec.InsecureSkipTLSVerify, spec.CACert, spec.AuthUser, block.Decrypt(spec.AuthPassword), []*model.QueryFilter{})
+						ns, err := getVKSClusterProviderNamespaces(ctx, cp.ID, spec.Endpoint, spec.InsecureSkipTLSVerify, spec.CACert, spec.AuthUser, block.Decrypt(spec.AuthPassword), []*model.QueryFilter{})
 						if err != nil {
 							return nil, err
 						}
-						result.Spec.(*model.TKG2SClusterProviderSpec).Namespaces = ns
+						result.Spec.(*model.VKSClusterProviderSpec).Namespaces = ns
 						break LOOP
 					}
 				}
@@ -1370,6 +1169,246 @@ func (r *mutationResolver) UpdateTKG2SClusterProvider(ctx context.Context, input
 	return result, nil
 }
 
+// UpdateVKSClusterProvider is the resolver for the UpdateVKSClusterProvider field.
+func (r *mutationResolver) UpdateVKSClusterProvider(ctx context.Context, input model.UpdateVKSClusterProvider) (*model.ClusterProvider, error) {
+	sess, ok := auth.FromContext(ctx)
+	if !ok {
+		panic(ErrIdentityNotFound)
+	}
+
+	cp := &model1.ClusterProvider{ID: input.ID}
+	updates := make(map[string]interface{})
+	if input.Description != nil {
+		updates["description"] = *input.Description
+	}
+
+	var spec *model1.ClusterProviderVKSSpec
+	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Take(cp).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errObjectNotFound(ctx, "input.id", cp.ID.String())
+			}
+			panic(&ErrDBConnection{err})
+		}
+
+		if cp.Class != model1.ClusterClassVKS {
+			return errInvalidRequest(ctx, "input.id", "must be a VKS ClusterProvider", cp.ID.String())
+		}
+
+		if !IsGuardSilenced(ctx) && !sess.Can(model1.PermReadWrite, model1.PolicyObjectClusterProvider, cp.OrganizationID.UUID) {
+			return errInsufficientPrivileges(ctx)
+		}
+
+		spec = &model1.ClusterProviderVKSSpec{}
+		if err := json.Unmarshal(cp.Spec, spec); err != nil {
+			panic(err)
+		}
+		block, err := cryptoutil.NewAESGCMCipher(cp.ID[:]) // AES-128
+		if err != nil {
+			panic(err)
+		}
+		if input.Spec != nil {
+			if input.Spec.Endpoint != nil {
+				spec.Endpoint = input.Spec.Endpoint.String()
+			}
+			if input.Spec.CaCert != nil {
+				rootcas := x509.NewCertPool()
+				if !rootcas.AppendCertsFromPEM([]byte(*input.Spec.CaCert)) {
+					return errInvalidRequest(ctx, "input.spec.caCert", "invalid x509 certificate")
+				}
+				spec.CACert = []byte(*input.Spec.CaCert)
+			}
+			if input.Spec.AuthUser != nil && *input.Spec.AuthUser != "" {
+				spec.AuthUser = *input.Spec.AuthUser
+			}
+			if input.Spec.AuthPassword != nil && *input.Spec.AuthPassword != "" {
+				spec.AuthPassword = block.Encrypt([]byte(*input.Spec.AuthPassword))
+			}
+			if input.Spec.DefaultNamespace != nil && *input.Spec.DefaultNamespace != "" {
+				var count int64
+				if err := tx.Model(&model1.Cluster{}).Where("`provider_id` = ?", cp.ID).Count(&count).Error; err != nil {
+					panic(&ErrDBConnection{err})
+				}
+				if count > 0 && spec.DefaultNS != *input.Spec.DefaultNamespace {
+					return errObjectIsBusy(ctx, "input.spec.defaultNamespace", "Cluster", nil, "", *input.Spec.DefaultNamespace)
+				}
+				if protectedVKSNamespace(*input.Spec.DefaultNamespace) {
+					return errInvalidRequest(ctx, "input.spec.defaultNamespace", "cannot be a system namespace", *input.Spec.DefaultNamespace)
+				}
+				spec.DefaultNS = *input.Spec.DefaultNamespace
+			}
+			if len(input.Spec.AddTrustedCAs)+len(input.Spec.RemoveTrustedCAs) > 0 {
+				m := make(map[string][]byte)
+				for _, each := range spec.TrustedCAs {
+					m[each.Name] = each.Data
+				}
+				for _, each := range input.Spec.RemoveTrustedCAs {
+					delete(m, each.Name)
+				}
+				for i, each := range input.Spec.AddTrustedCAs {
+					if !validateName(each.Name) {
+						return errInvalidRequest(ctx, fmt.Sprintf("input.spec.addTrustedCAs.%d.name", i), fmt.Sprintf("regexp '%s' is not satisfied", regexpName.String()), each.Name)
+					}
+					rootcas := x509.NewCertPool()
+					if !rootcas.AppendCertsFromPEM([]byte(each.Cert)) {
+						return errInvalidRequest(ctx, fmt.Sprintf("input.spec.addTrustedCAs.%d.cert", i), "invalid x509 certificate", each.Name)
+					}
+					m[each.Name] = []byte(each.Cert)
+				}
+
+				spec.TrustedCAs = spec.TrustedCAs[:0]
+				for name, data := range m {
+					spec.TrustedCAs = append(spec.TrustedCAs, &model1.CACert{
+						Name: name,
+						Data: data,
+					})
+				}
+			}
+			b, err := json.Marshal(spec)
+			if err != nil {
+				panic(err)
+			}
+			updates["spec"] = string(b)
+		}
+
+		for _, each := range input.RemoveImageRegistries {
+			if err := tx.Where("`provider_id` = ? AND `image_registry_id` = ?", cp.ID, each.ID).Delete(&model1.ClusterProviderImageRegistry{}).Error; err != nil {
+				panic(&ErrDBConnection{err})
+			}
+		}
+		for i, each := range input.AddImageRegistries {
+			registry := &model1.ImageRegistry{ID: each.ID}
+			if err := tx.Take(registry).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return errObjectNotFound(ctx, fmt.Sprintf("input.addImageRegistries.%d.id", i), registry.ID.String())
+				}
+				panic(&ErrDBConnection{err})
+			}
+			if registry.OrganizationID != cp.OrganizationID {
+				return errInvalidRequest(ctx, fmt.Sprintf("input.addImageRegistries.%d.id", i), "image registry belongs to another organization", registry.ID.String())
+			}
+			reg := &model1.ClusterProviderImageRegistry{}
+			if err := tx.Where("`provider_id` = ? AND `image_registry_id` = ?", cp.ID, each.ID).Take(reg).Error; err != nil {
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					panic(&ErrDBConnection{err})
+				}
+
+				reg = &model1.ClusterProviderImageRegistry{
+					ID:              uuid.New(),
+					ProviderID:      model1.NewNullUUID(cp.ID),
+					ImageRegistryID: model1.NewNullUUID(each.ID),
+				}
+				if each.Default != nil && *each.Default {
+					reg.Default = true
+				}
+				if err := tx.Create(reg).Error; err != nil {
+					panic(&ErrDBConnection{err})
+				}
+				continue
+			}
+
+			update := make(map[string]interface{})
+			if each.Default != nil {
+				update["default"] = *each.Default
+			}
+			if len(update) > 0 {
+				if err := tx.Model(&model1.ClusterProviderImageRegistry{}).Where("`provider_id` = ? AND `image_registry_id` = ?", cp.ID, each.ID).Updates(update).Error; err != nil {
+					panic(&ErrDBConnection{err})
+				}
+			}
+		}
+		if len(input.RemoveImageRegistries)+len(input.AddImageRegistries) > 0 {
+			var defaultImageRegistries int64
+			if err := tx.Model(&model1.ClusterProviderImageRegistry{}).Where("`provider_id` = ? AND `default` = ?", cp.ID, true).Count(&defaultImageRegistries).Error; err != nil {
+				panic(&ErrDBConnection{err})
+			}
+			if defaultImageRegistries > 1 {
+				return errInvalidRequest(ctx, "input.addImageRegistries", "multiple image registries are specified as default")
+			} else if defaultImageRegistries < 1 {
+				return errInvalidRequest(ctx, "input.removeImageRegistries", "default image registry is required")
+			}
+		}
+		if input.LoadBalancer != nil {
+			lb := &model1.LoadBalancer{ID: *input.LoadBalancer}
+			if err := tx.Take(lb).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return errObjectNotFound(ctx, "input.loadBalancer", *input.LoadBalancer)
+				}
+				panic(&ErrDBConnection{err})
+			}
+			if lb.OrganizationID.String() != cp.OrganizationID.String() {
+				return errInvalidRequest(ctx, "input.loadBalancer", "different organization", lb.ID.String())
+			}
+			updates["load_balancer_id"] = input.LoadBalancer.String()
+		}
+
+		if input.Validate != nil && *input.Validate {
+			_, supervisor, err := vks.NewClientFromProvider(cp.ID, spec)
+			if err != nil {
+				return errGatewayError(ctx, err)
+			}
+			validationCtx, cancel := context.WithTimeout(ctx, mapd.GlobalConfig.HTTPClientTimeout)
+			defer cancel()
+			if err := supervisor.PingContext(validationCtx); err != nil {
+				return errGatewayError(ctx, err)
+			}
+			if _, err := supervisor.GetNamespacesContext(validationCtx); err != nil {
+				return errGatewayError(ctx, err)
+			}
+		}
+
+		if len(updates) > 0 {
+			if err := tx.Model(cp).Updates(updates).Error; err != nil {
+				panic(&ErrDBConnection{err})
+			}
+		}
+		if err := tx.Take(cp).Error; err != nil {
+			panic(&ErrDBConnection{err})
+		}
+
+		if input.Dryrun != nil && *input.Dryrun {
+			return errDryrun
+		}
+
+		if err := appendAuditLog(tx, "update", "ClusterProvider", cp.ID, cp.Name, sess.UserID, sess.UserName, cp.OrganizationID.UUID); err != nil {
+			panic(&ErrDBConnection{err})
+		}
+		return nil
+	}); err != nil && err != errDryrun {
+		if !IsGQLError(err) {
+			panic(err)
+		}
+		return nil, err
+	}
+	result := convertClusterProviderFromSQLModel(cp, spec)
+	if input.Dryrun != nil && *input.Dryrun && input.Validate != nil && *input.Validate {
+		fields := graphql.CollectFieldsCtx(ctx, []string{"ClusterProvider"})
+	LOOP:
+		for _, field := range fields {
+			if field.Name == "spec" {
+				oc := graphql.GetOperationContext(ctx)
+				fs := graphql.CollectFields(oc, field.Selections, []string{"VKSClusterProviderSpec", "ClusterProviderSpec"})
+				for _, f := range fs {
+					if f.Name == "namespaces" {
+						block, err := cryptoutil.NewAESGCMCipher(cp.ID[:]) // AES-128
+						if err != nil {
+							panic(err)
+						}
+						ns, err := getVKSClusterProviderNamespaces(ctx, cp.ID, spec.Endpoint, spec.InsecureSkipTLSVerify, spec.CACert, spec.AuthUser, block.Decrypt(spec.AuthPassword), []*model.QueryFilter{})
+						if err != nil {
+							return nil, err
+						}
+						result.Spec.(*model.VKSClusterProviderSpec).Namespaces = ns
+						break LOOP
+					}
+				}
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
 // UpdateTKG2MClusterProvider is the resolver for the UpdateTKG2MClusterProvider field.
 func (r *mutationResolver) UpdateTKG2MClusterProvider(ctx context.Context, input model.UpdateTKG2MClusterProvider) (*model.ClusterProvider, error) {
 	sess, ok := auth.FromContext(ctx)
@@ -1624,6 +1663,12 @@ func (r *mutationResolver) DeleteClusterProvider(ctx context.Context, input mode
 		}
 
 		switch cp.Class {
+		case model1.ClusterClassVKS:
+			v := &model1.ClusterProviderVKSSpec{}
+			if err := json.Unmarshal(cp.Spec, v); err != nil {
+				panic(err)
+			}
+			spec = v
 		case model1.ClusterClassTKGS:
 			v := &model1.ClusterProviderTKGSSpec{}
 			if err := json.Unmarshal(cp.Spec, v); err != nil {
@@ -1700,6 +1745,12 @@ func (r *queryResolver) ClusterProvider(ctx context.Context, id uuid.UUID) (*mod
 			panic(&ErrDBConnection{err})
 		}
 		switch cp.Class {
+		case model1.ClusterClassVKS:
+			v := &model1.ClusterProviderVKSSpec{}
+			if err := json.Unmarshal(cp.Spec, v); err != nil {
+				panic(err)
+			}
+			spec = v
 		case model1.ClusterClassTKGS:
 			v := &model1.ClusterProviderTKGSSpec{}
 			if err := json.Unmarshal(cp.Spec, v); err != nil {
@@ -2251,6 +2302,107 @@ func (r *tKGSClusterProviderSpecNamespaceResolver) Storages(ctx context.Context,
 	return storages, nil
 }
 
+// VMClasses is the resolver for the vmClasses field.
+func (r *vKSClusterProviderSpecResolver) VMClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VMClass, error) {
+	_, supervisor, err := vksProviderClient(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	list, err := supervisor.GetVirtualMachineClasses()
+	if err != nil {
+		return nil, errGatewayError(ctx, err)
+	}
+	classes := make([]*model.VMClass, 0, len(list.Items))
+	for _, item := range list.Items {
+		data, err := json.Marshal(item.Spec)
+		if err != nil {
+			return nil, err
+		}
+		classes = append(classes, &model.VMClass{Name: item.Name, Spec: data})
+	}
+	return classes, nil
+}
+
+// ClusterReleases is the resolver for the clusterReleases field.
+func (r *vKSClusterProviderSpecResolver) ClusterReleases(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*semver.Version, error) {
+	client, _, err := vksProviderClient(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	versions, err := client.ListReadyVersions(ctx)
+	if err != nil {
+		return nil, errGatewayError(ctx, err)
+	}
+	sort.Slice(versions, func(i, j int) bool { return versions[i].LessThan(versions[j]) })
+	return versions, nil
+}
+
+// ClusterClasses is the resolver for the clusterClasses field.
+func (r *vKSClusterProviderSpecResolver) ClusterClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]string, error) {
+	client, _, err := vksProviderClient(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	classes, err := client.ListClusterClasses(ctx, obj.DefaultNamespace)
+	if err != nil {
+		return nil, errGatewayError(ctx, err)
+	}
+	sort.Strings(classes)
+	return classes, nil
+}
+
+// Namespaces is the resolver for the namespaces field.
+func (r *vKSClusterProviderSpecResolver) Namespaces(ctx context.Context, obj *model.VKSClusterProviderSpec, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error) {
+	provider, err := vksProviderSpec(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	block, err := cryptoutil.NewAESGCMCipher(obj.ID[:])
+	if err != nil {
+		return nil, err
+	}
+	return getVKSClusterProviderNamespaces(ctx, obj.ID, provider.Endpoint, provider.InsecureSkipTLSVerify, provider.CACert, provider.AuthUser, block.Decrypt(provider.AuthPassword), filters)
+}
+
+// Storages is the resolver for the storages field.
+func (r *vKSClusterProviderSpecNamespaceResolver) Storages(ctx context.Context, obj *model.VKSClusterProviderSpecNamespace) ([]string, error) {
+	_, supervisor, err := vksProviderClient(ctx, obj.ClusterProvider)
+	if err != nil {
+		return nil, err
+	}
+	quotas, err := supervisor.GetResourceQuotasContext(ctx, obj.Name)
+	seen := make(map[string]bool)
+	if err == nil {
+		for _, quota := range quotas.Items {
+			for key := range quota.Spec.Hard {
+				name := strings.TrimSuffix(string(key), ".storageclass.storage.k8s.io/requests.storage")
+				if name != string(key) && name != "" {
+					seen[name] = true
+				}
+			}
+		}
+	}
+	storages := make([]string, 0, len(seen))
+	for name := range seen {
+		storages = append(storages, name)
+	}
+	if len(storages) == 0 {
+		kube, err := kubernetes.NewForConfig(supervisor.Config)
+		if err != nil {
+			return nil, errGatewayError(ctx, err)
+		}
+		list, err := kube.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, errGatewayError(ctx, err)
+		}
+		for _, item := range list.Items {
+			storages = append(storages, item.Name)
+		}
+	}
+	sort.Strings(storages)
+	return storages, nil
+}
+
 // ClusterProvider returns graphql1.ClusterProviderResolver implementation.
 func (r *Resolver) ClusterProvider() graphql1.ClusterProviderResolver {
 	return &clusterProviderResolver{r}
@@ -2301,6 +2453,16 @@ func (r *Resolver) TKGSClusterProviderSpecNamespace() graphql1.TKGSClusterProvid
 	return &tKGSClusterProviderSpecNamespaceResolver{r}
 }
 
+// VKSClusterProviderSpec returns graphql1.VKSClusterProviderSpecResolver implementation.
+func (r *Resolver) VKSClusterProviderSpec() graphql1.VKSClusterProviderSpecResolver {
+	return &vKSClusterProviderSpecResolver{r}
+}
+
+// VKSClusterProviderSpecNamespace returns graphql1.VKSClusterProviderSpecNamespaceResolver implementation.
+func (r *Resolver) VKSClusterProviderSpecNamespace() graphql1.VKSClusterProviderSpecNamespaceResolver {
+	return &vKSClusterProviderSpecNamespaceResolver{r}
+}
+
 type clusterProviderResolver struct{ *Resolver }
 type clusterProviderImageRegistriesResolver struct{ *Resolver }
 type clusterProviderImageRegistryResolver struct{ *Resolver }
@@ -2311,3 +2473,5 @@ type tKG2SClusterProviderSpecNamespaceResolver struct{ *Resolver }
 type tKGMClusterProviderSpecResolver struct{ *Resolver }
 type tKGSClusterProviderSpecResolver struct{ *Resolver }
 type tKGSClusterProviderSpecNamespaceResolver struct{ *Resolver }
+type vKSClusterProviderSpecResolver struct{ *Resolver }
+type vKSClusterProviderSpecNamespaceResolver struct{ *Resolver }

@@ -26,6 +26,7 @@ type Cluster struct {
 	Provisioned    ClusterProvision
 	Status         ClusterStatus  `gorm:"type:varchar(128);index"`
 	State          ClusterState   `gorm:"type:varchar(128);index"`
+	LastError      string         `gorm:"type:text"`
 	Spec           []byte         `gorm:"type:mediumblob"`
 	LoadBalancerID NullUUID       `gorm:"type:varchar(255)"`
 	ProviderID     NullUUID       `gorm:"type:varchar(255)"`
@@ -179,6 +180,30 @@ type ClusterTKG2SSpec struct {
 	NTP                          string   `json:"ntp,omitempty"`
 }
 
+// ClusterVKSSpec is the desired state of a Supervisor-managed VKS cluster.
+// RemoteUID binds a MAP record to one Kubernetes Cluster object across retries
+// and prevents a same-name replacement from being treated as the same cluster.
+type ClusterVKSSpec struct {
+	Namespace                    string   `json:"namespace,omitempty"`
+	ClusterClass                 string   `json:"clusterClass,omitempty"`
+	ClassNamespace               string   `json:"classNamespace,omitempty"`
+	OSName                       string   `json:"osName,omitempty"`
+	OSVersion                    string   `json:"osVersion,omitempty"`
+	CNI                          string   `json:"cni,omitempty"`
+	ClusterCIDR                  string   `json:"clusterCIDR,omitempty"`
+	ServiceCIDR                  string   `json:"serviceCIDR,omitempty"`
+	ServiceDomain                string   `json:"serviceDomain,omitempty"`
+	StorageClass                 string   `json:"storageClass,omitempty"`
+	CtlPlaneReplicas             int64    `json:"ctlPlaneReplicas,omitempty"`
+	CtlPlaneVmClass              string   `json:"ctlPlaneVmClass,omitempty"`
+	CtlPlaneEtcdVolumeSizeGi     int64    `json:"ctlPlaneEtcdVolumeSizeGi,omitempty"`
+	WorkerReplicas               int64    `json:"workerReplicas,omitempty"`
+	WorkerVmClass                string   `json:"workerVmClass,omitempty"`
+	WorkerContainerdVolumeSizeGi int64    `json:"workerContainerdVolumeSizeGi,omitempty"`
+	RemoteUID                    string   `json:"remoteUID,omitempty"`
+	TrustedCAs                   [][]byte `json:"trustedCAs,omitempty"`
+}
+
 type ClusterTKG2MSpec struct {
 	Namespace               string   `json:"namespace,omitempty"`
 	OSName                  string   `json:"osName,omitempty"`
@@ -244,6 +269,7 @@ const (
 	ClusterClassTKGM    ClusterClass = "TKGM"
 	ClusterClassTKG2S   ClusterClass = "TKG2S"
 	ClusterClassTKG2M   ClusterClass = "TKG2M"
+	ClusterClassVKS     ClusterClass = "VKS"
 )
 
 type ClusterProvision int64

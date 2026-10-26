@@ -30,6 +30,7 @@ export enum ClusterType {
 
 export enum ClusterClass {
   'UNKNOWN' = 'UNKNOWN',
+  'VKS' = 'VKS',
   'TKGS' = 'TKGS',
   'TKGM' = 'TKGM',
   'TKG2M' = 'TKG2M'
@@ -65,6 +66,7 @@ export class Cluster {
   version?: string;
   status?: ClusterStatus;
   state?: ClusterState;
+  errorReason?: string;
   spec?: any;
   extensions?: ClusterExtensions;
   kubeConfig?: string;
@@ -174,6 +176,25 @@ export class CreateTKGSClusterSpec {
   dataPlaneStorageCapGi?: number;
 }
 
+export class CreateVKSClusterSpec {
+  namespace?: string;
+  clusterClass?: string;
+  classNamespace?: string;
+  osName?: string;
+  osVersion?: string;
+  cni?: string;
+  podCIDR?: string;
+  svcCIDR?: string;
+  svcDomain?: string;
+  storageClass: string;
+  ctlPlaneVmClass: string;
+  ctlPlaneReplicas: number;
+  ctlPlaneEtcdVolumeSizeGi?: number;
+  workerVmClass: string;
+  workerReplicas: number;
+  workerContainerdVolumeSizeGi?: number;
+}
+
 export class CreateTKGMClusterSpec {
   namespace?: string;
   cni?: string;
@@ -219,6 +240,7 @@ export class CreateTKG2MClusterSpec {
 }
 
 export class CreateClusterSpec {
+  vks?: CreateVKSClusterSpec;
   tkgs?: CreateTKGSClusterSpec;
   tkgm?: CreateTKGMClusterSpec;
   tkg2m?: CreateTKG2MClusterSpec;

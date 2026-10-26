@@ -405,163 +405,21 @@ func (r *mutationResolver) CreateCluster(ctx context.Context, input model.Create
 		}
 
 		switch cluster.Class {
+		case model1.ClusterClassVKS:
+			spec, err := prepareVKSCluster(ctx, cp, cluster.ID, cluster.Name, input.Spec.Vks, cluster.Version, usage)
+			if err != nil {
+				return err
+			}
+			cluster.Spec, err = json.Marshal(spec)
+			if err != nil {
+				return err
+			}
 		case model1.ClusterClassTKGS:
-			cpSpec := &model1.ClusterProviderTKGSSpec{}
-			if err := json.Unmarshal(cp.Spec, cpSpec); err != nil {
-				panic(err)
-			}
-
-			if input.Spec.Tkgs == nil {
-				return errInvalidRequest(ctx, "input.spec.tkgs", "value cannot be empty")
-			}
-			if input.Spec.Tkgs.Namespace == nil || *input.Spec.Tkgs.Namespace == "" {
-				input.Spec.Tkgs.Namespace = util.StringPtr(cpSpec.DefaultNS)
-			}
-
-			block, err := cryptoutil.NewAESGCMCipher(cp.ID[:]) // AES-128
-			if err != nil {
-				panic(err)
-			}
-			client, err := k8s.NewTanzuKubernetesGridService(cpSpec.Endpoint, cpSpec.AuthUser, block.Decrypt(cpSpec.AuthPassword), rest.TLSClientConfig{
-				Insecure: cpSpec.InsecureSkipTLSVerify,
-				CAData:   cpSpec.CACert,
-			})
-			if err != nil {
-				panic(err)
-			}
-			ctlPlaneClass, err := client.GetVirtualMachineClass(input.Spec.Tkgs.CtlPlaneClass)
-			if err != nil {
-				if k8s.IsErrObjectNotExists(err) {
-					return errObjectNotFound(ctx, "input.spec.tkgs.ctlPlaneClass", input.Spec.Tkgs.CtlPlaneClass)
-				}
-				return errGatewayError(ctx, err)
-			}
-			dataPlaneClass, err := client.GetVirtualMachineClass(input.Spec.Tkgs.DataPlaneClass)
-			if err != nil {
-				if k8s.IsErrObjectNotExists(err) {
-					return errObjectNotFound(ctx, "input.spec.tkgs.dataPlaneClass", input.Spec.Tkgs.DataPlaneClass)
-				}
-				return errGatewayError(ctx, err)
-			}
-
-			spec := &model1.ClusterTKGSSpec{
-				Namespace:             *input.Spec.Tkgs.Namespace,
-				CNI:                   *input.Spec.Tkgs.Cni,
-				PodCIDR:               input.Spec.Tkgs.PodCidr.String(),
-				ServiceCIDR:           input.Spec.Tkgs.SvcCidr.String(),
-				ServiceDomain:         *input.Spec.Tkgs.SvcDomain,
-				DefStorage:            input.Spec.Tkgs.DefStorage,
-				CtlPlaneClass:         input.Spec.Tkgs.CtlPlaneClass,
-				CtlPlaneCount:         *input.Spec.Tkgs.CtlPlaneCount,
-				CtlPlaneStorage:       input.Spec.Tkgs.CtlPlaneStorage,
-				CtlPlaneStorageCapGi:  *input.Spec.Tkgs.CtlPlaneStorageCapGi,
-				DataPlaneClass:        input.Spec.Tkgs.DataPlaneClass,
-				DataPlaneCount:        *input.Spec.Tkgs.DataPlaneCount,
-				DataPlaneStorage:      input.Spec.Tkgs.DataPlaneStorage,
-				DataPlaneStorageCapGi: *input.Spec.Tkgs.DataPlaneStorageCapGi,
-			}
-			b, err := json.Marshal(spec)
-			if err != nil {
-				panic(err)
-			}
-			cluster.Spec = b
-
-			usage.CPUs = spec.CtlPlaneCount*ctlPlaneClass.Spec.Hardware.Cpus + spec.DataPlaneCount*dataPlaneClass.Spec.Hardware.Cpus
-			usage.MemoryMi = spec.CtlPlaneCount*ctlPlaneClass.Spec.Hardware.Memory.ScaledValue(resource.Mega) + spec.DataPlaneCount*dataPlaneClass.Spec.Hardware.Memory.ScaledValue(resource.Mega)
-			usage.StorageGi = spec.CtlPlaneCount*spec.CtlPlaneStorageCapGi + spec.DataPlaneCount*spec.DataPlaneStorageCapGi
+			return errNoLongerSupport(ctx, "TKGS cluster creation has been replaced by VKS")
 		case model1.ClusterClassTKGM:
 			return errNoLongerSupport(ctx, "TKGm 1.X is no longer supported. Please consider to migrate your clusters to TKG 2.")
 		case model1.ClusterClassTKG2S:
-			cpSpec := &model1.ClusterProviderTKG2SSpec{}
-			if err := json.Unmarshal(cp.Spec, cpSpec); err != nil {
-				panic(err)
-			}
-
-			if input.Spec.Tkg2s == nil {
-				return errInvalidRequest(ctx, "input.spec.tkg2s", "value cannot be empty")
-			}
-			if input.Spec.Tkg2s.Namespace == nil || *input.Spec.Tkg2s.Namespace == "" {
-				input.Spec.Tkg2s.Namespace = util.StringPtr(cpSpec.DefaultNS)
-			}
-
-			block, err := cryptoutil.NewAESGCMCipher(cp.ID[:]) // AES-128
-			if err != nil {
-				panic(err)
-			}
-			client, err := tanzuv2.NewVSphereWithTanzu(cpSpec.Endpoint, cpSpec.AuthUser, block.Decrypt(cpSpec.AuthPassword), rest.TLSClientConfig{
-				Insecure: cpSpec.InsecureSkipTLSVerify,
-				CAData:   cpSpec.CACert,
-			})
-			if err != nil {
-				panic(err)
-			}
-			ctlPlaneVmClass, err := client.GetVirtualMachineClass(input.Spec.Tkg2s.CtlPlaneVMClass)
-			if err != nil {
-				if k8s.IsErrObjectNotExists(err) {
-					return errObjectNotFound(ctx, "input.spec.tkg2s.ctlPlaneVmClass", input.Spec.Tkg2s.CtlPlaneVMClass)
-				}
-				return errGatewayError(ctx, err)
-			}
-			workerVmClass, err := client.GetVirtualMachineClass(input.Spec.Tkg2s.WorkerVMClass)
-			if err != nil {
-				if k8s.IsErrObjectNotExists(err) {
-					return errObjectNotFound(ctx, "input.spec.tkg2s.workerVmClass", input.Spec.Tkg2s.WorkerVMClass)
-				}
-				return errGatewayError(ctx, err)
-			}
-
-			spec := &model1.ClusterTKG2SSpec{
-				Namespace:                    *input.Spec.Tkg2s.Namespace,
-				OSName:                       *input.Spec.Tkg2s.OsName,
-				CNI:                          *input.Spec.Tkg2s.Cni,
-				ClusterCIDR:                  input.Spec.Tkg2s.ClusterCidr.String(),
-				ServiceCIDR:                  input.Spec.Tkg2s.ServiceCidr.String(),
-				StorageClass:                 input.Spec.Tkg2s.StorageClass,
-				CtlPlaneReplicas:             *input.Spec.Tkg2s.CtlPlaneReplicas,
-				CtlPlaneVmClass:              input.Spec.Tkg2s.CtlPlaneVMClass,
-				CtlPlaneEtcdVolumeSizeGi:     *input.Spec.Tkg2s.CtlPlaneEtcdVolumeSizeGi,
-				WorkerNodePool0Replicas:      *input.Spec.Tkg2s.WorkerNodePool0Replicas,
-				WorkerVmClass:                input.Spec.Tkg2s.WorkerVMClass,
-				WorkerContainerdVolumeSizeGi: *input.Spec.Tkg2s.WorkerContainerdVolumeSizeGi,
-			}
-			if input.Spec.Tkg2s.WorkerNodePool0Zone != nil {
-				spec.WorkerNodePool0Zone = *input.Spec.Tkg2s.WorkerNodePool0Zone
-			}
-			if input.Spec.Tkg2s.WorkerNodePool1Replicas != nil {
-				spec.WorkerNodePool1Replicas = *input.Spec.Tkg2s.WorkerNodePool1Replicas
-			}
-			if input.Spec.Tkg2s.WorkerNodePool1Zone != nil {
-				spec.WorkerNodePool1Zone = *input.Spec.Tkg2s.WorkerNodePool1Zone
-			}
-			if input.Spec.Tkg2s.WorkerNodePool2Replicas != nil {
-				spec.WorkerNodePool2Replicas = *input.Spec.Tkg2s.WorkerNodePool2Replicas
-			}
-			if input.Spec.Tkg2s.WorkerNodePool0Zone != nil {
-				spec.WorkerNodePool0Zone = *input.Spec.Tkg2s.WorkerNodePool0Zone
-			}
-			if spec.CtlPlaneReplicas < 1 {
-				return errInvalidRequest(ctx, "input.spec.tkg2s.ctlPlaneReplicas", "value must be greater than zero", spec.CtlPlaneReplicas)
-			}
-			if spec.WorkerNodePool0Replicas < 1 {
-				return errInvalidRequest(ctx, "input.spec.tkg2s.workerNodePool0Replicas", "value must be greater than zero", spec.WorkerNodePool0Replicas)
-			}
-			if spec.WorkerNodePool1Replicas < 1 && spec.WorkerNodePool2Replicas > 0 {
-				spec.WorkerNodePool1Replicas, spec.WorkerNodePool2Replicas = spec.WorkerNodePool2Replicas, spec.WorkerNodePool1Replicas
-				spec.WorkerNodePool1Zone, spec.WorkerNodePool2Zone = spec.WorkerNodePool2Zone, spec.WorkerNodePool1Zone
-			}
-			for _, each := range cpSpec.TrustedCAs {
-				spec.TrustedCAs = append(spec.TrustedCAs, each.Data)
-			}
-
-			b, err := json.Marshal(spec)
-			if err != nil {
-				panic(err)
-			}
-			cluster.Spec = b
-
-			usage.CPUs = spec.CtlPlaneReplicas*ctlPlaneVmClass.Spec.Hardware.Cpus + (spec.WorkerNodePool0Replicas+spec.WorkerNodePool1Replicas+spec.WorkerNodePool2Replicas)*workerVmClass.Spec.Hardware.Cpus
-			usage.MemoryMi = spec.CtlPlaneReplicas*ctlPlaneVmClass.Spec.Hardware.Memory.ScaledValue(resource.Mega) + (spec.WorkerNodePool0Replicas+spec.WorkerNodePool1Replicas+spec.WorkerNodePool2Replicas)*workerVmClass.Spec.Hardware.Memory.ScaledValue(resource.Mega)
-			usage.StorageGi = spec.CtlPlaneReplicas*spec.CtlPlaneEtcdVolumeSizeGi + (spec.WorkerNodePool0Replicas+spec.WorkerNodePool1Replicas+spec.WorkerNodePool2Replicas)*spec.WorkerContainerdVolumeSizeGi
+			return errNoLongerSupport(ctx, "TKG2S cluster creation has been replaced by VKS")
 		case model1.ClusterClassTKG2M:
 			cpSpec := &model1.ClusterProviderTKG2MSpec{}
 			if err := json.Unmarshal(cp.Spec, cpSpec); err != nil {
@@ -1114,6 +972,9 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 		}
 
 		if cluster.Type == model1.ClusterTypeProvisioned {
+			if cluster.Class == model1.ClusterClassVKS && (input.Version != nil || input.Spec != nil) {
+				return errInvalidRequest(ctx, "input", "VKS version and topology changes are not supported yet")
+			}
 			var reconfig int
 
 			switch cluster.Class {
@@ -1584,6 +1445,10 @@ func (r *mutationResolver) DeleteCluster(ctx context.Context, input model.Delete
 			}
 
 			switch cp.Class {
+			case model1.ClusterClassVKS:
+				if err := deleteVKSCluster(ctx, cp, cluster); err != nil {
+					return errGatewayError(ctx, err)
+				}
 			case model1.ClusterClassTKGS:
 				cpSpec := &model1.ClusterProviderTKGSSpec{}
 				if err := json.Unmarshal(cp.Spec, cpSpec); err != nil {

@@ -2813,6 +2813,8 @@
        "LB-HELP": "为集群供应商下的工作负载集群关联AVI负载均衡器。"
      },
      "ADDPROVIDER-TKGS-PAGE": {
+       "VKS-PAGETITLE": "VKS供应商参数",
+       "VKS-PAGEDESC": "请输入VKS集群供应商信息。",
        "PAGETITLE": "TKGS供应商参数",
        "PAGEDESC": "请输入TKGS集群供应商信息。",
        "ADDTKGSPROVIDERALERT": "添加后可能需要进入详情页管理用于验证非受信的HTTPS地址，如自签名私有镜像仓库证书。",

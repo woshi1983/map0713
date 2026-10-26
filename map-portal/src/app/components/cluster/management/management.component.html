@@ -26,9 +26,9 @@
         <clr-dropdown-menu *clrIfOpen>
           <button id='reinit' type="button" [disabled]="!selectedCluster || selectedCluster.status !== 'INITIALIZING' || selectedCluster.state !== 'FAILED'" (click)="doReinitCluster(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.REINIT' | translate }}</button>
           <button id='modify-desc' type="button" [disabled]="!selectedCluster" (click)="showUpdateClusterDesc(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</button>
-          <button id='scale-vmclass' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</button>
-          <button id='scale-node' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</button>
-          <button id='scale-master' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</button>
+          <button *ngIf="selectedCluster?.class !== 'VKS'" id='scale-vmclass' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</button>
+          <button *ngIf="selectedCluster?.class !== 'VKS'" id='scale-node' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</button>
+          <button *ngIf="selectedCluster?.class !== 'VKS'" id='scale-master' type="button" [disabled]="!selectedCluster || selectedCluster.type !== 'PROVISIONED' || selectedCluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster(selectedCluster)" clrDropdownItem>{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</button>
           <button id='delete-cluster' type="button" [disabled]="!selectedCluster" (click)="showDeleteClusterDialog(selectedCluster)"  clrDropdownItem [fxHide]="selectedCluster?.type === 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</button>
           <button id='remove-cluster' type="button" [disabled]="!selectedCluster" (click)="showRemoveClusterDialog(selectedCluster)"  clrDropdownItem [fxHide]="selectedCluster?.type !== 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</button>
           <button id='force-delete-cluster' type="button" [disabled]="!selectedCluster" (click)="showForceDeleteDialog(selectedCluster)"  clrDropdownItem [fxHide]="!canForceDelete  || selectedCluster?.type === 'ATTACHED'">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</button>
@@ -183,7 +183,7 @@
     </form>
   </clr-wizard-page>
 
-  <clr-wizard-page [clrWizardPageNextDisabled]="tkgsClusterParamForm.invalid || clusterCIDRInvaildAlert" *ngIf="providerClass === 'TKGS'">
+  <clr-wizard-page [clrWizardPageNextDisabled]="tkgsClusterParamForm.invalid || clusterCIDRInvaildAlert || (providerClass === 'VKS' && !tkgsClusterParamForm.value.vksClusterClass)" *ngIf="providerClass === 'VKS' || providerClass === 'TKGS'">
     <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}</ng-template>
     {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEDESC' | translate }}
     <br>
@@ -215,6 +215,21 @@
                   </select>
                   <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-ERROR' | translate }}</clr-control-error>
                 </clr-select-container>
+                <clr-select-container *ngIf="providerClass === 'VKS'">
+                  <label class="required clr-col-md-3">ClusterClass</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="vksClusterClass" required>
+                    <option value="" disabled>Select ClusterClass</option>
+                    <option *ngFor="let clusterClass of vksClusterClasses" [value]="clusterClass">{{clusterClass}}</option>
+                  </select>
+                </clr-select-container>
+                <clr-input-container *ngIf="providerClass === 'VKS'">
+                  <label class="required clr-col-md-3">OS name</label>
+                  <input class="clr-col-md-9" clrInput formControlName="vksOsName" required />
+                </clr-input-container>
+                <clr-input-container *ngIf="providerClass === 'VKS'">
+                  <label class="clr-col-md-3">OS version</label>
+                  <input class="clr-col-md-9" clrInput formControlName="vksOsVersion" />
+                </clr-input-container>
                 <clr-select-container>
                   <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT-HELP' | translate }}</clr-control-helper>
                   <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT' | translate }}</label>
@@ -539,7 +554,7 @@
         </div>
     </div>
 
-    <div *ngIf="providerClass === 'TKGS'">
+    <div *ngIf="providerClass === 'VKS' || providerClass === 'TKGS'">
       <div class="clr-row">
         <div class="clr-col-lg-12 clr-col-12">
             <div class="card">

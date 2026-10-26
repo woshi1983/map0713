@@ -78,6 +78,7 @@ export class ManagementComponent implements OnInit {
   providerClass: string;
   providerList: ClusterProvider[] = [];
   tkcVersionList: string[] = [];
+  vksClusterClasses: string[] = [];
   sortedTkcVersionList: string[] = [];
   tkcvmClassList: VMClass[] = [];
   storageClassList: string[] = [];
@@ -125,6 +126,9 @@ export class ManagementComponent implements OnInit {
     workerStoragePolicy: new FormControl('', [Validators.required]),
     workerContainerdSize: new FormControl('50'),
     defaultStorageClass: new FormControl('', [Validators.required]),
+    vksClusterClass: new FormControl(''),
+    vksOsName: new FormControl('photon', [Validators.required]),
+    vksOsVersion: new FormControl(''),
     cniType: new FormControl('antrea'),
     serviceCIDR: new FormControl('10.96.0.0/12', [Validators.pattern(this.CIDRPattern)]),
     serviceDomain: new FormControl('cluster.local'),
@@ -241,7 +245,8 @@ export class ManagementComponent implements OnInit {
            }
         }
       }
-      this.providerList = !!data.data?.ClusterProviders?.edge?.nodes ? data.data.ClusterProviders.edge.nodes : [];
+      this.providerList = (data.data?.ClusterProviders?.edge?.nodes || [])
+        .filter(provider => provider.class !== 'TKGS' && provider.class !== 'TKG2S');
     }, (e) => this.toast.show( this.translate.instant('MESSAGE.SHARED.UNGET')+` ${e}`, this.translate.instant('MESSAGE.CLUSTER.GET-PROVIDER-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}));
   }
 
@@ -279,8 +284,11 @@ export class ManagementComponent implements OnInit {
       }
     }
     switch (this.providerClass) {
+      case 'VKS':
       case 'TKGS':
-        this.providerService.getTKGSClusterProfileByProvider(providerId).subscribe( data => {
+        (this.providerClass === 'VKS'
+          ? this.providerService.getVKSClusterProfileByProvider(providerId)
+          : this.providerService.getTKGSClusterProfileByProvider(providerId)).subscribe( data => {
           if (!!data.errors){
             for (const each of data.errors){
                if(!!each.message){
@@ -291,6 +299,11 @@ export class ManagementComponent implements OnInit {
           if (!!data.data?.ClusterProvider) {
             this.clusterNamespace = data.data.ClusterProvider.spec.defaultNamespace;
             this.tkcVersionList = data.data.ClusterProvider.spec.clusterReleases;
+            this.vksClusterClasses = this.providerClass === 'VKS'
+              ? (data.data.ClusterProvider.spec.clusterClasses || []) : [];
+            this.tkgsClusterParamForm.patchValue({
+              vksClusterClass: this.vksClusterClasses.length === 1 ? this.vksClusterClasses[0] : ''
+            });
             this.tkcvmClassList = data.data.ClusterProvider.spec.vmClasses;
             this.noVMclassOnNamespaceAlert = !this.tkcvmClassList;
             for ( const namespaceInfo of data.data.ClusterProvider.spec.namespaces) {
@@ -315,6 +328,7 @@ export class ManagementComponent implements OnInit {
             this.clusterNamespace = '';
             this.tkcvmClassList = [];
             this.tkcVersionList = [];
+            this.vksClusterClasses = [];
             this.storageClassList = [];
             this.noVMclassOnNamespaceAlert = true;
             this.noStorageOnNamespaceAlert = true;
@@ -372,7 +386,7 @@ export class ManagementComponent implements OnInit {
     this.clusterCIDRInvaildAlert = false;
     let networkCIDR;
     let workerNum;
-    if(providerClass === 'TKGS'){
+    if(providerClass === 'TKGS' || providerClass === 'VKS'){
       networkCIDR = !!this.tkgsClusterParamForm.value.podCIDR ? this.tkgsClusterParamForm.value.podCIDR : '192.168.0.0/16';
       workerNum = this.tkgsClusterParamForm.value.workerNum;
     } else {
@@ -432,6 +446,9 @@ export class ManagementComponent implements OnInit {
       workerNum: 1,
       workerContainerdSize: 50,
       cniType: 'antrea',
+      vksClusterClass: '',
+      vksOsName: 'photon',
+      vksOsVersion: '',
       serviceCIDR: '10.96.0.0/12',
       serviceDomain: 'cluster.local',
       podCIDR: '192.168.0.0/16'
@@ -476,6 +493,52 @@ export class ManagementComponent implements OnInit {
       defaultExtensionsEnabled.push({name: 'TBS'})
     }
     switch (this.providerClass) {
+      case 'VKS': {
+        const vksInput: CreateCluster = {
+          name: this.basicClusterForm.value.name,
+          description: this.basicClusterForm.value.description,
+          version: this.tkgsClusterParamForm.value.tkcVersion,
+          provider: this.basicClusterForm.value.providerId,
+          extensions: defaultExtensionsEnabled,
+          spec: { vks: {
+            namespace: this.clusterNamespace,
+            clusterClass: this.tkgsClusterParamForm.value.vksClusterClass || undefined,
+            osName: this.tkgsClusterParamForm.value.vksOsName,
+            osVersion: this.tkgsClusterParamForm.value.vksOsVersion || undefined,
+            cni: this.tkgsClusterParamForm.value.cniType || 'antrea',
+            podCIDR: this.tkgsClusterParamForm.value.podCIDR || '192.168.0.0/16',
+            svcCIDR: this.tkgsClusterParamForm.value.serviceCIDR || '10.96.0.0/12',
+            svcDomain: this.tkgsClusterParamForm.value.serviceDomain || 'cluster.local',
+            storageClass: this.tkgsClusterParamForm.value.defaultStorageClass,
+            ctlPlaneVmClass: this.tkgsClusterParamForm.value.masterClass,
+            ctlPlaneReplicas: Number(this.tkgsClusterParamForm.value.masterNum),
+            ctlPlaneEtcdVolumeSizeGi: Number(this.tkgsClusterParamForm.value.masterEtcdSize),
+            workerVmClass: this.tkgsClusterParamForm.value.workerClass,
+            workerReplicas: Number(this.tkgsClusterParamForm.value.workerNum),
+            workerContainerdVolumeSizeGi: Number(this.tkgsClusterParamForm.value.workerContainerdSize)
+          }}
+        };
+        this.clusterService.createCluster(vksInput).subscribe(data => {
+          for (const each of data.errors || []) {
+            if (each.message) {
+              this.toast.show(`${each.message}${each.extensions?.reason ? ' : ' + each.extensions.reason : ''}`,
+                this.translate.instant('MESSAGE.CLUSTER.CREATE-CLUSTER-FAILED'),
+                {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0});
+            }
+          }
+          if (data.data?.CreateCluster) {
+            this.toast.show(`${data.data.CreateCluster.name} ` + this.translate.instant('MESSAGE.CLUSTER.CREATE-CLUSTER-MSG'),
+              this.translate.instant('MESSAGE.CLUSTER.CREATE-CLUSTER-SUCCESS'),
+              {toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000});
+          }
+        }, (e) => this.toast.show(`${e}`, this.translate.instant('MESSAGE.CLUSTER.CREATE-CLUSTER-FAILED'),
+          {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => {
+          this.doClusterReset();
+          this.pagination.currentPage = 1;
+          this.refresh();
+        });
+        break;
+      }
       case 'TKGS':
         const tkgsInput: CreateCluster = {
           name: this.basicClusterForm.value.name,

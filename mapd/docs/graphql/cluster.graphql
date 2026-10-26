@@ -10,6 +10,7 @@ type Cluster {
   tlsCertChain: [X509Certificate!]
   version: Version
   status: ClusterStatus!
+  errorReason: String
   state: ClusterState!
   spec: ClusterSpec
   kubeConfig: String
@@ -106,9 +107,31 @@ enum ClusterClass {
   TKGM
   TKG2S
   TKG2M
+  VKS
 }
 
-union ClusterSpec = TKGSClusterSpec | TKGMClusterSpec | TKG2SClusterSpec | TKG2MClusterSpec
+union ClusterSpec = TKGSClusterSpec | TKGMClusterSpec | TKG2SClusterSpec | TKG2MClusterSpec | VKSClusterSpec
+
+"""A VKS workload cluster provisioned through a vSphere Supervisor."""
+type VKSClusterSpec {
+  namespace: String!
+  clusterClass: String!
+  classNamespace: String!
+  osName: String!
+  osVersion: String!
+  cni: String!
+  podCIDR: CIDR
+  svcCIDR: CIDR
+  svcDomain: String!
+  storageClass: String!
+  ctlPlaneVmClass: String!
+  ctlPlaneReplicas: Int!
+  ctlPlaneEtcdVolumeSizeGi: Int!
+  workerVmClass: String!
+  workerReplicas: Int!
+  workerContainerdVolumeSizeGi: Int!
+  remoteUID: String!
+}
 
 type TKGSClusterSpec {
   namespace: String!
@@ -295,6 +318,27 @@ input CreateClusterSpec {
   tkgm: CreateTKGMClusterSpec
   tkg2s: CreateTKG2SClusterSpec
   tkg2m: CreateTKG2MClusterSpec
+  vks: CreateVKSClusterSpec
+}
+
+"""VKS creation uses one worker pool and reuses the existing Supervisor form."""
+input CreateVKSClusterSpec {
+  namespace: String
+  clusterClass: String
+  classNamespace: String
+  osName: String
+  osVersion: String
+  cni: String = "antrea"
+  podCIDR: CIDR = "192.168.0.0/16"
+  svcCIDR: CIDR = "10.96.0.0/12"
+  svcDomain: String = "cluster.local"
+  storageClass: String!
+  ctlPlaneVmClass: String!
+  ctlPlaneReplicas: Int = 3
+  ctlPlaneEtcdVolumeSizeGi: Int = 10
+  workerVmClass: String!
+  workerReplicas: Int = 1
+  workerContainerdVolumeSizeGi: Int = 50
 }
 
 input CreateTKGSClusterSpec {

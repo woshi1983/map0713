@@ -29,6 +29,7 @@ func convertClusterFromSQLModel(cluster *model1.Cluster) *model.Cluster {
 		InsecureSkipTLSVerify: cluster.InsecureTLS,
 		Version:               abstract.MustParseVersion(cluster.Version),
 		Status:                model.ClusterStatus(cluster.Status.String()),
+		ErrorReason:           &cluster.LastError,
 		State:                 model.ClusterState(cluster.State.String()),
 		CreatedAt:             cluster.CreatedAt,
 		LastModified:          cluster.UpdatedAt,
@@ -37,6 +38,27 @@ func convertClusterFromSQLModel(cluster *model1.Cluster) *model.Cluster {
 		obj.Endpoint = abstract.MustParseURL(cluster.Endpoint)
 	}
 	switch cluster.Class {
+	case model1.ClusterClassVKS:
+		spec := &model1.ClusterVKSSpec{}
+		if err := json.Unmarshal(cluster.Spec, spec); err != nil {
+			panic(err)
+		}
+		v := &model.VKSClusterSpec{
+			Namespace: spec.Namespace, ClusterClass: spec.ClusterClass, ClassNamespace: spec.ClassNamespace,
+			OsName: spec.OSName, OsVersion: spec.OSVersion, Cni: spec.CNI,
+			SvcDomain: spec.ServiceDomain, StorageClass: spec.StorageClass,
+			CtlPlaneVMClass: spec.CtlPlaneVmClass, CtlPlaneReplicas: spec.CtlPlaneReplicas,
+			CtlPlaneEtcdVolumeSizeGi: spec.CtlPlaneEtcdVolumeSizeGi,
+			WorkerVMClass:            spec.WorkerVmClass, WorkerReplicas: spec.WorkerReplicas,
+			WorkerContainerdVolumeSizeGi: spec.WorkerContainerdVolumeSizeGi, RemoteUID: spec.RemoteUID,
+		}
+		if spec.ClusterCIDR != "" {
+			v.PodCidr = abstract.MustParseCIDR(spec.ClusterCIDR)
+		}
+		if spec.ServiceCIDR != "" {
+			v.SvcCidr = abstract.MustParseCIDR(spec.ServiceCIDR)
+		}
+		obj.Spec = v
 	case model1.ClusterClassTKGS:
 		spec := &model1.ClusterTKGSSpec{}
 		if err := json.Unmarshal(cluster.Spec, spec); err != nil {

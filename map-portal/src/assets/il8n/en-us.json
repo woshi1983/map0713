@@ -2813,6 +2813,8 @@
        "LB-HELP": "Assign LoadBalancer to the cluster provider."
      },
      "ADDPROVIDER-TKGS-PAGE": {
+       "VKS-PAGETITLE": "VKS Provider Parameters",
+       "VKS-PAGEDESC": "Please enter VKS cluster provider information.",
        "PAGETITLE": "TKGS Provider Parameters",
        "PAGEDESC": "Please input TKGS cluster provider information.",
        "ADDTKGSPROVIDERALERT": "After adding, you may need to enter the details page to manage untrusted HTTPS addresses, such as self-signed private registry warehouse certificates.",

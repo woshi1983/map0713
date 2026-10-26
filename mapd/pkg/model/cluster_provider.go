@@ -105,6 +105,19 @@ type ClusterProviderTKG2SSpec struct {
 	TrustedCAs            []*CACert `json:"trustedCAs,omitempty"`
 }
 
+// ClusterProviderVKSSpec stores the credentials and defaults for a Supervisor
+// running vSphere Kubernetes Service. The password is encrypted with the
+// provider ID, like the existing Supervisor provider credentials.
+type ClusterProviderVKSSpec struct {
+	Endpoint              string    `json:"endpoint,omitempty"`
+	CACert                []byte    `json:"caCert,omitempty"`
+	InsecureSkipTLSVerify bool      `json:"insecureSkipTLSVerify,omitempty"`
+	AuthUser              string    `json:"authUser,omitempty"`
+	AuthPassword          []byte    `json:"authPassword,omitempty"`
+	DefaultNS             string    `json:"defaultNS,omitempty"`
+	TrustedCAs            []*CACert `json:"trustedCAs,omitempty"`
+}
+
 type ClusterProviderTKG2MSpec struct {
 	KubeConfig            []byte    `json:"kubeConfig,omitempty"` // AES-128
 	DefaultNS             string    `json:"defaultNS,omitempty"`

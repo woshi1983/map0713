@@ -37,6 +37,16 @@ func convertClusterProviderFromSQLModel(cp *model1.ClusterProvider, spec interfa
 		LastModified: cp.UpdatedAt,
 	}
 	switch v := spec.(type) {
+	case *model1.ClusterProviderVKSSpec:
+		providerSpec := &model.VKSClusterProviderSpec{
+			ID: cp.ID, Endpoint: abstract.MustParseURL(v.Endpoint), CaCert: string(v.CACert),
+			InsecureSkipTLSVerify: v.InsecureSkipTLSVerify, AuthUser: v.AuthUser,
+			DefaultNamespace: v.DefaultNS,
+		}
+		for _, ca := range v.TrustedCAs {
+			providerSpec.TrustedCAs = append(providerSpec.TrustedCAs, &model.ClusterProviderSpecTrustedCa{Name: ca.Name, Cert: string(ca.Data)})
+		}
+		obj.Spec = providerSpec
 	case *model1.ClusterProviderTKGSSpec:
 		spec := &model.TKGSClusterProviderSpec{
 			ID:                    cp.ID,
@@ -369,6 +379,46 @@ func getTKG2SClusterProviderNamespaces(ctx context.Context, id uuid.UUID, endpoi
 		namespaces = append(namespaces, namespace)
 	}
 	return namespaces, nil
+}
+
+func getVKSClusterProviderNamespaces(ctx context.Context, id uuid.UUID, endpoint string, insecure bool, caCert []byte, authUser string, authPassword []byte, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error) {
+	client, err := tanzuv2.NewVSphereWithTanzu(endpoint, authUser, authPassword, rest.TLSClientConfig{Insecure: insecure, CAData: caCert})
+	if err != nil {
+		return nil, err
+	}
+	var selectors []k8s.Selector
+	for _, filter := range filters {
+		if filter.Key == "name" && len(filter.Value) == 1 {
+			selectors = append(selectors, k8s.FieldEqual("metadata.name", filter.Value[0]))
+		}
+	}
+	list, err := client.GetNamespacesContext(ctx, selectors...)
+	if err != nil {
+		return nil, errGatewayError(ctx, err)
+	}
+	labeled := make([]*model.VKSClusterProviderSpecNamespace, 0)
+	all := make([]*model.VKSClusterProviderSpecNamespace, 0)
+	for _, ns := range list.Items {
+		if tkg2sProviderProtectedNamespaces[ns.Name] || strings.HasPrefix(ns.Name, "kube-") || strings.HasPrefix(ns.Name, "vmware-system-") {
+			continue
+		}
+		created := ns.CreationTimestamp.Time
+		if created.IsZero() {
+			created = time.Unix(0, 0)
+		}
+		item := &model.VKSClusterProviderSpecNamespace{
+			ClusterProvider: id, Name: ns.Name, Labels: ns.Labels,
+			CreatedAt: created, LastModified: created,
+		}
+		all = append(all, item)
+		if _, ok := ns.Labels["vSphereClusterID"]; ok {
+			labeled = append(labeled, item)
+		}
+	}
+	if len(labeled) > 0 {
+		return labeled, nil
+	}
+	return all, nil
 }
 
 func getTKG2MClusterProviderNamespaces(ctx context.Context, id uuid.UUID, kubeconfig []byte, filters []*model.QueryFilter) ([]*model.TKG2MClusterProviderSpecNamespace, error) {

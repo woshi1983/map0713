@@ -2487,6 +2487,8 @@
        "LB-HELP": "為叢集供應商下的工作負載叢集分配AVI負載平衡器。"
      },
      "ADDPROVIDER-TKGS-PAGE": {
+       "VKS-PAGETITLE": "VKS供應商參數",
+       "VKS-PAGEDESC": "請輸入VKS叢集供應商資訊。",
        "PAGETITLE": "TKGS供應商參數",
        "PAGEDESC": "請輸入TKGS叢集供應商資訊。",
        "ADDTKGSPROVIDERALERT": "添加后可能需要進入詳情頁管理用於驗證非受信的HTTPS地址，如自簽名私有鏡像倉庫憑據。",

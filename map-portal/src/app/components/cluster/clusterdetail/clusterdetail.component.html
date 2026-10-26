@@ -63,9 +63,9 @@
               <clr-dropdown-menu *clrIfOpen>
                 <button id='reinit' type="button" [disabled]="cluster.status !== 'INITIALIZING' || cluster.state !== 'FAILED'" (click)="doReinitCluster()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.REINIT' | translate }}</span></button>
                 <button id='modify-desc' type="button" (click)="showUpdateClusterDesc()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.CHANGEDESC' | translate }}</span></button>
-                <button id='scale-vmclass' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</span></button>
-                <button id='scale-node' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</span></button>
-                <button id='scale-master' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</span></button>
+                <button *ngIf="cluster.class !== 'VKS'" id='scale-vmclass' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterVMClass()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.NODETYPE' | translate }}</span></button>
+                <button *ngIf="cluster.class !== 'VKS'" id='scale-node' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClusterWorker()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.WORKERCOUNT' | translate }}</span></button>
+                <button *ngIf="cluster.class !== 'VKS'" id='scale-master' type="button" [disabled]="cluster.type !== 'PROVISIONED' || cluster.status !== 'HEALTHY'" (click)="showUpdateClustrMaster()" clrDropdownItem><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.MASTERCOUNT' | translate }}</span></button>
                 <button id='delete-cluster' type="button" (click)="showDeleteClusterDialog()" clrDropdownItem [fxHide]="cluster?.type === 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.DELETECLUSTER' | translate }}</span></button>
                 <button id='remove-cluster' type="button" (click)="showRemoveClusterDialog()"  clrDropdownItem [fxHide]="cluster?.type !== 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.REMOVECLUSTER' | translate }}</span></button>
                 <button id='force-delete-cluster' type="button" (click)="showForceRemoveDialog()" clrDropdownItem [fxHide]="!canForceDelete || cluster?.type === 'ATTACHED'"><span style="font-size: 12px;">{{ 'CLUSTERSMGMT.ACTIONS.FORCEDELETECLUSTER' | translate }}</span></button>
@@ -95,6 +95,12 @@
           <span class="alert-text">{{ 'CLUSTERDETAILS.UNABLE-GETRESOURCE-ALERT' | translate }}</span>
         </div>
       </div>
+    </div>
+    <div class="alert alert-danger" role="alert" *ngIf="cluster.class === 'VKS' && cluster.errorReason">
+      <div class="alert-items"><div class="alert-item static">
+        <div class="alert-icon-wrapper"><clr-icon class="alert-icon" shape="error-standard"></clr-icon></div>
+        <span class="alert-text">{{cluster.errorReason}}</span>
+      </div></div>
     </div>
     <div class="clr-row" fxLayout="none">
         <div class="clr-col-lg-12 clr-col-12">

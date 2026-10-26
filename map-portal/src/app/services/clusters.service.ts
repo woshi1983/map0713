@@ -26,6 +26,7 @@ export class ClustersService {
                 class
                 status
                 state
+                errorReason
                 tlsCertChain {
                   notAfter
                   isCA
@@ -38,6 +39,18 @@ export class ClustersService {
                     ctlPlaneCount
                     dataPlaneClass
                     dataPlaneCount
+                  }
+                  ... on VKSClusterSpec {
+                    namespace
+                    clusterClass
+                    classNamespace
+                    osName
+                    osVersion
+                    ctlPlaneVmClass
+                    ctlPlaneReplicas
+                    workerVmClass
+                    workerReplicas
+                    remoteUID
                   }
                   ... on TKGMClusterSpec {
                     namespace
@@ -70,6 +83,9 @@ export class ClustersService {
                     ... on TKGSClusterProviderSpec {
                       vmClasses {name spec}
                     }
+                    ... on VKSClusterProviderSpec {
+                      vmClasses {name spec}
+                    }
                   }
                 }
                 createdAt
@@ -98,6 +114,7 @@ export class ClustersService {
               version
               status
               state
+              errorReason
               spec {
                   __typename
                   ... on TKGSClusterSpec {
@@ -113,6 +130,25 @@ export class ClustersService {
                     ctlPlaneCount
                     dataPlaneClass
                     dataPlaneCount
+                  }
+                  ... on VKSClusterSpec {
+                    namespace
+                    clusterClass
+                    classNamespace
+                    osName
+                    osVersion
+                    cni
+                    podCIDR
+                    svcCIDR
+                    svcDomain
+                    storageClass
+                    ctlPlaneVmClass
+                    ctlPlaneReplicas
+                    ctlPlaneEtcdVolumeSizeGi
+                    workerVmClass
+                    workerReplicas
+                    workerContainerdVolumeSizeGi
+                    remoteUID
                   }
                   ... on TKGMClusterSpec {
                     namespace
@@ -173,6 +209,11 @@ export class ClustersService {
                     ... on TKGSClusterProviderSpec {
                       vmClasses {name spec}
                       clusterReleases
+                    }
+                    ... on VKSClusterProviderSpec {
+                      vmClasses {name spec}
+                      clusterReleases
+                      clusterClasses
                     }
                     ... on TKGMClusterProviderSpec {
                       clusterReleases
