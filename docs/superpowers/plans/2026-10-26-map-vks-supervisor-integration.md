@@ -2,7 +2,7 @@
 
 日期：2026-10-26。状态：首期 VKS 创建链路在 `vks` 分支实施中，尚未部署；显式同步和存量迁移属于后续阶段。依据：`/data/claude/k8mgmt` 的 Supervisor/VKS 实现和 MAP 当前代码。用户要求：删除 TKGS 与 TKG2S 产品入口，以 VKS 替代；MAP 前端尽量沿用现有页面。
 
-实施进度：已接入 VKS 供应商、资源查询、单工作池创建、conductor 状态跟踪、远端 UID 保护删除，以及现有门户表单与详情；TKGS/TKG2S 新建已拒绝，但保留存量读取和处理。待补：OSImage 按版本发现和选择、供应商 Dry-run 直接查询 `vmClasses` 等资源字段、显式同步纳管、旧记录迁移和端到端 Supervisor 验证。
+实施进度：已接入 VKS 供应商、资源查询、单工作池创建、conductor 状态跟踪、远端 UID 保护删除，以及现有门户表单与详情；TKGS/TKG2S 新建已拒绝，但保留存量读取和处理。OSImage 现按所选 KubernetesRelease 发现并自动选择版本；旧 Supervisor 没有 OSImage API 时仍由创建预检的准入校验判断。待补：供应商 Dry-run 直接查询 `vmClasses` 等资源字段、显式同步纳管、旧记录迁移和端到端 Supervisor 验证。
 
 ## 目标与边界
 

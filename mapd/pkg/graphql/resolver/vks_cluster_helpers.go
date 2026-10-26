@@ -90,6 +90,10 @@ func prepareVKSCluster(ctx context.Context, cp *model1.ClusterProvider, id uuid.
 	if input.OsVersion != nil {
 		osVersion = *input.OsVersion
 	}
+	osVersion, err = client.ResolveOSVersion(ctx, releaseName, *input.OsName, osVersion)
+	if err != nil {
+		return nil, errInvalidRequest(ctx, "input.spec.vks.osVersion", err.Error())
+	}
 	if input.Cni != nil && *input.Cni != "" {
 		cni = *input.Cni
 	}
