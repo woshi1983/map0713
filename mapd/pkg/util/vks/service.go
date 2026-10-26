@@ -69,7 +69,11 @@ func NewClient(config *rest.Config) (*Client, error) {
 		return nil, err
 	}
 	client := &Client{dynamic: d, kube: k}
-	if resources, err := k.Discovery().ServerResourcesForGroupVersion("cluster.x-k8s.io/v1beta2"); err == nil {
+	for _, version := range []string{"v1beta1", "v1beta2"} {
+		resources, err := k.Discovery().ServerResourcesForGroupVersion("cluster.x-k8s.io/" + version)
+		if err != nil {
+			continue
+		}
 		clusters, classes := false, false
 		for _, resource := range resources.APIResources {
 			if resource.Name == "clusters" {
@@ -80,7 +84,8 @@ func NewClient(config *rest.Config) (*Client, error) {
 			}
 		}
 		if clusters && classes {
-			client.capiVersion = "v1beta2"
+			client.capiVersion = version
+			break
 		}
 	}
 	return client, nil
@@ -95,7 +100,9 @@ func (c *Client) ValidateCluster(ctx context.Context, id uuid.UUID, name, releas
 	if err != nil {
 		return err
 	}
-	obj.SetAPIVersion("cluster.x-k8s.io/" + c.capiResource("clusters").Version)
+	if err := configureClusterAPIVersion(obj, c.capiResource("clusters").Version); err != nil {
+		return err
+	}
 	_, err = c.dynamic.Resource(c.capiResource("clusters")).Namespace(spec.Namespace).Create(ctx, obj, metav1.CreateOptions{DryRun: []string{metav1.DryRunAll}})
 	return err
 }
@@ -107,7 +114,9 @@ func (c *Client) CreateCluster(ctx context.Context, id uuid.UUID, name, releaseN
 	if err != nil {
 		return nil, err
 	}
-	obj.SetAPIVersion("cluster.x-k8s.io/" + c.capiResource("clusters").Version)
+	if err := configureClusterAPIVersion(obj, c.capiResource("clusters").Version); err != nil {
+		return nil, err
+	}
 	existing, err := c.GetCluster(ctx, spec.Namespace, name)
 	if err == nil {
 		if existing.GetLabels()[OwnerLabel] != id.String() || (spec.RemoteUID != "" && string(existing.GetUID()) != spec.RemoteUID) {
@@ -137,14 +146,33 @@ func (c *Client) DeleteCluster(ctx context.Context, id uuid.UUID, name string, s
 }
 
 func Available(obj *unstructured.Unstructured) bool {
-	conditions, _, _ := unstructured.NestedSlice(obj.Object, "status", "conditions")
-	for _, item := range conditions {
-		condition, ok := item.(map[string]interface{})
-		if ok && condition["type"] == "Available" && condition["status"] == "True" {
-			return true
+	for _, path := range [][]string{{"status", "conditions"}, {"status", "v1beta2", "conditions"}} {
+		conditions, _, _ := unstructured.NestedSlice(obj.Object, path...)
+		for _, item := range conditions {
+			condition, ok := item.(map[string]interface{})
+			if ok && condition["type"] == "Available" && condition["status"] == "True" {
+				return true
+			}
 		}
 	}
-	return false
+	available, _, _ := unstructured.NestedBool(obj.Object, "status", "available")
+	return available
+}
+
+func configureClusterAPIVersion(obj *unstructured.Unstructured, version string) error {
+	obj.SetAPIVersion("cluster.x-k8s.io/" + version)
+	if version != "v1beta2" {
+		return nil
+	}
+	class, _, _ := unstructured.NestedString(obj.Object, "spec", "topology", "class")
+	namespace, _, _ := unstructured.NestedString(obj.Object, "spec", "topology", "classNamespace")
+	ref := map[string]interface{}{"name": class}
+	if namespace != "" {
+		ref["namespace"] = namespace
+	}
+	unstructured.RemoveNestedField(obj.Object, "spec", "topology", "class")
+	unstructured.RemoveNestedField(obj.Object, "spec", "topology", "classNamespace")
+	return unstructured.SetNestedMap(obj.Object, ref, "spec", "topology", "classRef")
 }
 
 func Endpoint(obj *unstructured.Unstructured) string {

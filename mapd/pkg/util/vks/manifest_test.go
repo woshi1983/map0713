@@ -18,6 +18,10 @@ func TestBuildClusterUsesSingleWorkerPoolAndOwner(t *testing.T) {
 	if obj.GetLabels()[OwnerLabel] != id.String() {
 		t.Fatalf("missing MAP ownership label: %v", obj.GetLabels())
 	}
+	version, _, _ := unstructured.NestedString(obj.Object, "spec", "topology", "version")
+	if version != "v1.33.3+vmware.1" {
+		t.Fatalf("wrong topology version: %q", version)
+	}
 	classNS, _, _ := unstructured.NestedString(obj.Object, "spec", "topology", "classNamespace")
 	if classNS != spec.ClassNamespace {
 		t.Fatalf("wrong class namespace: %q", classNS)

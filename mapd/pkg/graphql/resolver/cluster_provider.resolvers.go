@@ -2304,21 +2304,21 @@ func (r *tKGSClusterProviderSpecNamespaceResolver) Storages(ctx context.Context,
 
 // VMClasses is the resolver for the vmClasses field.
 func (r *vKSClusterProviderSpecResolver) VMClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VMClass, error) {
-	_, supervisor, err := vksProviderClient(ctx, obj.ID)
+	client, _, err := vksProviderClient(ctx, obj.ID)
 	if err != nil {
 		return nil, err
 	}
-	list, err := supervisor.GetVirtualMachineClasses()
+	list, err := client.ListVMClasses(ctx, obj.DefaultNamespace)
 	if err != nil {
 		return nil, errGatewayError(ctx, err)
 	}
-	classes := make([]*model.VMClass, 0, len(list.Items))
-	for _, item := range list.Items {
-		data, err := json.Marshal(item.Spec)
+	classes := make([]*model.VMClass, 0, len(list))
+	for _, item := range list {
+		data, err := json.Marshal(item.Object["spec"])
 		if err != nil {
 			return nil, err
 		}
-		classes = append(classes, &model.VMClass{Name: item.Name, Spec: data})
+		classes = append(classes, &model.VMClass{Name: item.GetName(), Spec: data})
 	}
 	return classes, nil
 }
@@ -2353,6 +2353,9 @@ func (r *vKSClusterProviderSpecResolver) ClusterClasses(ctx context.Context, obj
 
 // Namespaces is the resolver for the namespaces field.
 func (r *vKSClusterProviderSpecResolver) Namespaces(ctx context.Context, obj *model.VKSClusterProviderSpec, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error) {
+	if obj.Namespaces != nil && len(filters) == 0 {
+		return obj.Namespaces, nil
+	}
 	provider, err := vksProviderSpec(ctx, obj.ID)
 	if err != nil {
 		return nil, err

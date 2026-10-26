@@ -313,17 +313,10 @@ export class ManagementComponent implements OnInit {
             }
             this.noStorageOnNamespaceAlert = !this.storageClassList;
             // add sorted tkc version list
-            this.sortedTkcVersionList = this.tkcVersionList.sort((n1, n2) => {
-              if(semver.gt(n1, n2)){return -1;}
-              if(semver.lt(n1,n2)){return 1;}
-              return 0;
+            this.sortedTkcVersionList = Array.from(new Set(this.tkcVersionList)).sort((n1, n2) => {
+              const order = semver.rcompare(n1, n2);
+              return order || n2.localeCompare(n1);
             });
-            // remove duplicate item
-            for(let i =0;i < this.sortedTkcVersionList.length - 1;i++){
-              if(semver.eq(this.sortedTkcVersionList[i], this.sortedTkcVersionList[i+1])){
-                this.sortedTkcVersionList.splice(i,1);
-              }
-            }
           } else {
             this.clusterNamespace = '';
             this.tkcvmClassList = [];

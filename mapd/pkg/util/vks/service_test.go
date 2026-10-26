@@ -72,3 +72,27 @@ func TestResolveReleasePrefersExactBuildMetadata(t *testing.T) {
 		t.Fatalf("exact release was not selected: got %q, error %v", got, err)
 	}
 }
+
+func TestConfigureV1Beta2ClassReference(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{"spec": map[string]interface{}{
+		"topology": map[string]interface{}{"class": "builtin", "classNamespace": "public"},
+	}}}
+	if err := configureClusterAPIVersion(obj, "v1beta2"); err != nil {
+		t.Fatal(err)
+	}
+	name, found, _ := unstructured.NestedString(obj.Object, "spec", "topology", "classRef", "name")
+	namespace, _, _ := unstructured.NestedString(obj.Object, "spec", "topology", "classRef", "namespace")
+	_, oldField, _ := unstructured.NestedString(obj.Object, "spec", "topology", "class")
+	if !found || name != "builtin" || namespace != "public" || oldField {
+		t.Fatalf("unexpected v1beta2 topology: %v", obj.Object)
+	}
+}
+
+func TestAvailableReadsV1Beta1EmbeddedConditions(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{"status": map[string]interface{}{
+		"v1beta2": map[string]interface{}{"conditions": []interface{}{map[string]interface{}{"type": "Available", "status": "True"}}},
+	}}}
+	if !Available(obj) {
+		t.Fatal("embedded Available condition was ignored")
+	}
+}

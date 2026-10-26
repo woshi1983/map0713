@@ -11,7 +11,6 @@ import (
 	model1 "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/vks"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // prepareVKSCluster validates the selected Supervisor resources before MAP
@@ -34,7 +33,7 @@ func prepareVKSCluster(ctx context.Context, cp *model1.ClusterProvider, id uuid.
 	if protectedVKSNamespace(namespace) {
 		return nil, errInvalidRequest(ctx, "input.spec.vks.namespace", "invalid workload namespace", namespace)
 	}
-	client, supervisor, err := vks.NewClientFromProvider(cp.ID, provider)
+	client, _, err := vks.NewClientFromProvider(cp.ID, provider)
 	if err != nil {
 		return nil, errGatewayError(ctx, err)
 	}
@@ -78,13 +77,21 @@ func prepareVKSCluster(ctx context.Context, cp *model1.ClusterProvider, id uuid.
 	if err != nil {
 		return nil, errInvalidRequest(ctx, "input.version", err.Error(), version)
 	}
-	ctl, err := supervisor.GetVirtualMachineClass(input.CtlPlaneVMClass)
+	ctl, err := client.GetVMClass(ctx, namespace, input.CtlPlaneVMClass)
 	if err != nil {
 		return nil, errGatewayError(ctx, err)
 	}
-	worker, err := supervisor.GetVirtualMachineClass(input.WorkerVMClass)
+	worker, err := client.GetVMClass(ctx, namespace, input.WorkerVMClass)
 	if err != nil {
 		return nil, errGatewayError(ctx, err)
+	}
+	ctlCPUs, ctlMemoryMi, err := vks.VMClassResources(ctl)
+	if err != nil {
+		return nil, errInvalidRequest(ctx, "input.spec.vks.ctlPlaneVmClass", err.Error())
+	}
+	workerCPUs, workerMemoryMi, err := vks.VMClassResources(worker)
+	if err != nil {
+		return nil, errInvalidRequest(ctx, "input.spec.vks.workerVmClass", err.Error())
 	}
 	osVersion, cni := "", "antrea"
 	if input.OsVersion != nil {
@@ -116,8 +123,8 @@ func prepareVKSCluster(ctx context.Context, cp *model1.ClusterProvider, id uuid.
 	if err := client.ValidateCluster(ctx, id, name, releaseName, *spec); err != nil {
 		return nil, errInvalidRequest(ctx, "input.spec.vks", err.Error())
 	}
-	usage.CPUs = spec.CtlPlaneReplicas*ctl.Spec.Hardware.Cpus + spec.WorkerReplicas*worker.Spec.Hardware.Cpus
-	usage.MemoryMi = spec.CtlPlaneReplicas*ctl.Spec.Hardware.Memory.ScaledValue(resource.Mega) + spec.WorkerReplicas*worker.Spec.Hardware.Memory.ScaledValue(resource.Mega)
+	usage.CPUs = spec.CtlPlaneReplicas*ctlCPUs + spec.WorkerReplicas*workerCPUs
+	usage.MemoryMi = spec.CtlPlaneReplicas*ctlMemoryMi + spec.WorkerReplicas*workerMemoryMi
 	usage.StorageGi = spec.CtlPlaneReplicas*spec.CtlPlaneEtcdVolumeSizeGi + spec.WorkerReplicas*spec.WorkerContainerdVolumeSizeGi
 	return spec, nil
 }

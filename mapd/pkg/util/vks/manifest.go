@@ -29,7 +29,7 @@ func BuildCluster(id uuid.UUID, name, releaseName string, spec model.ClusterVKSS
 	if spec.ClusterCIDR == "" || spec.ServiceCIDR == "" || spec.ServiceDomain == "" {
 		return nil, fmt.Errorf("VKS pod CIDR, service CIDR and service domain are required")
 	}
-	version := strings.ReplaceAll(releaseName, "+", "---")
+	version := strings.ReplaceAll(releaseName, "---", "+")
 	osSelector := "os-name=" + spec.OSName
 	if spec.OSVersion != "" {
 		osSelector += ",os-version=" + spec.OSVersion
