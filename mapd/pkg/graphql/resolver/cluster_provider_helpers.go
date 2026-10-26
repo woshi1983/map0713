@@ -399,7 +399,7 @@ func getVKSClusterProviderNamespaces(ctx context.Context, id uuid.UUID, endpoint
 	labeled := make([]*model.VKSClusterProviderSpecNamespace, 0)
 	all := make([]*model.VKSClusterProviderSpecNamespace, 0)
 	for _, ns := range list.Items {
-		if tkg2sProviderProtectedNamespaces[ns.Name] || strings.HasPrefix(ns.Name, "kube-") || strings.HasPrefix(ns.Name, "vmware-system-") {
+		if protectedVKSNamespace(ns.Name) {
 			continue
 		}
 		created := ns.CreationTimestamp.Time

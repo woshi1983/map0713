@@ -15,7 +15,9 @@ import (
 )
 
 func protectedVKSNamespace(name string) bool {
-	return name == "" || tkg2sProviderProtectedNamespaces[name] || strings.HasPrefix(name, "kube-") || strings.HasPrefix(name, "vmware-system-")
+	return name == "" || tkg2sProviderProtectedNamespaces[name] ||
+		strings.HasPrefix(name, "svc-") || strings.HasPrefix(name, "vmware-") ||
+		strings.HasPrefix(name, "kube-") || strings.HasPrefix(name, "wcp-")
 }
 
 func vksProviderSpec(ctx context.Context, id uuid.UUID) (*model1.ClusterProviderVKSSpec, error) {
