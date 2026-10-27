@@ -2059,6 +2059,7 @@ type ComplexityRoot struct {
 		ID                    func(childComplexity int) int
 		InsecureSkipTLSVerify func(childComplexity int) int
 		Namespaces            func(childComplexity int, filters []*model.QueryFilter) int
+		OsImages              func(childComplexity int) int
 		TrustedCAs            func(childComplexity int) int
 		VMClasses             func(childComplexity int) int
 	}
@@ -2090,6 +2091,14 @@ type ComplexityRoot struct {
 		WorkerContainerdVolumeSizeGi func(childComplexity int) int
 		WorkerReplicas               func(childComplexity int) int
 		WorkerVMClass                func(childComplexity int) int
+	}
+
+	VKSOSImage struct {
+		KubernetesVersion func(childComplexity int) int
+		Name              func(childComplexity int) int
+		OsName            func(childComplexity int) int
+		OsVersion         func(childComplexity int) int
+		Releases          func(childComplexity int) int
 	}
 
 	VMClass struct {
@@ -2647,6 +2656,7 @@ type VKSClusterProviderSpecResolver interface {
 	VMClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VMClass, error)
 	ClusterReleases(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*semver.Version, error)
 	ClusterClasses(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]string, error)
+	OsImages(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VKSOSImage, error)
 	Namespaces(ctx context.Context, obj *model.VKSClusterProviderSpec, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error)
 }
 type VKSClusterProviderSpecNamespaceResolver interface {
@@ -12572,6 +12582,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.VKSClusterProviderSpec.Namespaces(childComplexity, args["filters"].([]*model.QueryFilter)), true
 
+	case "VKSClusterProviderSpec.osImages":
+		if e.complexity.VKSClusterProviderSpec.OsImages == nil {
+			break
+		}
+
+		return e.complexity.VKSClusterProviderSpec.OsImages(childComplexity), true
+
 	case "VKSClusterProviderSpec.trustedCAs":
 		if e.complexity.VKSClusterProviderSpec.TrustedCAs == nil {
 			break
@@ -12746,6 +12763,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.VKSClusterSpec.WorkerVMClass(childComplexity), true
+
+	case "VKSOSImage.kubernetesVersion":
+		if e.complexity.VKSOSImage.KubernetesVersion == nil {
+			break
+		}
+
+		return e.complexity.VKSOSImage.KubernetesVersion(childComplexity), true
+
+	case "VKSOSImage.name":
+		if e.complexity.VKSOSImage.Name == nil {
+			break
+		}
+
+		return e.complexity.VKSOSImage.Name(childComplexity), true
+
+	case "VKSOSImage.osName":
+		if e.complexity.VKSOSImage.OsName == nil {
+			break
+		}
+
+		return e.complexity.VKSOSImage.OsName(childComplexity), true
+
+	case "VKSOSImage.osVersion":
+		if e.complexity.VKSOSImage.OsVersion == nil {
+			break
+		}
+
+		return e.complexity.VKSOSImage.OsVersion(childComplexity), true
+
+	case "VKSOSImage.releases":
+		if e.complexity.VKSOSImage.Releases == nil {
+			break
+		}
+
+		return e.complexity.VKSOSImage.Releases(childComplexity), true
 
 	case "VMClass.name":
 		if e.complexity.VMClass.Name == nil {
@@ -14723,8 +14775,17 @@ type VKSClusterProviderSpec {
   vmClasses: [VMClass!]
   clusterReleases: [Version!]
   clusterClasses: [String!]
+  osImages: [VKSOSImage!]
   namespaces(filters: [QueryFilter!] = []): [VKSClusterProviderSpecNamespace!]
   trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type VKSOSImage {
+  name: String!
+  osName: String!
+  osVersion: String!
+  kubernetesVersion: String!
+  releases: [String!]!
 }
 
 type VKSClusterProviderSpecNamespace {
@@ -88398,6 +88459,59 @@ func (ec *executionContext) fieldContext_VKSClusterProviderSpec_clusterClasses(c
 	return fc, nil
 }
 
+func (ec *executionContext) _VKSClusterProviderSpec_osImages(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSClusterProviderSpec_osImages(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.VKSClusterProviderSpec().OsImages(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.VKSOSImage)
+	fc.Result = res
+	return ec.marshalOVKSOSImage2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSOSImageᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSClusterProviderSpec_osImages(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSClusterProviderSpec",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "name":
+				return ec.fieldContext_VKSOSImage_name(ctx, field)
+			case "osName":
+				return ec.fieldContext_VKSOSImage_osName(ctx, field)
+			case "osVersion":
+				return ec.fieldContext_VKSOSImage_osVersion(ctx, field)
+			case "kubernetesVersion":
+				return ec.fieldContext_VKSOSImage_kubernetesVersion(ctx, field)
+			case "releases":
+				return ec.fieldContext_VKSOSImage_releases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VKSOSImage", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _VKSClusterProviderSpec_namespaces(ctx context.Context, field graphql.CollectedField, obj *model.VKSClusterProviderSpec) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_VKSClusterProviderSpec_namespaces(ctx, field)
 	if err != nil {
@@ -89501,6 +89615,226 @@ func (ec *executionContext) _VKSClusterSpec_remoteUID(ctx context.Context, field
 func (ec *executionContext) fieldContext_VKSClusterSpec_remoteUID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "VKSClusterSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSOSImage_name(ctx context.Context, field graphql.CollectedField, obj *model.VKSOSImage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSOSImage_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSOSImage_name(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSOSImage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSOSImage_osName(ctx context.Context, field graphql.CollectedField, obj *model.VKSOSImage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSOSImage_osName(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OsName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSOSImage_osName(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSOSImage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSOSImage_osVersion(ctx context.Context, field graphql.CollectedField, obj *model.VKSOSImage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSOSImage_osVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OsVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSOSImage_osVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSOSImage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSOSImage_kubernetesVersion(ctx context.Context, field graphql.CollectedField, obj *model.VKSOSImage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSOSImage_kubernetesVersion(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.KubernetesVersion, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSOSImage_kubernetesVersion(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSOSImage",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VKSOSImage_releases(ctx context.Context, field graphql.CollectedField, obj *model.VKSOSImage) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VKSOSImage_releases(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Releases, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VKSOSImage_releases(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VKSOSImage",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -120483,6 +120817,23 @@ func (ec *executionContext) _VKSClusterProviderSpec(ctx context.Context, sel ast
 				return innerFunc(ctx)
 
 			})
+		case "osImages":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._VKSClusterProviderSpec_osImages(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "namespaces":
 			field := field
 
@@ -120704,6 +121055,62 @@ func (ec *executionContext) _VKSClusterSpec(ctx context.Context, sel ast.Selecti
 		case "remoteUID":
 
 			out.Values[i] = ec._VKSClusterSpec_remoteUID(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var vKSOSImageImplementors = []string{"VKSOSImage"}
+
+func (ec *executionContext) _VKSOSImage(ctx context.Context, sel ast.SelectionSet, obj *model.VKSOSImage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, vKSOSImageImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VKSOSImage")
+		case "name":
+
+			out.Values[i] = ec._VKSOSImage_name(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "osName":
+
+			out.Values[i] = ec._VKSOSImage_osName(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "osVersion":
+
+			out.Values[i] = ec._VKSOSImage_osVersion(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kubernetesVersion":
+
+			out.Values[i] = ec._VKSOSImage_kubernetesVersion(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "releases":
+
+			out.Values[i] = ec._VKSOSImage_releases(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -124562,6 +124969,16 @@ func (ec *executionContext) marshalNVKSClusterProviderSpecNamespace2ᚖgitlabᚗ
 		return graphql.Null
 	}
 	return ec._VKSClusterProviderSpecNamespace(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVKSOSImage2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSOSImage(ctx context.Context, sel ast.SelectionSet, v *model.VKSOSImage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VKSOSImage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNVMClass2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVMClass(ctx context.Context, sel ast.SelectionSet, v *model.VMClass) graphql.Marshaler {
@@ -130724,6 +131141,53 @@ func (ec *executionContext) marshalOVKSClusterProviderSpecNamespace2ᚕᚖgitlab
 				defer wg.Done()
 			}
 			ret[i] = ec.marshalNVKSClusterProviderSpecNamespace2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSClusterProviderSpecNamespace(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOVKSOSImage2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSOSImageᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.VKSOSImage) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNVKSOSImage2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐVKSOSImage(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)

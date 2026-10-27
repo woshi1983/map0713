@@ -82,6 +82,7 @@ export class TKGSClusterProviderSpec {
 
 export class VKSClusterProviderSpec extends TKGSClusterProviderSpec {
   clusterClasses?: string[];
+  osImages?: {name: string; osName: string; osVersion: string; kubernetesVersion: string; releases: string[]}[];
 }
 
 export class TKGMClusterProviderSpecNamespace {

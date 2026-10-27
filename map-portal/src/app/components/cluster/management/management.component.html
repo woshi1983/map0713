@@ -183,7 +183,7 @@
     </form>
   </clr-wizard-page>
 
-  <clr-wizard-page [clrWizardPageNextDisabled]="tkgsClusterParamForm.invalid || clusterCIDRInvaildAlert || (providerClass === 'VKS' && !tkgsClusterParamForm.value.vksClusterClass)" *ngIf="providerClass === 'VKS' || providerClass === 'TKGS'">
+  <clr-wizard-page [clrWizardPageNextDisabled]="tkgsClusterParamForm.invalid || clusterCIDRInvaildAlert || (providerClass === 'VKS' && (!tkgsClusterParamForm.value.vksClusterClass || !tkgsClusterParamForm.value.vksOsVersion))" *ngIf="providerClass === 'VKS' || providerClass === 'TKGS'">
     <ng-template clrPageTitle>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERPARAM' | translate }}</ng-template>
     {{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.PAGEDESC' | translate }}
     <br>
@@ -210,7 +210,7 @@
                 <clr-select-container>
                   <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION' | translate }}</label>
                   <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-HELP' | translate }}</clr-control-helper>
-                  <select class="clr-col-md-9" clrSelect formControlName="tkcVersion" required>
+                  <select class="clr-col-md-9" clrSelect formControlName="tkcVersion" (change)="onVKSVersionChange()" required>
                     <option value="{{version}}" *ngFor="let version of sortedTkcVersionList">{{version}}</option>
                   </select>
                   <clr-control-error *clrIfError="'required'">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.CLUSTERVERSION-ERROR' | translate }}</clr-control-error>
@@ -222,14 +222,20 @@
                     <option *ngFor="let clusterClass of vksClusterClasses" [value]="clusterClass">{{clusterClass}}</option>
                   </select>
                 </clr-select-container>
-                <clr-input-container *ngIf="providerClass === 'VKS'">
+                <clr-select-container *ngIf="providerClass === 'VKS'">
                   <label class="required clr-col-md-3">OS name</label>
-                  <input class="clr-col-md-9" clrInput formControlName="vksOsName" required />
-                </clr-input-container>
-                <clr-input-container *ngIf="providerClass === 'VKS'">
-                  <label class="clr-col-md-3">OS version</label>
-                  <input class="clr-col-md-9" clrInput formControlName="vksOsVersion" />
-                </clr-input-container>
+                  <select class="clr-col-md-9" clrSelect formControlName="vksOsName" (change)="onVKSOSNameChange()" required>
+                    <option value="" disabled>Select OS</option>
+                    <option *ngFor="let osName of vksOSNames" [value]="osName">{{osName}}</option>
+                  </select>
+                </clr-select-container>
+                <clr-select-container *ngIf="providerClass === 'VKS'">
+                  <label class="required clr-col-md-3">OS version</label>
+                  <select class="clr-col-md-9" clrSelect formControlName="vksOsVersion" required>
+                    <option value="" disabled>Select OS version</option>
+                    <option *ngFor="let osVersion of vksOSVersions" [value]="osVersion">{{osVersion}}</option>
+                  </select>
+                </clr-select-container>
                 <clr-select-container>
                   <clr-control-helper>{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT-HELP' | translate }}</clr-control-helper>
                   <label class="required clr-col-md-3">{{ 'CLUSTERSMGMT.CREATECLUSTER-PAGE2.MASTERCOUNT' | translate }}</label>

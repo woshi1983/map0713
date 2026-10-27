@@ -192,6 +192,7 @@ export class ProviderService {
               vmClasses { name spec }
               clusterReleases
               clusterClasses
+              osImages { name osName osVersion kubernetesVersion releases }
               defaultNamespace
             }
           }

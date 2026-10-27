@@ -544,6 +544,8 @@ models:
         resolver: true
       clusterClasses:
         resolver: true
+      osImages:
+        resolver: true
       namespaces:
         resolver: true
   VKSClusterProviderSpecNamespace:

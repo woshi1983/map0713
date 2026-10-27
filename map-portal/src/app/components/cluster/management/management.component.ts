@@ -27,6 +27,7 @@ import {TranslateService} from "@ngx-translate/core";
 import {OrganizationService} from "../../../services/organization.service";
 import {FEATUREGATES} from "../../../utils/static-entries/shared.const";
 import { checkCerts, certCheckResult } from "../../../utils/operator/check-certs";
+import {availableVKSOSNames, availableVKSOSVersions, VKSOSImage} from './vks-os-images';
 
 
 @Component({
@@ -79,10 +80,36 @@ export class ManagementComponent implements OnInit {
   providerList: ClusterProvider[] = [];
   tkcVersionList: string[] = [];
   vksClusterClasses: string[] = [];
+  vksOSImages: VKSOSImage[] = [];
   sortedTkcVersionList: string[] = [];
   tkcvmClassList: VMClass[] = [];
   storageClassList: string[] = [];
   clusterNamespace: string;
+
+  get vksOSNames(): string[] {
+    return availableVKSOSNames(this.vksOSImages, this.tkgsClusterParamForm.value.tkcVersion);
+  }
+
+  get vksOSVersions(): string[] {
+    return availableVKSOSVersions(this.vksOSImages, this.tkgsClusterParamForm.value.tkcVersion,
+      this.tkgsClusterParamForm.value.vksOsName);
+  }
+
+  onVKSVersionChange(): void {
+    const names = this.vksOSNames;
+    const currentName = this.tkgsClusterParamForm.value.vksOsName;
+    const osName = names.includes(currentName) ? currentName : (names.includes('photon') ? 'photon' : names[0] || '');
+    this.tkgsClusterParamForm.patchValue({vksOsName: osName});
+    this.onVKSOSNameChange();
+  }
+
+  onVKSOSNameChange(): void {
+    const versions = this.vksOSVersions;
+    const currentVersion = this.tkgsClusterParamForm.value.vksOsVersion;
+    this.tkgsClusterParamForm.patchValue({
+      vksOsVersion: versions.includes(currentVersion) ? currentVersion : versions[versions.length - 1] || ''
+    });
+  }
 
   ClusterConnectSuccess = false;
   showClusterConnectAlert = false;
@@ -278,6 +305,8 @@ export class ManagementComponent implements OnInit {
 
   refreshNamespaceInProvider($event: any): void {
     const providerId = $event.target.value;
+    this.vksOSImages = [];
+    this.tkgsClusterParamForm.patchValue({vksOsName: '', vksOsVersion: ''});
     for (const provider of this.providerList){
       if(providerId === provider.id){
         this.providerClass = provider.class;
@@ -301,6 +330,9 @@ export class ManagementComponent implements OnInit {
             this.tkcVersionList = data.data.ClusterProvider.spec.clusterReleases;
             this.vksClusterClasses = this.providerClass === 'VKS'
               ? (data.data.ClusterProvider.spec.clusterClasses || []) : [];
+            this.vksOSImages = this.providerClass === 'VKS'
+              ? (data.data.ClusterProvider.spec.osImages || []) : [];
+            this.onVKSVersionChange();
             this.tkgsClusterParamForm.patchValue({
               vksClusterClass: this.vksClusterClasses.length === 1 ? this.vksClusterClasses[0] : ''
             });
@@ -322,6 +354,7 @@ export class ManagementComponent implements OnInit {
             this.tkcvmClassList = [];
             this.tkcVersionList = [];
             this.vksClusterClasses = [];
+            this.vksOSImages = [];
             this.storageClassList = [];
             this.noVMclassOnNamespaceAlert = true;
             this.noStorageOnNamespaceAlert = true;
@@ -446,6 +479,7 @@ export class ManagementComponent implements OnInit {
       serviceDomain: 'cluster.local',
       podCIDR: '192.168.0.0/16'
     });
+    this.vksOSImages = [];
     this.createClusterOpen = false;
     this.updateClusterOpen = false;
     this.providerList = [];

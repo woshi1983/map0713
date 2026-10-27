@@ -2351,6 +2351,26 @@ func (r *vKSClusterProviderSpecResolver) ClusterClasses(ctx context.Context, obj
 	return classes, nil
 }
 
+// OsImages is the resolver for the osImages field.
+func (r *vKSClusterProviderSpecResolver) OsImages(ctx context.Context, obj *model.VKSClusterProviderSpec) ([]*model.VKSOSImage, error) {
+	client, _, err := vksProviderClient(ctx, obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	images, err := client.ListOSImages(ctx, obj.DefaultNamespace)
+	if err != nil {
+		return nil, errGatewayError(ctx, err)
+	}
+	result := make([]*model.VKSOSImage, 0, len(images))
+	for _, image := range images {
+		result = append(result, &model.VKSOSImage{
+			Name: image.Name, OsName: image.OSName, OsVersion: image.OSVersion,
+			KubernetesVersion: image.KubernetesVersion, Releases: append([]string{}, image.Releases...),
+		})
+	}
+	return result, nil
+}
+
 // Namespaces is the resolver for the namespaces field.
 func (r *vKSClusterProviderSpecResolver) Namespaces(ctx context.Context, obj *model.VKSClusterProviderSpec, filters []*model.QueryFilter) ([]*model.VKSClusterProviderSpecNamespace, error) {
 	if obj.Namespaces != nil && len(filters) == 0 {

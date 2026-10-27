@@ -3757,6 +3757,7 @@ type VKSClusterProviderSpec struct {
 	VMClasses             []*VMClass                         `json:"vmClasses"`
 	ClusterReleases       []*semver.Version                  `json:"clusterReleases"`
 	ClusterClasses        []string                           `json:"clusterClasses"`
+	OsImages              []*VKSOSImage                      `json:"osImages"`
 	Namespaces            []*VKSClusterProviderSpecNamespace `json:"namespaces"`
 	TrustedCAs            []*ClusterProviderSpecTrustedCa    `json:"trustedCAs"`
 }
@@ -3794,6 +3795,14 @@ type VKSClusterSpec struct {
 }
 
 func (VKSClusterSpec) IsClusterSpec() {}
+
+type VKSOSImage struct {
+	Name              string   `json:"name"`
+	OsName            string   `json:"osName"`
+	OsVersion         string   `json:"osVersion"`
+	KubernetesVersion string   `json:"kubernetesVersion"`
+	Releases          []string `json:"releases"`
+}
 
 type VMClass struct {
 	Name string          `json:"name"`

@@ -184,8 +184,17 @@ type VKSClusterProviderSpec {
   vmClasses: [VMClass!]
   clusterReleases: [Version!]
   clusterClasses: [String!]
+  osImages: [VKSOSImage!]
   namespaces(filters: [QueryFilter!] = []): [VKSClusterProviderSpecNamespace!]
   trustedCAs: [ClusterProviderSpecTrustedCA!]
+}
+
+type VKSOSImage {
+  name: String!
+  osName: String!
+  osVersion: String!
+  kubernetesVersion: String!
+  releases: [String!]!
 }
 
 type VKSClusterProviderSpecNamespace {
