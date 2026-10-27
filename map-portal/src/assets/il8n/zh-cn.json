@@ -403,6 +403,7 @@
       "SSH-NOTES": "登陆集群节点命令"
     },
     "UPGRADE-ALERT": "建议将集群升级到更新的版本！",
+    "VKS-OPERATIONS-READY": "VKS 集群健康且处于运行状态后，才能升级或调整节点数量。",
     "UNABLE-GETRESOURCE-ALERT": "集群处于操作锁定状态，暂时无法查看集群内资源，如节点，命名空间等！",
     "CLUSTERSTATUS": {
       "TITLE": "集群状态",

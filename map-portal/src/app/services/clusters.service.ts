@@ -227,6 +227,7 @@ export class ClustersService {
               lastModified
           }
         }`,
+      fetchPolicy: 'network-only',
       errorPolicy: 'all'
     });
   }
@@ -577,6 +578,29 @@ export class ClustersService {
       variables: {
         input
       },
+      errorPolicy: 'all'
+    });
+  }
+
+  updateVKSClusterWorkerCount (id: string, count: number): Observable<any> {
+    return this.updateVKSClusterReplicas(id, {workerReplicas: count});
+  }
+
+  updateVKSClusterMasterCount (id: string, count: number): Observable<any> {
+    return this.updateVKSClusterReplicas(id, {ctlPlaneReplicas: count});
+  }
+
+  private updateVKSClusterReplicas (id: string, replicas: {ctlPlaneReplicas?: number; workerReplicas?: number}): Observable<any> {
+    const input: UpdateCluster = {id, spec: {vks: replicas}};
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($input: UpdateCluster!){
+        UpdateCluster(input: $input){
+          name
+          createdAt
+          lastModified
+        }
+      }`,
+      variables: {input},
       errorPolicy: 'all'
     });
   }

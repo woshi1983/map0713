@@ -403,6 +403,7 @@
       "SSH-NOTES": "Log in command"
     },
     "UPGRADE-ALERT": "It is recommended to upgrade the cluster to a newer version!",
+    "VKS-OPERATIONS-READY": "VKS upgrade and scaling are available when the cluster is healthy and running.",
     "UNABLE-GETRESOURCE-ALERT": "The cluster is in an operation locked state, and resources in the cluster, such as nodes, namespaces, etc., cannot be viewed temporarily!",
     "CLUSTERSTATUS": {
       "TITLE": "Cluster Status",

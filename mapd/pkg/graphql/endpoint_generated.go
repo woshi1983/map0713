@@ -13174,6 +13174,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputUpdateUser,
 		ec.unmarshalInputUpdateVKSClusterProvider,
 		ec.unmarshalInputUpdateVKSClusterProviderSpec,
+		ec.unmarshalInputUpdateVKSClusterSpec,
 		ec.unmarshalInputWritePodExec,
 	)
 	first := true
@@ -14332,6 +14333,12 @@ input UpdateClusterSpec {
   tkgm: UpdateTKGMClusterSpec
   tkg2s: UpdateTKG2SClusterSpec
   tkg2m: UpdateTKG2MClusterSpec
+  vks: UpdateVKSClusterSpec
+}
+
+input UpdateVKSClusterSpec {
+  ctlPlaneReplicas: Int
+  workerReplicas: Int
 }
 
 input UpdateTKGSClusterSpec {
@@ -101740,7 +101747,7 @@ func (ec *executionContext) unmarshalInputUpdateClusterSpec(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"tkgs", "tkgm", "tkg2s", "tkg2m"}
+	fieldsInOrder := [...]string{"tkgs", "tkgm", "tkg2s", "tkg2m", "vks"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -101776,6 +101783,14 @@ func (ec *executionContext) unmarshalInputUpdateClusterSpec(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tkg2m"))
 			it.Tkg2m, err = ec.unmarshalOUpdateTKG2MClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateTKG2MClusterSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "vks":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vks"))
+			it.Vks, err = ec.unmarshalOUpdateVKSClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterSpec(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -104744,6 +104759,42 @@ func (ec *executionContext) unmarshalInputUpdateVKSClusterProviderSpec(ctx conte
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("removeTrustedCAs"))
 			it.RemoveTrustedCAs, err = ec.unmarshalORemoveClusterProviderTrustedCA2ᚕᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐRemoveClusterProviderTrustedCaᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateVKSClusterSpec(ctx context.Context, obj interface{}) (model.UpdateVKSClusterSpec, error) {
+	var it model.UpdateVKSClusterSpec
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"ctlPlaneReplicas", "workerReplicas"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "ctlPlaneReplicas":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ctlPlaneReplicas"))
+			it.CtlPlaneReplicas, err = ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "workerReplicas":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("workerReplicas"))
+			it.WorkerReplicas, err = ec.unmarshalOInt2ᚖint64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -131056,6 +131107,14 @@ func (ec *executionContext) unmarshalOUpdateVKSClusterProviderSpec2ᚖgitlabᚗe
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputUpdateVKSClusterProviderSpec(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOUpdateVKSClusterSpec2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐUpdateVKSClusterSpec(ctx context.Context, v interface{}) (*model.UpdateVKSClusterSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUpdateVKSClusterSpec(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

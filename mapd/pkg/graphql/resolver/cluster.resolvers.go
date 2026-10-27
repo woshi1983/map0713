@@ -24,6 +24,7 @@ import (
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/k8s"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/sshutil"
 	tanzuv2 "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/tanzu/v2"
+	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/vks"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	corev1 "k8s.io/api/core/v1"
@@ -972,12 +973,110 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 		}
 
 		if cluster.Type == model1.ClusterTypeProvisioned {
-			if cluster.Class == model1.ClusterClassVKS && (input.Version != nil || input.Spec != nil) {
-				return errInvalidRequest(ctx, "input", "VKS version and topology changes are not supported yet")
-			}
 			var reconfig int
 
 			switch cluster.Class {
+			case model1.ClusterClassVKS:
+				if input.Spec != nil && (input.Spec.Tkgs != nil || input.Spec.Tkgm != nil || input.Spec.Tkg2s != nil || input.Spec.Tkg2m != nil) {
+					return errInvalidRequest(ctx, "input.spec", "VKS requires the vks topology input")
+				}
+				var cpCount, workerCount *int64
+				if input.Spec != nil && input.Spec.Vks != nil {
+					cpCount = input.Spec.Vks.CtlPlaneReplicas
+					workerCount = input.Spec.Vks.WorkerReplicas
+				}
+				if cpCount == nil && workerCount == nil && input.Version == nil {
+					break
+				}
+				if (cpCount != nil || workerCount != nil) && input.Version != nil {
+					return errInvalidRequest(ctx, "input", "VKS version and node counts must be changed separately")
+				}
+				if cluster.Provisioned != model1.ClusterProvisionFinish || cluster.State != model1.ClusterStateRunning || cluster.Status != model1.ClusterStatusHealthy {
+					return errInvalidRequest(ctx, "input", "VKS cluster must be running and healthy before upgrade or scaling")
+				}
+				spec := &model1.ClusterVKSSpec{}
+				if err := json.Unmarshal(cluster.Spec, spec); err != nil {
+					return errGatewayError(ctx, err)
+				}
+				provider := &model1.ClusterProvider{ID: cluster.ProviderID.UUID}
+				if err := tx.Take(provider).Error; err != nil {
+					return errGatewayError(ctx, err)
+				}
+				providerSpec := &model1.ClusterProviderVKSSpec{}
+				if err := json.Unmarshal(provider.Spec, providerSpec); err != nil {
+					return errGatewayError(ctx, err)
+				}
+				client, _, err := vks.NewClientFromProvider(provider.ID, providerSpec)
+				if err != nil {
+					return errGatewayError(ctx, err)
+				}
+				if cpCount != nil || workerCount != nil {
+					if cpCount != nil && *cpCount != 1 && *cpCount != 3 {
+						return errInvalidRequest(ctx, "input.spec.vks.ctlPlaneReplicas", "must be 1 or 3", *cpCount)
+					}
+					if workerCount != nil && (*workerCount < 1 || *workerCount > 100) {
+						return errInvalidRequest(ctx, "input.spec.vks.workerReplicas", "must be between 1 and 100", *workerCount)
+					}
+				}
+				targetVersion := ""
+				if input.Version != nil {
+					targetVersion = input.Version.String()
+				}
+				// Check quota against the requested counts before writing the remote Cluster.
+				if cpCount != nil || workerCount != nil {
+					remote, err := client.GetCluster(ctx, spec.Namespace, cluster.Name)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					if remote.GetLabels()[vks.OwnerLabel] != cluster.ID.String() || spec.RemoteUID == "" || string(remote.GetUID()) != spec.RemoteUID {
+						return errInvalidRequest(ctx, "input.id", "Supervisor cluster ownership or UID mismatch")
+					}
+					cp, worker, err := vks.VKSReplicas(remote)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					if cpCount != nil {
+						cp = *cpCount
+					}
+					if workerCount != nil {
+						worker = *workerCount
+					}
+					ctlClass, err := client.GetVMClass(ctx, spec.Namespace, spec.CtlPlaneVmClass)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					workerClass, err := client.GetVMClass(ctx, spec.Namespace, spec.WorkerVmClass)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					ctlCPUs, ctlMem, err := vks.VMClassResources(ctlClass)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					workerCPUs, workerMem, err := vks.VMClassResources(workerClass)
+					if err != nil {
+						return errGatewayError(ctx, err)
+					}
+					usage := map[string]interface{}{"cpus": cp*ctlCPUs + worker*workerCPUs, "memory_mi": cp*ctlMem + worker*workerMem, "storage_gi": cp*spec.CtlPlaneEtcdVolumeSizeGi + worker*spec.WorkerContainerdVolumeSizeGi}
+					if err := tx.Model(&model1.OrganizationQuotaUsage{}).Where("`id` IN (SELECT `usage_id` FROM `cluster_quota_usage` WHERE `cluster_id` = ?)", cluster.ID).Updates(usage).Error; err != nil {
+						return errGatewayError(ctx, err)
+					}
+					if !validateOrganizationQuotaUsage(tx, cluster.OrganizationID.UUID) {
+						return errQuotaExceeded(ctx, "input.spec.vks")
+					}
+				}
+				updatedSpec, err := client.UpdateTopology(ctx, cluster.ID, cluster.Name, *spec, cpCount, workerCount, targetVersion)
+				if err != nil {
+					return errGatewayError(ctx, err)
+				}
+				encoded, err := json.Marshal(updatedSpec)
+				if err != nil {
+					return errGatewayError(ctx, err)
+				}
+				updates["spec"] = string(encoded)
+				if targetVersion != "" {
+					updates["version"] = targetVersion
+				}
 			case model1.ClusterClassTKGS:
 				spec := &model1.ClusterTKGSSpec{}
 				if err := json.Unmarshal(cluster.Spec, spec); err != nil {
@@ -1329,7 +1428,7 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 					}
 				}
 			}
-			if input.Version != nil {
+			if input.Version != nil && cluster.Class != model1.ClusterClassVKS {
 				switch cluster.Class {
 				case model1.ClusterClassTKGS, model1.ClusterClassTKGM:
 					if reconfig > 0 {
@@ -1613,7 +1712,32 @@ func (r *queryResolver) Cluster(ctx context.Context, id uuid.UUID) (*model.Clust
 		}
 		panic(&ErrDBConnection{err})
 	}
-	return convertClusterFromSQLModel(cluster), nil
+	result := convertClusterFromSQLModel(cluster)
+	if cluster.Class == model1.ClusterClassVKS && cluster.ProviderID.Valid && cluster.Status == model1.ClusterStatusHealthy && cluster.State == model1.ClusterStateRunning {
+		spec := &model1.ClusterVKSSpec{}
+		if err := json.Unmarshal(cluster.Spec, spec); err != nil {
+			return nil, errGatewayError(ctx, err)
+		}
+		client, _, err := vksProviderClient(ctx, cluster.ProviderID.UUID)
+		if err != nil {
+			return nil, err
+		}
+		remote, err := client.GetCluster(ctx, spec.Namespace, cluster.Name)
+		if err != nil {
+			return nil, errGatewayError(ctx, err)
+		}
+		if remote.GetLabels()[vks.OwnerLabel] != cluster.ID.String() || spec.RemoteUID == "" || string(remote.GetUID()) != spec.RemoteUID {
+			return nil, errInvalidRequest(ctx, "id", "Supervisor cluster ownership or UID mismatch")
+		}
+		cp, workers, err := vks.VKSReplicas(remote)
+		if err != nil {
+			return nil, errGatewayError(ctx, err)
+		}
+		if current, ok := result.Spec.(*model.VKSClusterSpec); ok {
+			current.CtlPlaneReplicas, current.WorkerReplicas = cp, workers
+		}
+	}
+	return result, nil
 }
 
 // Clusters is the resolver for the Clusters field.

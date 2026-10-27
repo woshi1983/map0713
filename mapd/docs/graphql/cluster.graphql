@@ -519,6 +519,12 @@ input UpdateClusterSpec {
   tkgm: UpdateTKGMClusterSpec
   tkg2s: UpdateTKG2SClusterSpec
   tkg2m: UpdateTKG2MClusterSpec
+  vks: UpdateVKSClusterSpec
+}
+
+input UpdateVKSClusterSpec {
+  ctlPlaneReplicas: Int
+  workerReplicas: Int
 }
 
 input UpdateTKGSClusterSpec {

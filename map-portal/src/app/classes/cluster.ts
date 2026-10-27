@@ -313,7 +313,13 @@ export class UpdateTKG2MClusterSpec {
   workerDiskGiB?: number;
 }
 
+export class UpdateVKSClusterSpec {
+  ctlPlaneReplicas?: number;
+  workerReplicas?: number;
+}
+
 export class UpdateClusterSpec {
+  vks?: UpdateVKSClusterSpec;
   tkgs?: UpdateTKGSClusterSpec;
   tkgm?: UpdateTKGMClusterSpec;
   tkg2m?: UpdateTKG2MClusterSpec;

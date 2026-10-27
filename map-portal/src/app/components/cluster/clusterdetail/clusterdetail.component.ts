@@ -11,6 +11,7 @@ import { saveAs } from 'file-saver';
 import {OrganizationService} from "../../../services/organization.service";
 import {ClusterExtensionService} from "../../../services/cluster-extension.service";
 import {FEATUREGATES} from "../../../utils/static-entries/shared.const";
+import {availableVKSUpgradeVersions, vksVersionForMutation} from './vks-upgrade-versions';
 
 @Component({
   selector: 'app-clusterdetail',
@@ -189,10 +190,15 @@ export class ClusterdetailComponent implements OnInit {
         }
         this.getOctantLink();
         if(this.cluster.type === 'PROVISIONED' && !!this.cluster.provider.spec.clusterReleases){
-          //some logic in tkgs and tkgm
           this.tkcVersionList = this.cluster.provider.spec.clusterReleases;
-          // new version exist
-          if(semver.gt(semver.maxSatisfying(this.tkcVersionList, '*'), this.cluster.version)){
+          const availableVersions = this.cluster.class === 'VKS'
+            ? availableVKSUpgradeVersions(this.tkcVersionList, this.cluster.version)
+            : this.tkcVersionList;
+          const latestVersion = this.cluster.class === 'VKS'
+            ? availableVersions[availableVersions.length - 1]
+            : semver.maxSatisfying(availableVersions, '*');
+          if (latestVersion && (this.cluster.class === 'VKS' ||
+            (semver.valid(this.cluster.version) && semver.gt(latestVersion, this.cluster.version)))) {
             this.allowUpdateClusterVersion = true;
             this.showNewCLusterVersionAlert = true;
           }
@@ -250,8 +256,14 @@ export class ClusterdetailComponent implements OnInit {
 
   showClusterUpdate(): void {
     this.showClusterUpdateDialog = true;
-    // this param is check ova template version is next to.
     this.showNoAdjacentVersion = false;
+    this.allowUpdateVersionList = [];
+    if (this.cluster.class === 'VKS') {
+      this.allowUpdateVersionList = availableVKSUpgradeVersions(this.tkcVersionList, this.cluster.version);
+      this.showNoAdjacentVersion = this.allowUpdateVersionList.length === 0;
+      return;
+    }
+    // this param is check ova template version is next to.
     // current version
     const currentVerson = this.cluster.version;
     // sorted version list
@@ -543,9 +555,12 @@ export class ClusterdetailComponent implements OnInit {
         break;
       case 'TKG2M':
       case 'TKGM':
+      case 'VKS':
         this.showUpdateTKGMMasterDialog = true;
+        this.updateWorkerChanged = false;
         this.updateTKGMClusterMasterForm.setValue({
-          masterCount: this.cluster.class === 'TKG2M' ? this.cluster.spec.ctlPlaneReplicas : this.cluster.spec.ctlPlaneCount
+          masterCount: this.cluster.class === 'TKG2M' || this.cluster.class === 'VKS'
+            ? this.cluster.spec.ctlPlaneReplicas : this.cluster.spec.ctlPlaneCount
         })
         break;
       default:
@@ -595,6 +610,27 @@ export class ClusterdetailComponent implements OnInit {
         })
         break;
       }
+      case 'VKS': {
+        this.showUpdateTKGMMasterDialog = false;
+        this.clusterService.updateVKSClusterMasterCount(this.clusterId,
+          Number(this.updateTKGMClusterMasterForm.value.masterCount)).subscribe(data => {
+          if (data.errors) {
+            for (const each of data.errors) {
+              this.toast.show(this.translate.instant('MESSAGE.SHARED.UPDATEERROR') + ` ${each.message} ${each.extensions?.reason || ''}`,
+                this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-MSATER-FAILED'),
+                {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0});
+            }
+          }
+          if (data.data?.UpdateCluster) {
+            this.toast.show(`${data.data.UpdateCluster.name} ` + this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-MSG'),
+              this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-SUCCESS'),
+              {toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000});
+          }
+        }, e => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`,
+          this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-MSATER-FAILED'),
+          {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => this.refresh());
+        break;
+      }
       default:
         console.log('not support')
     }
@@ -603,9 +639,14 @@ export class ClusterdetailComponent implements OnInit {
   showUpdateClusterWorker(): void {
     this.showUpdateWorkerDialog = true;
     this.updateWorkerChanged = false;
+    this.updateTKGSClusterWorkerForm.controls.workerCount.setValidators([
+      Validators.required, Validators.min(1), Validators.max(this.cluster.class === 'VKS' ? 100 : 150)
+    ]);
     this.updateTKGSClusterWorkerForm.patchValue({
       workerCount: this.cluster.class === 'TKG2M'
         ? this.cluster.spec.workerNodePool0Replicas
+        : this.cluster.class === 'VKS'
+          ? this.cluster.spec.workerReplicas
         : this.cluster.spec.dataPlaneCount
     });
   }
@@ -661,6 +702,25 @@ export class ClusterdetailComponent implements OnInit {
          this.refresh();
          })
         break;
+      case 'VKS':
+        this.clusterService.updateVKSClusterWorkerCount(this.clusterId,
+          Number(this.updateTKGSClusterWorkerForm.value.workerCount)).subscribe(data => {
+          if (data.errors) {
+            for (const each of data.errors) {
+              this.toast.show(this.translate.instant('MESSAGE.SHARED.UPDATEERROR') + ` ${each.message} ${each.extensions?.reason || ''}`,
+                this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-WORKER-FAILED'),
+                {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0});
+            }
+          }
+          if (data.data?.UpdateCluster) {
+            this.toast.show(`${data.data.UpdateCluster.name} ` + this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-MSG'),
+              this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-SUCCESS'),
+              {toastClass: 'alert-success', closeButton: true, extendedTimeOut: 10000, timeOut: 10000});
+          }
+        }, e => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`,
+          this.translate.instant('MESSAGE.CLUSTER.UPDATE-CLUSTER-WORKER-FAILED'),
+          {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => this.refresh());
+        break;
       default:
         console.log('not support')
     }
@@ -668,7 +728,8 @@ export class ClusterdetailComponent implements OnInit {
 
   doUpdateClusterVersion(id: string, version: string): void {
     this.showClusterUpdateDialog = false;
-     this.clusterService.updateClusterVersion(id, version).subscribe(data => {
+     const targetVersion = this.cluster.class === 'VKS' ? vksVersionForMutation(version) : version;
+     this.clusterService.updateClusterVersion(id, targetVersion).subscribe(data => {
        if (!!data.errors){
           for (const each of data.errors){
              if(!!each.message){

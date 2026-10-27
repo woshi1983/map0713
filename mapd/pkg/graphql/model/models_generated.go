@@ -3317,6 +3317,7 @@ type UpdateClusterSpec struct {
 	Tkgm  *UpdateTKGMClusterSpec  `json:"tkgm"`
 	Tkg2s *UpdateTKG2SClusterSpec `json:"tkg2s"`
 	Tkg2m *UpdateTKG2MClusterSpec `json:"tkg2m"`
+	Vks   *UpdateVKSClusterSpec   `json:"vks"`
 }
 
 type UpdateComponent struct {
@@ -3721,6 +3722,11 @@ type UpdateVKSClusterProviderSpec struct {
 	DefaultNamespace      *string                           `json:"defaultNamespace"`
 	AddTrustedCAs         []*AddClusterProviderTrustedCa    `json:"addTrustedCAs"`
 	RemoveTrustedCAs      []*RemoveClusterProviderTrustedCa `json:"removeTrustedCAs"`
+}
+
+type UpdateVKSClusterSpec struct {
+	CtlPlaneReplicas *int64 `json:"ctlPlaneReplicas"`
+	WorkerReplicas   *int64 `json:"workerReplicas"`
 }
 
 type User struct {

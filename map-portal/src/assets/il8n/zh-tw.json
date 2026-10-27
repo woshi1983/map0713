@@ -272,6 +272,7 @@
     "DOWNLOADKUBECONFIG": "下載KUBECONFIG",
     "NODESC": "無描述",
     "UPGRADE-ALERT": "建議將叢集升級到更新的版本！",
+    "VKS-OPERATIONS-READY": "VKS 叢集健康且處於運行狀態後，才能升級或調整節點數量。",
     "//comment": "more actions use CLUSTERMGMT-MOREACTIONS and CLUSTERMGMT-ACTIONS",
     "CLUSTERSTATUS": {
       "TITLE": "叢集狀態",
