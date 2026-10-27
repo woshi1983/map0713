@@ -136,6 +136,16 @@ func TestVKSReconciliationPending(t *testing.T) {
 	}
 	_ = unstructured.SetNestedField(obj.Object, int64(5), "status", "observedGeneration")
 	_ = unstructured.SetNestedField(obj.Object, int64(5), "status", "workers", "availableReplicas")
+	_ = unstructured.SetNestedField(obj.Object, int64(6), "status", "workers", "replicas")
+	if !ReconciliationPending(obj) {
+		t.Fatal("extra worker being removed must remain updating")
+	}
+	_ = unstructured.SetNestedField(obj.Object, int64(5), "status", "workers", "replicas")
+	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{map[string]interface{}{"type": "ScalingDown", "status": "True"}}, "status", "conditions")
+	if !ReconciliationPending(obj) {
+		t.Fatal("ScalingDown condition must remain updating")
+	}
+	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{map[string]interface{}{"type": "ScalingDown", "status": "False"}}, "status", "conditions")
 	if ReconciliationPending(obj) {
 		t.Fatal("fully available cluster must complete updating")
 	}

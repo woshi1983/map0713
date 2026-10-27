@@ -106,10 +106,25 @@ func ReconciliationPending(obj *unstructured.Unstructured) bool {
 		if !found || desired == 0 {
 			continue
 		}
-		for _, field := range []string{"readyReplicas", "availableReplicas", "upToDateReplicas"} {
+		for _, field := range []string{"replicas", "readyReplicas", "availableReplicas", "upToDateReplicas"} {
 			count, reported, _ := unstructured.NestedInt64(obj.Object, "status", role, field)
-			if reported && count < desired {
+			if reported && count != desired {
 				return true
+			}
+		}
+	}
+	for _, path := range [][]string{{"status", "conditions"}, {"status", "v1beta2", "conditions"}} {
+		conditions, _, _ := unstructured.NestedSlice(obj.Object, path...)
+		for _, raw := range conditions {
+			condition, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			switch condition["type"] {
+			case "ScalingUp", "ScalingDown", "RollingOut":
+				if condition["status"] == "True" {
+					return true
+				}
 			}
 		}
 	}
