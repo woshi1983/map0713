@@ -346,11 +346,12 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 
 			// cluster is fully provisioned.
 			state, err := handler.CheckHealth()
-			if err != nil {
-				updates["status"] = model.ClusterStatusUnhealthy
+			updates["status"] = clusterHealthStatus(obj.Class, state, err)
+			if state == model.ClusterStateUpdating && obj.Class == model.ClusterClassVKS {
+				log.Infof("cluster %s is still updating.", strconv.Quote(obj.Name))
+			} else if err != nil {
 				log.Warnf("cluster %s is unhealthy.", strconv.Quote(obj.Name))
 			} else {
-				updates["status"] = model.ClusterStatusHealthy
 				if obj.Status == model.ClusterStatusUnhealthy {
 					log.Infof("cluster %s is recovered and healthy.", strconv.Quote(obj.Name))
 				}
@@ -375,4 +376,14 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 		})
 	}
 	return next
+}
+
+func clusterHealthStatus(class model.ClusterClass, state model.ClusterState, healthErr error) model.ClusterStatus {
+	if class == model.ClusterClassVKS && state == model.ClusterStateUpdating {
+		return model.ClusterStatusInitializing
+	}
+	if healthErr != nil {
+		return model.ClusterStatusUnhealthy
+	}
+	return model.ClusterStatusHealthy
 }
