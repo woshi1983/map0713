@@ -121,3 +121,22 @@ func TestVKSUpgradeInProgressIgnoresResolvedCondition(t *testing.T) {
 		t.Fatal("UpToDate=False must block new updates")
 	}
 }
+
+func TestVKSReconciliationPending(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"metadata": map[string]interface{}{"generation": int64(5)},
+		"status": map[string]interface{}{
+			"observedGeneration": int64(4),
+			"controlPlane":       map[string]interface{}{"desiredReplicas": int64(3), "availableReplicas": int64(3), "upToDateReplicas": int64(3)},
+			"workers":            map[string]interface{}{"desiredReplicas": int64(5), "availableReplicas": int64(4), "upToDateReplicas": int64(5)},
+		},
+	}}
+	if !ReconciliationPending(obj) {
+		t.Fatal("unobserved generation and unavailable worker must remain updating")
+	}
+	_ = unstructured.SetNestedField(obj.Object, int64(5), "status", "observedGeneration")
+	_ = unstructured.SetNestedField(obj.Object, int64(5), "status", "workers", "availableReplicas")
+	if ReconciliationPending(obj) {
+		t.Fatal("fully available cluster must complete updating")
+	}
+}

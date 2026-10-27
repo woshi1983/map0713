@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"gitlab.eng.vmware.com/cn-se-solution/mapd"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
@@ -13,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -94,6 +96,41 @@ func (k *VKSKubernetes) ProvisionKubernetes() (string, model.ClusterState, []byt
 		return "", model.ClusterStateCreating, nil, err
 	}
 	return endpoint, model.ClusterStateRunning, ca, nil
+}
+
+func vksHealthState(current model.ClusterState, obj *unstructured.Unstructured) (model.ClusterState, error) {
+	if current == model.ClusterStateUpdating && (vks.ReconciliationPending(obj) || !vks.Available(obj)) {
+		return model.ClusterStateUpdating, fmt.Errorf("VKS cluster topology is still reconciling")
+	}
+	if !vks.Available(obj) {
+		return model.ClusterStateRunning, fmt.Errorf("VKS cluster is not available")
+	}
+	return model.ClusterStateRunning, nil
+}
+
+func (k *VKSKubernetes) CheckHealth() (model.ClusterState, error) {
+	spec, err := k.spec()
+	if err != nil {
+		return model.ClusterStateUnknown, err
+	}
+	client, err := k.supervisor()
+	if err != nil {
+		return model.ClusterStateUnknown, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), mapd.GlobalConfig.HTTPClientTimeout)
+	defer cancel()
+	obj, err := client.GetCluster(ctx, spec.Namespace, k.Cluster.Name)
+	if err != nil {
+		return model.ClusterStateUnknown, err
+	}
+	if obj.GetLabels()[vks.OwnerLabel] != k.Cluster.ID.String() || spec.RemoteUID == "" || string(obj.GetUID()) != spec.RemoteUID {
+		return model.ClusterStateUnknown, fmt.Errorf("VKS cluster ownership or UID mismatch")
+	}
+	state, err := vksHealthState(k.Cluster.State, obj)
+	if err != nil {
+		return state, err
+	}
+	return k.Kubernetes.CheckHealth()
 }
 
 func (k *VKSKubernetes) workloadClient() (*k8s.Kubernetes, error) {

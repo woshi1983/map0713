@@ -94,6 +94,28 @@ func vksUpgradeInProgress(obj *unstructured.Unstructured) bool {
 	return false
 }
 
+// ReconciliationPending reports whether the Supervisor has observed the latest
+// Cluster spec and brought all requested replicas up to date and available.
+func ReconciliationPending(obj *unstructured.Unstructured) bool {
+	observed, found, _ := unstructured.NestedInt64(obj.Object, "status", "observedGeneration")
+	if found && observed < obj.GetGeneration() {
+		return true
+	}
+	for _, role := range []string{"controlPlane", "workers"} {
+		desired, found, _ := unstructured.NestedInt64(obj.Object, "status", role, "desiredReplicas")
+		if !found || desired == 0 {
+			continue
+		}
+		for _, field := range []string{"readyReplicas", "availableReplicas", "upToDateReplicas"} {
+			count, reported, _ := unstructured.NestedInt64(obj.Object, "status", role, field)
+			if reported && count < desired {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func VKSReplicas(obj *unstructured.Unstructured) (int64, int64, error) {
 	cp, found, err := unstructured.NestedInt64(obj.Object, "spec", "topology", "controlPlane", "replicas")
 	if err != nil || !found {

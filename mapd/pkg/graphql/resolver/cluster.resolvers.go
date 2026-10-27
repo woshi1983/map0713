@@ -1077,6 +1077,8 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 				if targetVersion != "" {
 					updates["version"] = targetVersion
 				}
+				updates["state"] = model1.ClusterStateUpdating
+				updates["status"] = model1.ClusterStatusInitializing
 			case model1.ClusterClassTKGS:
 				spec := &model1.ClusterTKGSSpec{}
 				if err := json.Unmarshal(cluster.Spec, spec); err != nil {
