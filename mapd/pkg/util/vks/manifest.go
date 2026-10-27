@@ -2,12 +2,27 @@ package vks
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+var clusterClassVersionPattern = regexp.MustCompile(`v(\d+)\.(\d+)\.`)
+
+// The kubernetes.security variable is supported by VKS ClusterClass v3.3+.
+func SupportsPSAVariable(className string) bool {
+	match := clusterClassVersionPattern.FindStringSubmatch(className)
+	if len(match) != 3 {
+		return false
+	}
+	major, _ := strconv.Atoi(match[1])
+	minor, _ := strconv.Atoi(match[2])
+	return major > 3 || (major == 3 && minor >= 3)
+}
 
 const OwnerLabel = "map.huaruicloud.cn/cluster-id"
 
@@ -19,6 +34,9 @@ func BuildCluster(id uuid.UUID, name, releaseName string, spec model.ClusterVKSS
 	}
 	if spec.StorageClass == "" || spec.CtlPlaneVmClass == "" || spec.WorkerVmClass == "" || spec.OSName == "" {
 		return nil, fmt.Errorf("VKS storage class, VM classes and OS name are required")
+	}
+	if !SupportsPSAVariable(spec.ClusterClass) {
+		return nil, fmt.Errorf("VKS ClusterClass %q does not support kubernetes.security; select v3.3.0 or newer", spec.ClusterClass)
 	}
 	if spec.CtlPlaneReplicas < 1 || spec.WorkerReplicas < 1 {
 		return nil, fmt.Errorf("VKS control plane and worker replicas must be positive")
@@ -57,6 +75,11 @@ func BuildCluster(id uuid.UUID, name, releaseName string, spec model.ClusterVKSS
 		"variables": []interface{}{
 			map[string]interface{}{"name": "vmClass", "value": spec.CtlPlaneVmClass},
 			map[string]interface{}{"name": "storageClass", "value": spec.StorageClass},
+			map[string]interface{}{"name": "kubernetes", "value": map[string]interface{}{
+				"security": map[string]interface{}{"podSecurityStandard": map[string]interface{}{
+					"enforce": "privileged", "audit": "privileged", "warn": "privileged",
+				}},
+			}},
 		},
 		"controlPlane": controlPlane,
 		"workers": map[string]interface{}{"machineDeployments": []interface{}{map[string]interface{}{

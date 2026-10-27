@@ -62,6 +62,9 @@ func prepareVKSCluster(ctx context.Context, cp *model1.ClusterProvider, id uuid.
 	if classNS == "" {
 		classNS = namespace
 	}
+	if !vks.SupportsPSAVariable(className) {
+		return nil, errInvalidRequest(ctx, "input.spec.vks.clusterClass", "ClusterClass v3.3.0 or newer is required to disable PSA", className)
+	}
 	qualified := classNS + "/" + className
 	found := false
 	for _, each := range classes {

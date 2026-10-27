@@ -2347,8 +2347,14 @@ func (r *vKSClusterProviderSpecResolver) ClusterClasses(ctx context.Context, obj
 	if err != nil {
 		return nil, errGatewayError(ctx, err)
 	}
-	sort.Strings(classes)
-	return classes, nil
+	filtered := make([]string, 0, len(classes))
+	for _, class := range classes {
+		if vks.SupportsPSAVariable(class) {
+			filtered = append(filtered, class)
+		}
+	}
+	sort.Strings(filtered)
+	return filtered, nil
 }
 
 // OsImages is the resolver for the osImages field.

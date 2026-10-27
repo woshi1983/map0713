@@ -32,6 +32,49 @@ func TestBuildClusterUsesSingleWorkerPoolAndOwner(t *testing.T) {
 	}
 }
 
+func TestBuildClusterDisablesPSAByDefault(t *testing.T) {
+	spec := model.ClusterVKSSpec{
+		Namespace: "team-a", ClusterClass: "builtin-generic-v3.6.0", OSName: "photon",
+		StorageClass: "vsan", CtlPlaneVmClass: "small", WorkerVmClass: "medium",
+		CtlPlaneReplicas: 1, WorkerReplicas: 1, ClusterCIDR: "192.168.0.0/16",
+		ServiceCIDR: "10.96.0.0/12", ServiceDomain: "cluster.local",
+	}
+	obj, err := BuildCluster(uuid.New(), "demo", "v1.35.2", spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	variables, _, _ := unstructured.NestedSlice(obj.Object, "spec", "topology", "variables")
+	found := false
+	for _, raw := range variables {
+		variable := raw.(map[string]interface{})
+		if variable["name"] != "kubernetes" {
+			continue
+		}
+		security := variable["value"].(map[string]interface{})["security"].(map[string]interface{})
+		psa := security["podSecurityStandard"].(map[string]interface{})
+		if psa["enforce"] != "privileged" || psa["audit"] != "privileged" || psa["warn"] != "privileged" {
+			t.Fatalf("PSA is not disabled by default: %v", psa)
+		}
+		found = true
+	}
+	if !found {
+		t.Fatal("missing kubernetes.security.podSecurityStandard variable")
+	}
+}
+
+func TestClusterClassMustSupportPSAVariable(t *testing.T) {
+	for _, class := range []string{"builtin-generic-v3.1.0", "builtin-generic-v3.2.0", "unknown"} {
+		if SupportsPSAVariable(class) {
+			t.Fatalf("%s must not allow the kubernetes.security variable", class)
+		}
+	}
+	for _, class := range []string{"builtin-generic-v3.3.0", "builtin-generic-v3.6.0"} {
+		if !SupportsPSAVariable(class) {
+			t.Fatalf("%s must allow the kubernetes.security variable", class)
+		}
+	}
+}
+
 func TestBuildClusterRejectsUnsupportedCNI(t *testing.T) {
 	_, err := BuildCluster(uuid.New(), "test-vks", "v1.33.3", model.ClusterVKSSpec{CNI: "calico"})
 	if err == nil {
@@ -52,10 +95,10 @@ func TestBuildClusterPassesTrustedCAsToNodeConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	cas, found, err := unstructured.NestedSlice(obj.Object, "spec", "topology", "variables")
-	if err != nil || !found || len(cas) != 3 {
+	if err != nil || !found || len(cas) != 4 {
 		t.Fatalf("expected osConfiguration trust variable, got %v: %v", cas, err)
 	}
-	trust := cas[2].(map[string]interface{})
+	trust := cas[3].(map[string]interface{})
 	if trust["name"] != "osConfiguration" {
 		t.Fatalf("unexpected trust variable: %v", trust)
 	}
