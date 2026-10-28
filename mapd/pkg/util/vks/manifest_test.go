@@ -32,6 +32,36 @@ func TestBuildClusterUsesSingleWorkerPoolAndOwner(t *testing.T) {
 	}
 }
 
+func TestBuildClusterMakesSelectedStorageClassDefaultWithoutRestrictingAvailableClasses(t *testing.T) {
+	spec := model.ClusterVKSSpec{
+		Namespace: "team-a", ClusterClass: "builtin-generic-v3.6.0", OSName: "ubuntu",
+		StorageClass:    "cluster-optimal-datastore-default-policy-raid1",
+		CtlPlaneVmClass: "small", WorkerVmClass: "medium",
+		CtlPlaneReplicas: 1, WorkerReplicas: 1, ClusterCIDR: "192.168.0.0/16",
+		ServiceCIDR: "10.96.0.0/12", ServiceDomain: "cluster.local",
+	}
+	obj, err := BuildCluster(uuid.New(), "demo", "v1.35.2", spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	variables, _, _ := unstructured.NestedSlice(obj.Object, "spec", "topology", "variables")
+	for _, raw := range variables {
+		variable := raw.(map[string]interface{})
+		if variable["name"] != "vsphereOptions" {
+			continue
+		}
+		persistentVolumes := variable["value"].(map[string]interface{})["persistentVolumes"].(map[string]interface{})
+		if persistentVolumes["defaultStorageClass"] != spec.StorageClass {
+			t.Fatalf("default storage class = %v, want %q", persistentVolumes["defaultStorageClass"], spec.StorageClass)
+		}
+		if classes, found := persistentVolumes["availableStorageClasses"]; found {
+			t.Fatalf("available storage classes must remain unrestricted, got %v", classes)
+		}
+		return
+	}
+	t.Fatal("missing vsphereOptions persistentVolumes variable")
+}
+
 func TestBuildClusterDisablesPSAByDefault(t *testing.T) {
 	spec := model.ClusterVKSSpec{
 		Namespace: "team-a", ClusterClass: "builtin-generic-v3.6.0", OSName: "photon",
@@ -95,12 +125,19 @@ func TestBuildClusterPassesTrustedCAsToNodeConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	cas, found, err := unstructured.NestedSlice(obj.Object, "spec", "topology", "variables")
-	if err != nil || !found || len(cas) != 4 {
+	if err != nil || !found {
 		t.Fatalf("expected osConfiguration trust variable, got %v: %v", cas, err)
 	}
-	trust := cas[3].(map[string]interface{})
-	if trust["name"] != "osConfiguration" {
-		t.Fatalf("unexpected trust variable: %v", trust)
+	var trust map[string]interface{}
+	for _, variable := range cas {
+		candidate := variable.(map[string]interface{})
+		if candidate["name"] == "osConfiguration" {
+			trust = candidate
+			break
+		}
+	}
+	if trust == nil {
+		t.Fatalf("missing osConfiguration trust variable: %v", cas)
 	}
 	configuration := trust["value"].(map[string]interface{})
 	caEntries := configuration["trust"].(map[string]interface{})["additionalTrustedCAs"].([]interface{})

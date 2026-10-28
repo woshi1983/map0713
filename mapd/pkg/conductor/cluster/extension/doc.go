@@ -24,6 +24,7 @@ const (
 	SharedEnvVarRootCACertsBase64  = "MAPD_ROOTCA_CERTS_BASE64"
 	SharedEnvVarUseNodePortService = "MAPD_USE_NODEPORT_SERVICE"
 	SharedEnvVarDockerConfig       = "DOCKER_CONFIG"
+	SharedEnvVarStorageClass       = "MAPD_STORAGE_CLASS"
 
 	defRegistrySecret   = "vmware-system-map-registry"
 	defKubeConfigSecret = "vmware-system-map-kubeconfig"
@@ -86,6 +87,7 @@ func getService(client *k8s.Kubernetes, namespace, name string) (*corev1.Service
 type InstallerOptions struct {
 	ClusterName         string
 	ClusterClass        model.ClusterClass
+	StorageClass        string
 	Kubernetes          *k8s.Kubernetes
 	ImageRegistry       *model.ImageRegistry
 	LoadBalancerEnabled bool

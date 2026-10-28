@@ -133,6 +133,20 @@ func (k *VKSKubernetes) CheckHealth() (model.ClusterState, error) {
 	return k.Kubernetes.CheckHealth()
 }
 
+func (k *VKSKubernetes) EnsureDefaultStorageClass() (bool, error) {
+	spec, err := k.spec()
+	if err != nil {
+		return false, err
+	}
+	client, err := k.supervisor()
+	if err != nil {
+		return false, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), mapd.GlobalConfig.HTTPClientTimeout)
+	defer cancel()
+	return client.EnsureDefaultStorageClass(ctx, k.Cluster.ID, k.Cluster.Name, *spec)
+}
+
 func (k *VKSKubernetes) workloadClient() (*k8s.Kubernetes, error) {
 	spec, err := k.spec()
 	if err != nil {

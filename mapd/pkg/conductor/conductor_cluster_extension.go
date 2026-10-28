@@ -20,8 +20,25 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
 )
+
+const vksStorageClassSyncDeadline = 10 * time.Minute
+
+func selectedExtensionStorageClass(c *model.Cluster) (string, error) {
+	if c.Class != model.ClusterClassVKS {
+		return "", nil
+	}
+	var spec model.ClusterVKSSpec
+	if err := json.Unmarshal(c.Spec, &spec); err != nil {
+		return "", fmt.Errorf("invalid VKS cluster storage configuration: %w", err)
+	}
+	if problems := validation.IsDNS1123Subdomain(spec.StorageClass); len(problems) != 0 {
+		return "", fmt.Errorf("invalid VKS storage class %q: %s", spec.StorageClass, problems[0])
+	}
+	return spec.StorageClass, nil
+}
 
 func init() {
 	Registry.Register("clusterExtension", DispatcherFactory(
@@ -160,9 +177,64 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			return nil
 		}
 
+		storageClass, err := selectedExtensionStorageClass(c)
+		if err != nil {
+			return err
+		}
+		if obj.State == model.ClusterExtensionStateEnabling {
+			switch obj.Name {
+			case model.ClusterExtensionNameElasticSearch, model.ClusterExtensionNamePrometheus, model.ClusterExtensionNameGrafana:
+				if vksHandler, ok := handler.(*cluster.VKSKubernetes); ok {
+					changed, err := vksHandler.EnsureDefaultStorageClass()
+					if err != nil {
+						if obj.Status == model.ClusterExtensionStatusProvisioning && time.Since(obj.UpdatedAt) >= vksStorageClassSyncDeadline {
+							updates["status"] = model.ClusterExtensionStatusFailed
+							if err := tx.Model(obj).Updates(updates).Error; err != nil {
+								return err
+							}
+							log.Errorf("could not configure storage class %q for VKS cluster %s within %s: %v.", storageClass, strconv.Quote(c.Name), vksStorageClassSyncDeadline, err)
+							finished = true
+							return nil
+						}
+						if obj.Status != model.ClusterExtensionStatusProvisioning {
+							if err := tx.Model(obj).Updates(updates).Error; err != nil {
+								return err
+							}
+						}
+						log.Warnf("waiting to configure storage class %q for VKS cluster %s: %v.", storageClass, strconv.Quote(c.Name), err)
+						return nil
+					}
+					if changed {
+						log.Infof("VKS cluster %s now uses storage class %q as its guest-cluster default.", strconv.Quote(c.Name), storageClass)
+					}
+					if _, err := wc.GetStorageClass(storageClass); err != nil {
+						if !k8s.IsErrObjectNotExists(err) {
+							return err
+						}
+						if !changed && obj.Status == model.ClusterExtensionStatusProvisioning && time.Since(obj.UpdatedAt) >= vksStorageClassSyncDeadline {
+							updates["status"] = model.ClusterExtensionStatusFailed
+							if err := tx.Model(obj).Updates(updates).Error; err != nil {
+								return err
+							}
+							log.Errorf("storage class %q did not synchronize to VKS cluster %s within %s; check that the policy is assigned to its Supervisor namespace.", storageClass, strconv.Quote(c.Name), vksStorageClassSyncDeadline)
+							finished = true
+							return nil
+						}
+						log.Infof("waiting for storage class %q to be synchronized to VKS cluster %s.", storageClass, strconv.Quote(c.Name))
+						if changed || obj.Status != model.ClusterExtensionStatusProvisioning {
+							if err := tx.Model(obj).Updates(updates).Error; err != nil {
+								return err
+							}
+						}
+						return nil
+					}
+				}
+			}
+		}
 		installer, err := extension.Registry.NewInstaller(&extension.InstallerOptions{
 			ClusterName:         c.Name,
 			ClusterClass:        c.Class,
+			StorageClass:        storageClass,
 			Kubernetes:          wc,
 			ImageRegistry:       imageRegistry,
 			LoadBalancerEnabled: c.LoadBalancerID.Valid,

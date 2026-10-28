@@ -75,6 +75,11 @@ func BuildCluster(id uuid.UUID, name, releaseName string, spec model.ClusterVKSS
 		"variables": []interface{}{
 			map[string]interface{}{"name": "vmClass", "value": spec.CtlPlaneVmClass},
 			map[string]interface{}{"name": "storageClass", "value": spec.StorageClass},
+			map[string]interface{}{"name": "vsphereOptions", "value": map[string]interface{}{
+				"persistentVolumes": map[string]interface{}{
+					"defaultStorageClass": spec.StorageClass,
+				},
+			}},
 			map[string]interface{}{"name": "kubernetes", "value": map[string]interface{}{
 				"security": map[string]interface{}{"podSecurityStandard": map[string]interface{}{
 					"enforce": "privileged", "audit": "privileged", "warn": "privileged",

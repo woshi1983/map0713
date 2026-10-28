@@ -39,6 +39,7 @@ type GenericInstallerConfig struct {
 
 	Cluster            string
 	ClusterClass       model.ClusterClass
+	StorageClass       string
 	JobNamespace       string
 	Job                string
 	JobDeadlineSeconds int64
@@ -206,6 +207,9 @@ func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) e
 	env[SharedEnvVarImageRegistry] = k.ImageRegistry.Endpoint
 	env[SharedEnvVarDockerConfig] = defDockerCfgDir
 	env[SharedEnvVarUseNodePortService] = strconv.FormatBool(!k.LoadBalancerEnabled)
+	if k.StorageClass != "" {
+		env[SharedEnvVarStorageClass] = k.StorageClass
+	}
 	if k.CACerts != nil {
 		env[SharedEnvVarRootCACertsBase64] = base64.StdEncoding.EncodeToString(k.CACerts)
 	}

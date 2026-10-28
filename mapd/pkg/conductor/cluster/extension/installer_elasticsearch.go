@@ -34,6 +34,7 @@ func NewElasticSearch(opts *InstallerOptions) Installer {
 		LoadBalancerEnabled: opts.LoadBalancerEnabled,
 		Cluster:             opts.ClusterName,
 		ClusterClass:        opts.ClusterClass,
+		StorageClass:        opts.StorageClass,
 		JobNamespace:        opts.Namespace,
 		Job:                 "cluster-extension-elasticsearch",
 		JobDeadlineSeconds:  2400,
