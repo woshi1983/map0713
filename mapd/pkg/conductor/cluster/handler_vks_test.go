@@ -27,3 +27,16 @@ func TestVKSHealthStateTracksScaling(t *testing.T) {
 		t.Fatalf("completed scaling must become running: %s, %v", state, err)
 	}
 }
+
+func TestVKSHealthStateRecoversPrematureRunningDuringUpgrade(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"status": map[string]interface{}{"conditions": []interface{}{
+			map[string]interface{}{"type": "Available", "status": "True"},
+			map[string]interface{}{"type": "TopologyReconciled", "status": "False", "reason": "ClusterUpgrading"},
+		}},
+	}}
+	state, err := vksHealthState(model.ClusterStateRunning, obj)
+	if state != model.ClusterStateUpdating || err == nil {
+		t.Fatalf("active upgrade must restore UPDATING: %s, %v", state, err)
+	}
+}

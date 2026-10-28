@@ -22,7 +22,7 @@ func (c *Client) UpdateTopology(ctx context.Context, id uuid.UUID, name string, 
 	if obj.GetLabels()[OwnerLabel] != id.String() || spec.RemoteUID == "" || string(obj.GetUID()) != spec.RemoteUID {
 		return spec, fmt.Errorf("VKS cluster %s/%s ownership or UID mismatch", spec.Namespace, name)
 	}
-	if !Available(obj) || strings.EqualFold(obj.GetAnnotations()["cluster.x-k8s.io/paused"], "true") || vksUpgradeInProgress(obj) {
+	if !Available(obj) || strings.EqualFold(obj.GetAnnotations()["cluster.x-k8s.io/paused"], "true") || UpgradeInProgress(obj) {
 		return spec, fmt.Errorf("VKS cluster %s/%s is not available, is paused, or is upgrading", spec.Namespace, name)
 	}
 	currentCP, currentWorkers, err := VKSReplicas(obj)
@@ -78,7 +78,9 @@ func (c *Client) UpdateTopology(ctx context.Context, id uuid.UUID, name string, 
 	return spec, nil
 }
 
-func vksUpgradeInProgress(obj *unstructured.Unstructured) bool {
+// UpgradeInProgress checks Supervisor conditions independently of MAP's stored
+// state, so a transiently healthy Cluster cannot end an active upgrade.
+func UpgradeInProgress(obj *unstructured.Unstructured) bool {
 	for _, path := range [][]string{{"status", "conditions"}, {"status", "v1beta2", "conditions"}} {
 		conditions, _, _ := unstructured.NestedSlice(obj.Object, path...)
 		for _, raw := range conditions {
@@ -86,7 +88,15 @@ func vksUpgradeInProgress(obj *unstructured.Unstructured) bool {
 			if !ok || condition["status"] == "True" {
 				continue
 			}
-			if condition["type"] == "UpToDate" || strings.Contains(strings.ToLower(fmt.Sprint(condition["message"])), "upgrad") {
+			switch condition["type"] {
+			case "UpToDate", "ControlPlaneMachinesUpToDate", "WorkerMachinesUpToDate":
+				return true
+			case "TopologyReconciled":
+				if condition["reason"] == "ClusterUpgrading" {
+					return true
+				}
+			}
+			if strings.Contains(strings.ToLower(fmt.Sprint(condition["message"])), "upgrad") {
 				return true
 			}
 		}
@@ -97,6 +107,9 @@ func vksUpgradeInProgress(obj *unstructured.Unstructured) bool {
 // ReconciliationPending reports whether the Supervisor has observed the latest
 // Cluster spec and brought all requested replicas up to date and available.
 func ReconciliationPending(obj *unstructured.Unstructured) bool {
+	if UpgradeInProgress(obj) {
+		return true
+	}
 	observed, found, _ := unstructured.NestedInt64(obj.Object, "status", "observedGeneration")
 	if found && observed < obj.GetGeneration() {
 		return true

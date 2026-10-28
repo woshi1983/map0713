@@ -99,7 +99,7 @@ func (k *VKSKubernetes) ProvisionKubernetes() (string, model.ClusterState, []byt
 }
 
 func vksHealthState(current model.ClusterState, obj *unstructured.Unstructured) (model.ClusterState, error) {
-	if current == model.ClusterStateUpdating && (vks.ReconciliationPending(obj) || !vks.Available(obj)) {
+	if vks.UpgradeInProgress(obj) || current == model.ClusterStateUpdating && (vks.ReconciliationPending(obj) || !vks.Available(obj)) {
 		return model.ClusterStateUpdating, fmt.Errorf("VKS cluster topology is still reconciling")
 	}
 	if !vks.Available(obj) {

@@ -111,13 +111,13 @@ func TestVKSUpgradeInProgressIgnoresResolvedCondition(t *testing.T) {
 	obj := &unstructured.Unstructured{Object: map[string]interface{}{"status": map[string]interface{}{"conditions": []interface{}{
 		map[string]interface{}{"type": "Ready", "status": "True", "message": "Upgrading to version v1.36.0"},
 	}}}}
-	if vksUpgradeInProgress(obj) {
+	if UpgradeInProgress(obj) {
 		t.Fatal("resolved upgrade message must not block updates")
 	}
 	obj.Object["status"].(map[string]interface{})["conditions"] = []interface{}{
 		map[string]interface{}{"type": "UpToDate", "status": "False"},
 	}
-	if !vksUpgradeInProgress(obj) {
+	if !UpgradeInProgress(obj) {
 		t.Fatal("UpToDate=False must block new updates")
 	}
 }
@@ -148,5 +148,33 @@ func TestVKSReconciliationPending(t *testing.T) {
 	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{map[string]interface{}{"type": "ScalingDown", "status": "False"}}, "status", "conditions")
 	if ReconciliationPending(obj) {
 		t.Fatal("fully available cluster must complete updating")
+	}
+}
+
+func TestVKSUpgradeConditionKeepsReconciliationPending(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"metadata": map[string]interface{}{"generation": int64(5)},
+		"status": map[string]interface{}{
+			"observedGeneration": int64(5),
+			"controlPlane":       map[string]interface{}{"desiredReplicas": int64(3), "replicas": int64(3), "readyReplicas": int64(3), "availableReplicas": int64(3), "upToDateReplicas": int64(3)},
+			"workers":            map[string]interface{}{"desiredReplicas": int64(5), "replicas": int64(5), "readyReplicas": int64(5), "availableReplicas": int64(5), "upToDateReplicas": int64(5)},
+			"conditions": []interface{}{
+				map[string]interface{}{"type": "Available", "status": "True"},
+				map[string]interface{}{"type": "TopologyReconciled", "status": "False", "reason": "ClusterUpgrading", "message": "Cluster is upgrading"},
+			},
+		},
+	}}
+	if !ReconciliationPending(obj) {
+		t.Fatal("upgrade must remain pending even when replica counts temporarily match")
+	}
+	if !UpgradeInProgress(obj) {
+		t.Fatal("active Supervisor upgrade must be recognized after MAP state becomes RUNNING")
+	}
+	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{
+		map[string]interface{}{"type": "Available", "status": "True"},
+		map[string]interface{}{"type": "TopologyReconciled", "status": "True"},
+	}, "status", "conditions")
+	if ReconciliationPending(obj) || UpgradeInProgress(obj) {
+		t.Fatal("completed topology reconciliation must clear upgrade")
 	}
 }
