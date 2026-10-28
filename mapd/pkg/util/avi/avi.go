@@ -16,25 +16,77 @@ import (
 
 	"gitlab.eng.vmware.com/cn-se-solution/mapd"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/httputil"
+	"golang.org/x/mod/semver"
 )
+
+const aviDefaultAPIVersion = "20.1.6"
 
 type AVI struct {
 	Endpoint      *url.URL
 	LoginUser     string
 	LoginPassword []byte
 
-	mux sync.Mutex
-	cli *httputil.Client
+	mux        sync.Mutex
+	cli        *httputil.Client
+	versionMu  sync.Mutex
+	apiVersion string
+}
+
+func (a *AVI) ensureAPIVersion(ctx context.Context) (string, error) {
+	a.versionMu.Lock()
+	defer a.versionMu.Unlock()
+	if a.apiVersion != "" {
+		return a.apiVersion, nil
+	}
+	u := &url.URL{Scheme: a.Endpoint.Scheme, Host: a.Endpoint.Host, Path: "api/cluster/version"}
+	do, err := a.cli.New(ctx, u.String(), httputil.BasicAuth(a.LoginUser, string(a.LoginPassword)))
+	if err != nil {
+		return "", err
+	}
+	var controller struct {
+		Version string `json:"Version"`
+		Minimum string `json:"min_version"`
+	}
+	if err := do(func(resp *http.Response) error {
+		body, err := validateResponse(resp)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(body, &controller)
+	}); err != nil {
+		return "", fmt.Errorf("discover AVI API version: %w", err)
+	}
+	if !semver.IsValid("v" + controller.Version) {
+		return "", fmt.Errorf("AVI controller returned invalid version %q", controller.Version)
+	}
+	version := aviDefaultAPIVersion
+	if controller.Minimum != "" {
+		if !semver.IsValid("v" + controller.Minimum) {
+			return "", fmt.Errorf("AVI controller returned invalid minimum API version %q", controller.Minimum)
+		}
+		if semver.Compare("v"+controller.Minimum, "v"+version) > 0 {
+			version = controller.Minimum
+		}
+	}
+	if semver.Compare("v"+version, "v"+controller.Version) > 0 {
+		return "", fmt.Errorf("AVI controller version %q does not support API version %q", controller.Version, version)
+	}
+	a.apiVersion = version
+	return version, nil
 }
 
 func (a *AVI) login(ctx context.Context) error {
+	version, err := a.ensureAPIVersion(ctx)
+	if err != nil {
+		return err
+	}
 	body, err := httputil.JSONBody(&Login{Username: a.LoginUser, Password: string(a.LoginPassword)})
 	if err != nil {
 		return err
 	}
 
 	u := &url.URL{Scheme: a.Endpoint.Scheme, Opaque: a.Endpoint.Opaque, Host: a.Endpoint.Host, Path: "login"}
-	do, err := a.cli.New(ctx, u.String(), httputil.POST, body)
+	do, err := a.cli.New(ctx, u.String(), httputil.POST, body, httputil.SetHeader("X-Avi-Version", version))
 	if err != nil {
 		return err
 	}
@@ -49,7 +101,7 @@ func (a *AVI) login(ctx context.Context) error {
 
 func (a *AVI) logout(ctx context.Context) error {
 	u := &url.URL{Scheme: a.Endpoint.Scheme, Opaque: a.Endpoint.Opaque, Host: a.Endpoint.Host, Path: "logout"}
-	do, err := a.cli.New(ctx, u.String(), httputil.POST)
+	do, err := a.cli.New(ctx, u.String(), httputil.POST, httputil.SetHeader("X-Avi-Version", a.apiVersion))
 	if err != nil {
 		return err
 	}
@@ -63,7 +115,11 @@ func (a *AVI) logout(ctx context.Context) error {
 }
 
 func (a *AVI) new(ctx context.Context, url string, opts ...httputil.HTTPRequestOption) (httputil.HTTPRequestFunc, error) {
-	do, err := a.cli.New(ctx, url, opts...)
+	version, err := a.ensureAPIVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	do, err := a.cli.New(ctx, url, append(opts, httputil.SetHeader("X-Avi-Version", version))...)
 	if err != nil {
 		return nil, err
 	}
@@ -1137,7 +1193,6 @@ func NewAVI(endpoint, user string, password []byte, insecureSkipTLSVerify bool, 
 			httputil.InsecureSkipVerify(insecureSkipTLSVerify),
 			httputil.TrustRootCACerts(caCerts...),
 		).Options(
-			httputil.SetHeader("X-Avi-Version", "20.1.6"),
 			httputil.SetHeader("Referer", referer.String()),
 			httputil.CSRFToken("X-CSRFToken", "csrftoken"),
 		),

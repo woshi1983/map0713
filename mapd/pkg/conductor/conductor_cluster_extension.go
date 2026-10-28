@@ -26,6 +26,10 @@ import (
 
 const vksStorageClassSyncDeadline = 10 * time.Minute
 
+func extensionLoadBalancerEnabled(c *model.Cluster) bool {
+	return c.Class == model.ClusterClassVKS || c.LoadBalancerID.Valid
+}
+
 func selectedExtensionStorageClass(c *model.Cluster) (string, error) {
 	if c.Class != model.ClusterClassVKS {
 		return "", nil
@@ -237,7 +241,7 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			StorageClass:        storageClass,
 			Kubernetes:          wc,
 			ImageRegistry:       imageRegistry,
-			LoadBalancerEnabled: c.LoadBalancerID.Valid,
+			LoadBalancerEnabled: extensionLoadBalancerEnabled(c),
 			CACerts:             caCerts,
 			Namespace:           defNamespace,
 			Extension:           obj,
