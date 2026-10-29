@@ -175,9 +175,7 @@ export class ProviderdetailComponent implements OnInit {
       }
       if (data.data?.ClusterProvider?.spec?.namespaces) {
         this.namespaceList = prividerNamespacediffset(data.data.ClusterProvider.spec.namespaces);
-        if (!this.namespaceList.find(x => x.name === ns)) {
-          this.selectedNsUnexist = true;
-        }
+        this.selectedNsUnexist = !this.namespaceList.some(x => x.name === ns);
       } else {
         this.namespaceList = [];
         this.selectedNsUnexist = true;

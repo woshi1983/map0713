@@ -214,9 +214,7 @@ export class ProviderComponent {
       }
       if (data.data?.ClusterProvider?.spec?.namespaces) {
         this.namespaceList = prividerNamespacediffset(data.data.ClusterProvider.spec.namespaces);
-        if (!this.namespaceList.find(x => x.name === ns)) {
-          this.selectedNsUnexist = true;
-        }
+        this.selectedNsUnexist = !this.namespaceList.some(x => x.name === ns);
       } else {
         this.namespaceList = [];
         this.selectedNsUnexist = true;
@@ -926,9 +924,7 @@ export class ProviderComponent {
       if (updated?.spec?.namespaces) {
         this.checkStatus.checkSuccess = true;
         this.namespaceList = prividerNamespacediffset(updated.spec.namespaces);
-        if (!this.namespaceList.find(x => x.name === this.selectedProvider.spec.defaultNamespace)) {
-          this.selectedNsUnexist = true;
-        }
+        this.selectedNsUnexist = !this.namespaceList.some(x => x.name === this.selectedProvider.spec.defaultNamespace);
       } else {
         this.checkStatus.checkSuccess = false;
         this.namespaceList = [];
