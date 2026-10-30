@@ -84,7 +84,7 @@ export class OperationComponent implements OnInit {
   });
   grafanaParamForm = new FormGroup({
     cluster: new FormControl('', Validators.required),
-    prometheusCluster: new FormControl(''),
+    prometheusCluster: new FormControl([], Validators.required),
     password: new FormControl(''),
     confirmPassword: new FormControl('')
   });

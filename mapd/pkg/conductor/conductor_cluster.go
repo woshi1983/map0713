@@ -379,7 +379,7 @@ func syncCluster(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 }
 
 func clusterHealthStatus(class model.ClusterClass, state model.ClusterState, healthErr error) model.ClusterStatus {
-	if class == model.ClusterClassVKS && state == model.ClusterStateUpdating {
+	if class == model.ClusterClassVKS && (state == model.ClusterStateUpdating || state == model.ClusterStateCreating) {
 		return model.ClusterStatusInitializing
 	}
 	if healthErr != nil {

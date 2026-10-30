@@ -73,7 +73,11 @@ func (k *VKSKubernetes) ProvisionKubernetes() (string, model.ClusterState, []byt
 			return "", model.ClusterStateUnknown, nil, err
 		}
 	}
-	if !vks.Available(obj) {
+	obj, err = client.GetClusterWithStatus(ctx, spec.Namespace, k.Cluster.Name)
+	if err != nil {
+		return "", model.ClusterStateCreating, nil, err
+	}
+	if !vks.Available(obj) || !vks.ReplicasReady(obj) {
 		return "", model.ClusterStateCreating, nil, nil
 	}
 	endpoint := vks.Endpoint(obj)
@@ -99,11 +103,14 @@ func (k *VKSKubernetes) ProvisionKubernetes() (string, model.ClusterState, []byt
 }
 
 func vksHealthState(current model.ClusterState, obj *unstructured.Unstructured) (model.ClusterState, error) {
-	if vks.UpgradeInProgress(obj) || current == model.ClusterStateUpdating && (vks.ReconciliationPending(obj) || !vks.Available(obj)) {
+	if vks.UpgradeInProgress(obj) || current == model.ClusterStateUpdating && (vks.ReconciliationPending(obj) || !vks.Available(obj) || !vks.ReplicasReady(obj)) {
 		return model.ClusterStateUpdating, fmt.Errorf("VKS cluster topology is still reconciling")
 	}
+	if !vks.ReplicasReady(obj) {
+		return model.ClusterStateCreating, fmt.Errorf("VKS cluster replicas are not ready")
+	}
 	if !vks.Available(obj) {
-		return model.ClusterStateRunning, fmt.Errorf("VKS cluster is not available")
+		return model.ClusterStateCreating, fmt.Errorf("VKS cluster is not available")
 	}
 	return model.ClusterStateRunning, nil
 }
@@ -119,7 +126,7 @@ func (k *VKSKubernetes) CheckHealth() (model.ClusterState, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), mapd.GlobalConfig.HTTPClientTimeout)
 	defer cancel()
-	obj, err := client.GetCluster(ctx, spec.Namespace, k.Cluster.Name)
+	obj, err := client.GetClusterWithStatus(ctx, spec.Namespace, k.Cluster.Name)
 	if err != nil {
 		return model.ClusterStateUnknown, err
 	}

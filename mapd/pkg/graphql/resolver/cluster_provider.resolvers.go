@@ -704,6 +704,9 @@ func (r *mutationResolver) UpdateTKGSClusterProvider(ctx context.Context, input 
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cp := &model1.ClusterProvider{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -713,7 +716,7 @@ func (r *mutationResolver) UpdateTKGSClusterProvider(ctx context.Context, input 
 
 	var spec *model1.ClusterProviderTKGSSpec
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(cp).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(cp).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cp.ID.String())
 			}
@@ -946,6 +949,9 @@ func (r *mutationResolver) UpdateTKG2SClusterProvider(ctx context.Context, input
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cp := &model1.ClusterProvider{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -955,7 +961,7 @@ func (r *mutationResolver) UpdateTKG2SClusterProvider(ctx context.Context, input
 
 	var spec *model1.ClusterProviderTKG2SSpec
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(cp).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(cp).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cp.ID.String())
 			}
@@ -1175,6 +1181,9 @@ func (r *mutationResolver) UpdateVKSClusterProvider(ctx context.Context, input m
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cp := &model1.ClusterProvider{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -1184,7 +1193,7 @@ func (r *mutationResolver) UpdateVKSClusterProvider(ctx context.Context, input m
 
 	var spec *model1.ClusterProviderVKSSpec
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(cp).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(cp).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cp.ID.String())
 			}
@@ -1415,6 +1424,9 @@ func (r *mutationResolver) UpdateTKG2MClusterProvider(ctx context.Context, input
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cp := &model1.ClusterProvider{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -1424,7 +1436,7 @@ func (r *mutationResolver) UpdateTKG2MClusterProvider(ctx context.Context, input
 
 	var spec *model1.ClusterProviderTKG2MSpec
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(cp).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(cp).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cp.ID.String())
 			}
@@ -1647,18 +1659,21 @@ func (r *mutationResolver) DeleteClusterProvider(ctx context.Context, input mode
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cp := &model1.ClusterProvider{ID: input.ID}
 	var spec interface{}
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(cp).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(cp).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cp.ID.String())
 			}
 			panic(&ErrDBConnection{err})
 		}
 
-		if !IsGuardSilenced(ctx) && !sess.Can(model1.PermModify, model1.PolicyObjectApplication, cp.OrganizationID.UUID) {
+		if !IsGuardSilenced(ctx) && !sess.Can(model1.PermDeleteOnly, model1.PolicyObjectClusterProvider, cp.OrganizationID.UUID) {
 			return errInsufficientPrivileges(ctx)
 		}
 

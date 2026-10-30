@@ -34,13 +34,13 @@
   <br>
   <div class="clr-row" style="margin-left: 0px">
     <div class="clr-form">
-      <button (click)="showAddGlb()" class="btn btn-primary btn-outline">
+      <button *ngIf="authService.getUserInfo()?.admin" (click)="showAddGlb()" class="btn btn-primary btn-outline">
           <clr-icon shape="plus"></clr-icon>
           {{ 'LBMGMT.ADDLB' | translate }}
       </button>
     </div>
     <div class="clr-form">
-      <clr-dropdown class="dropdown" >
+      <clr-dropdown *ngIf="authService.getUserInfo()?.admin" class="dropdown" >
           <button class="btn btn-outline btn-primary custom-dropdown-toggle" clrDropdownTrigger>
               <clr-icon shape="bars"></clr-icon>
               {{ 'SHARED.MOREACTIONS' | translate }}

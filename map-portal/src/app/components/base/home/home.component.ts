@@ -26,15 +26,15 @@ export class HomeComponent implements OnInit {
   }
 
   get hideUser (): boolean {
-    return !this.authService.can(this.orgId, handleObject.USER);
+    return !this.authService.canRead(this.orgId, handleObject.USER);
   }
 
   get hideAuditlog (): boolean {
-    return !this.authService.can(this.orgId, handleObject.AUDITLOG);
+    return !this.authService.canRead(this.orgId, handleObject.AUDITLOG);
   }
 
   get hideOverview (): boolean {
-    return !this.authService.can(this.orgId, handleObject.OVERVIEW);
+    return !this.authService.canRead(this.orgId, handleObject.OVERVIEW);
   }
 
   @ViewChild(ToastContainerDirective, { static: true }) toastContainer: ToastContainerDirective;

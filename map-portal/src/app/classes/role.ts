@@ -110,6 +110,28 @@ export class PermValidator {
         return false;
     }
   }
+
+  public canRead (org: string, obj: handleObject): boolean {
+    if (this.can(org, obj)) {
+      return true;
+    }
+
+    // The system menu deliberately requires more than its static read policy.
+    if (obj === handleObject.CLUSTER_PROVIDER || org === 'NULL') {
+      return false;
+    }
+
+    switch (this.role[org]?.toUpperCase()) {
+      case 'ADMIN':
+        return STATICPERMISSION.ADMIN[obj] === 'READ';
+      case 'USER':
+        return STATICPERMISSION.USER[obj] === 'READ';
+      case 'GUEST':
+        return STATICPERMISSION.GUEST[obj] === 'READ';
+      default:
+        return false;
+    }
+  }
 }
 
 export class UserInfo {

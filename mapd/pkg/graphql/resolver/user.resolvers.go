@@ -293,8 +293,19 @@ func (r *queryResolver) Whoami(ctx context.Context) (*model.User, error) {
 
 // User is the resolver for the User field.
 func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	sess, ok := auth.FromContext(ctx)
+	if !ok {
+		panic(ErrIdentityNotFound)
+	}
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	user := &model1.UserBinding{ID: id}
-	if err := mapd.Database().Take(user).Error; err != nil {
+	db := mapd.Database().Where("`id` = ?", id)
+	if !IsGuardSilenced(ctx) {
+		db = filterVisibleUsers(db, sess)
+	}
+	if err := db.Take(user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}
@@ -305,6 +316,10 @@ func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, er
 
 // Users is the resolver for the Users field.
 func (r *queryResolver) Users(ctx context.Context, page *model.QueryPage, filters []*model.QueryFilter) (*model.Users, error) {
+	sess, ok := auth.FromContext(ctx)
+	if !ok {
+		panic(ErrIdentityNotFound)
+	}
 	obj := &model.Users{Page: &model.PageInfo{}}
 	if page.Limit != nil {
 		obj.Page.Limit = *page.Limit
@@ -318,6 +333,9 @@ func (r *queryResolver) Users(ctx context.Context, page *model.QueryPage, filter
 
 	db := mapd.Database().Model(&model1.UserBinding{})
 	db = finalizeUserQueryFilter(db, obj.Filters...)
+	if !IsGuardSilenced(ctx) {
+		db = filterVisibleUsers(db, sess)
+	}
 
 	if err := db.Count(&obj.TotalCount).Error; err != nil {
 		panic(&ErrDBConnection{err})
@@ -328,15 +346,29 @@ func (r *queryResolver) Users(ctx context.Context, page *model.QueryPage, filter
 
 // RoleBindings is the resolver for the roleBindings field.
 func (r *userResolver) RoleBindings(ctx context.Context, obj *model.User, page *model.QueryPage, filters []*model.QueryFilter) (*model.RoleBindings, error) {
-	return r.Resolver.Query().(*queryResolver).RoleBindings(WithGuardSilenced(ctx), page, append(filters, &model.QueryFilter{Key: "user", Value: []string{obj.ID.String()}}))
+	sess, ok := auth.FromContext(ctx)
+	if !ok {
+		panic(ErrIdentityNotFound)
+	}
+	if obj.ID == sess.UserID {
+		ctx = WithGuardSilenced(ctx)
+	}
+	return r.Resolver.Query().(*queryResolver).RoleBindings(ctx, page, append(filters, &model.QueryFilter{Key: "user", Value: []string{obj.ID.String()}}))
 }
 
 // Edge is the resolver for the edge field.
 func (r *usersResolver) Edge(ctx context.Context, obj *model.Users) (*model.UserNodes, error) {
+	sess, ok := auth.FromContext(ctx)
+	if !ok {
+		panic(ErrIdentityNotFound)
+	}
 	nodes := &model.UserNodes{}
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
 		db := tx.Order("`updated_at` DESC")
 		db = finalizeUserQueryFilter(db, obj.Filters...)
+		if !IsGuardSilenced(ctx) {
+			db = filterVisibleUsers(db, sess)
+		}
 
 		if err := paginate(obj.Page.Count, obj.Page.Offset, func(lim, off int64) error {
 			var users []model1.UserBinding

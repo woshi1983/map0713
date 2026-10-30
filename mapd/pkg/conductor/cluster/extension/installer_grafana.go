@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
 )
@@ -56,23 +55,23 @@ func unmarshalGrafanaEnv(ext *model.ClusterExtension, env map[string]string) err
 	}
 
 	var prefixes []string
-	sort.Slice(ext.Related, func(i, j int) bool { return ext.Related[i].Name < ext.Related[j].Name })
-	for i, rc := range ext.Related {
-		prefix := "CLUSTER" + strconv.Itoa(i)
+	related := append([]model.Cluster(nil), ext.Related...)
+	sort.Slice(related, func(i, j int) bool { return related[i].Name < related[j].Name })
+	for _, rc := range related {
+		prefix := "CLUSTER" + strconv.Itoa(len(prefixes))
 		for i := range rc.Extensions {
 			each := &rc.Extensions[i]
 			if each.Name == model.ClusterExtensionNamePrometheus {
+				if len(each.Endpoints) == 0 {
+					break
+				}
 				endpoints := []string{}
 				if err := json.Unmarshal(each.Endpoints, &endpoints); err != nil {
 					return err
 				}
 				for _, endpoint := range endpoints {
 					u, err := url.Parse(endpoint)
-					if err != nil {
-						return errors.Wrapf(err, "error parsing endpoint of %s", each.Name)
-					}
-					idx := strings.Index(u.Host, ":")
-					if idx > 0 {
+					if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" {
 						continue
 					}
 
@@ -84,6 +83,9 @@ func unmarshalGrafanaEnv(ext *model.ClusterExtension, env map[string]string) err
 				break
 			}
 		}
+	}
+	if len(prefixes) == 0 {
+		return fmt.Errorf("Grafana requires a related Prometheus cluster with a valid HTTP endpoint")
 	}
 	env["GRAFANA_CONTEXT_PREFIX_MAPPING"] = strings.Join(prefixes, ",")
 	return nil

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd"
@@ -29,6 +30,7 @@ import (
 	"gorm.io/gorm/clause"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 )
 
@@ -924,6 +926,9 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	cluster := &model1.Cluster{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -933,7 +938,7 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 	reprovision := false
 
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(cluster).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`id` = ?", input.ID).Take(cluster).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cluster.ID.String())
 			}
@@ -1716,30 +1721,47 @@ func (r *queryResolver) Cluster(ctx context.Context, id uuid.UUID) (*model.Clust
 	}
 	result := convertClusterFromSQLModel(cluster)
 	if cluster.Class == model1.ClusterClassVKS && cluster.ProviderID.Valid && cluster.Status == model1.ClusterStatusHealthy && cluster.State == model1.ClusterStateRunning {
-		spec := &model1.ClusterVKSSpec{}
-		if err := json.Unmarshal(cluster.Spec, spec); err != nil {
-			return nil, errGatewayError(ctx, err)
-		}
-		client, _, err := vksProviderClient(ctx, cluster.ProviderID.UUID)
-		if err != nil {
-			return nil, err
-		}
-		remote, err := client.GetCluster(ctx, spec.Namespace, cluster.Name)
-		if err != nil {
-			return nil, errGatewayError(ctx, err)
-		}
-		if remote.GetLabels()[vks.OwnerLabel] != cluster.ID.String() || spec.RemoteUID == "" || string(remote.GetUID()) != spec.RemoteUID {
-			return nil, errInvalidRequest(ctx, "id", "Supervisor cluster ownership or UID mismatch")
-		}
-		cp, workers, err := vks.VKSReplicas(remote)
-		if err != nil {
-			return nil, errGatewayError(ctx, err)
-		}
-		if current, ok := result.Spec.(*model.VKSClusterSpec); ok {
-			current.CtlPlaneReplicas, current.WorkerReplicas = cp, workers
+		if err := refreshVKSClusterReplicaCounts(ctx, cluster, result, func(ctx context.Context, namespace, name string) (*unstructured.Unstructured, error) {
+			client, _, err := vksProviderClient(ctx, cluster.ProviderID.UUID)
+			if err != nil {
+				return nil, err
+			}
+			return client.GetCluster(ctx, namespace, name)
+		}); err != nil {
+			if errors.Is(err, errVKSClusterOwnershipMismatch) {
+				return nil, errInvalidRequest(ctx, "id", "Supervisor cluster ownership or UID mismatch")
+			}
+			// A transient Supervisor failure must not erase the whole GraphQL
+			// cluster list. The database still has the last requested counts.
+			log.Printf("VKS cluster %s replica refresh failed: %v", cluster.ID, err)
 		}
 	}
 	return result, nil
+}
+
+var errVKSClusterOwnershipMismatch = errors.New("Supervisor cluster ownership or UID mismatch")
+
+func refreshVKSClusterReplicaCounts(ctx context.Context, cluster *model1.Cluster, result *model.Cluster, fetch func(context.Context, string, string) (*unstructured.Unstructured, error)) error {
+	spec, ok := result.Spec.(*model.VKSClusterSpec)
+	if !ok {
+		return fmt.Errorf("VKS cluster spec is unavailable")
+	}
+	remote, err := fetch(ctx, spec.Namespace, cluster.Name)
+	if err != nil {
+		return err
+	}
+	if remote == nil {
+		return fmt.Errorf("Supervisor returned an empty VKS cluster")
+	}
+	if remote.GetLabels()[vks.OwnerLabel] != cluster.ID.String() || spec.RemoteUID == "" || string(remote.GetUID()) != spec.RemoteUID {
+		return errVKSClusterOwnershipMismatch
+	}
+	cp, workers, err := vks.VKSReplicas(remote)
+	if err != nil {
+		return err
+	}
+	spec.CtlPlaneReplicas, spec.WorkerReplicas = cp, workers
+	return nil
 }
 
 // Clusters is the resolver for the Clusters field.

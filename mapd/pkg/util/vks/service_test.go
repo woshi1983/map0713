@@ -24,6 +24,23 @@ func newFakeClient(objects ...runtime.Object) *Client {
 	return &Client{dynamic: dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), objects...)}
 }
 
+func TestGetClusterWithStatusPrefersV1Beta2ReplicaCounts(t *testing.T) {
+	id := uuid.New()
+	old := fakeCluster("demo", "team-a", id, types.UID("remote-1"))
+	current := old.DeepCopy()
+	current.SetAPIVersion("cluster.x-k8s.io/v1beta2")
+	_ = unstructured.SetNestedField(current.Object, int64(3), "status", "controlPlane", "availableReplicas")
+	client := newFakeClient(old, current)
+	got, err := client.GetClusterWithStatus(context.Background(), "team-a", "demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	count, found, _ := unstructured.NestedInt64(got.Object, "status", "controlPlane", "availableReplicas")
+	if !found || count != 3 {
+		t.Fatalf("v1beta2 replica count not selected: %v", got.Object)
+	}
+}
+
 func TestCreateClusterRejectsExistingForeignObject(t *testing.T) {
 	ownedByOther := fakeCluster("demo", "team-a", uuid.New(), types.UID("remote-1"))
 	client := newFakeClient(ownedByOther)
@@ -94,5 +111,33 @@ func TestAvailableReadsV1Beta1EmbeddedConditions(t *testing.T) {
 	}}}
 	if !Available(obj) {
 		t.Fatal("embedded Available condition was ignored")
+	}
+}
+
+func TestReplicasReadyRejectsIncompleteControlPlaneAndReadyCondition(t *testing.T) {
+	obj := &unstructured.Unstructured{Object: map[string]interface{}{
+		"spec": map[string]interface{}{"topology": map[string]interface{}{
+			"controlPlane": map[string]interface{}{"replicas": int64(3)},
+			"workers":      map[string]interface{}{"machineDeployments": []interface{}{map[string]interface{}{"name": "pool-0", "replicas": int64(1)}}},
+		}},
+		"status": map[string]interface{}{
+			"controlPlane": map[string]interface{}{"desiredReplicas": int64(3), "readyReplicas": int64(1), "availableReplicas": int64(1)},
+			"workers":      map[string]interface{}{"desiredReplicas": int64(1), "readyReplicas": int64(1), "availableReplicas": int64(1)},
+			"conditions":   []interface{}{map[string]interface{}{"type": "Ready", "status": "False"}},
+		},
+	}}
+	if ReplicasReady(obj) {
+		t.Fatal("one of three control plane nodes cannot be ready")
+	}
+	_ = unstructured.SetNestedField(obj.Object, int64(3), "status", "controlPlane", "readyReplicas")
+	_ = unstructured.SetNestedField(obj.Object, int64(3), "status", "controlPlane", "availableReplicas")
+	if ReplicasReady(obj) {
+		t.Fatal("Ready=False must block healthy state even after counts agree")
+	}
+	_ = unstructured.SetNestedSlice(obj.Object, []interface{}{map[string]interface{}{"type": "Ready", "status": "True"}}, "status", "conditions")
+	unstructured.RemoveNestedField(obj.Object, "status", "controlPlane", "readyReplicas")
+	unstructured.RemoveNestedField(obj.Object, "status", "workers", "readyReplicas")
+	if !ReplicasReady(obj) {
+		t.Fatal("all requested available replicas and conditions are ready without optional readyReplicas")
 	}
 }

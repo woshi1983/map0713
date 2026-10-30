@@ -895,7 +895,7 @@
       "GRAFANA-CONFIRM-HELP": "Enter the password of admin again.",
       "GRAFANA-CONFIRM-ERROR": "Password and confirm password inconsistent!",
       "GRAFANA-LINKED": "Linked Cluster",
-      "GRAFANA-LINKED-HELP": "Select the cluster associated with Grafana. Only the cluster that started the Promethues Stack can be associated.",
+      "GRAFANA-LINKED-HELP": "Select at least one cluster with an enabled Prometheus Stack. Grafana requires a Prometheus datasource.",
       "LOGGING-PAGETITLE": "Logging Stack Parameters",
       "LOGGING-PAGEALERT1": "At most one Logging Stack service is started per cluster.",
       "LOGGING-PAGEALERT2": "The selected boot cluster should have at least 9.5 Core CPU, 22 Gi memory, and 160 Gi disk resources available (for 0 data nodes). The specific resource requirements depend on the data node parameter Settings.",

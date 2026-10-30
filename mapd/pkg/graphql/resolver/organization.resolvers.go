@@ -24,6 +24,9 @@ func (r *mutationResolver) CreateOrganization(ctx context.Context, input model.C
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if !IsGuardSilenced(ctx) && !sess.Can(model1.PermWriteOnly, model1.PolicyObjectOrganization, uuid.Nil) {
+		return nil, errInsufficientPrivileges(ctx)
+	}
 
 	if !validateName(input.Name) {
 		return nil, errInvalidRequest(ctx, "input.name", fmt.Sprintf("regexp '%s' is not satisfied", regexpName.String()), input.Name)

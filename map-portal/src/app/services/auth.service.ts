@@ -140,4 +140,10 @@ export class AuthService {
     }
     return this.permValidator.can(org, obj);
   }
+
+  public canRead (org: string, obj: handleObject): boolean {
+    // can() refreshes the cached validator from the current login cookies.
+    this.can(org, obj);
+    return this.permValidator?.canRead(org, obj) ?? false;
+  }
 }

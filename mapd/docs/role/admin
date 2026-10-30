@@ -7,7 +7,7 @@ full:component
 read:image_registry
 full:instance
 read:load_balancer
-write:organization
+modify:organization
 full:route
 full:shortcut
 read:user

@@ -3,6 +3,7 @@ package resolver
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	graphql "github.com/99designs/gqlgen/graphql"
 	gqlerror "github.com/vektah/gqlparser/v2/gqlerror"
@@ -164,9 +165,37 @@ func errNoLongerSupport(ctx context.Context, reason string) *gqlerror.Error {
 }
 
 func errGatewayError(ctx context.Context, e error) *gqlerror.Error {
-	err := newGQLErrorf(ctx, CodeGatewayError, "gateway error")
-	err.Extensions["reason"] = e.Error()
+	code, message := gatewayErrorMessage(e)
+	err := newGQLErrorf(ctx, code, "%s", message)
+	err.Extensions["reason"] = message
 	return err
+}
+
+func gatewayErrorMessage(e error) (ErrCode, string) {
+	reason := strings.TrimSpace(e.Error())
+	if strings.Contains(reason, "the server could not find the requested resource") {
+		switch {
+		case strings.Contains(reason, "builds.kpack.io"):
+			return CodeInvalidRequestError, "source builds are not enabled on this cluster"
+		case strings.Contains(reason, ".velero.io"):
+			return CodeInvalidRequestError, "backup and restore are not enabled on this cluster"
+		}
+	}
+	switch {
+	case strings.Contains(reason, "connection refused"):
+		return CodeGatewayError, "gateway error: upstream connection refused"
+	case strings.Contains(reason, "context deadline exceeded"), strings.Contains(reason, "i/o timeout"):
+		return CodeGatewayError, "gateway error: upstream request timed out"
+	case strings.Contains(strings.ToLower(reason), "unauthorized"), strings.Contains(reason, "provide credentials"):
+		return CodeGatewayError, "gateway error: upstream authentication failed"
+	case strings.Contains(strings.ToLower(reason), "forbidden"):
+		return CodeGatewayError, "gateway error: upstream access denied"
+	case strings.Contains(reason, "x509:"):
+		return CodeGatewayError, "gateway error: upstream TLS certificate validation failed"
+	case strings.Contains(reason, "the server could not find the requested resource"):
+		return CodeGatewayError, "gateway error: requested Kubernetes resource is unavailable"
+	}
+	return CodeGatewayError, "gateway error: upstream request failed"
 }
 
 type objectIsBusy struct {

@@ -95,6 +95,27 @@ func (c *Client) GetCluster(ctx context.Context, namespace, name string) (*unstr
 	return c.dynamic.Resource(c.capiResource("clusters")).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
+// GetClusterWithStatus reads v1beta2 when available because its replica
+// counters are more complete than the v1beta1 compatibility representation.
+func (c *Client) GetClusterWithStatus(ctx context.Context, namespace, name string) (*unstructured.Unstructured, error) {
+	cluster, err := c.GetCluster(ctx, namespace, name)
+	if err != nil || c.capiResource("clusters").Version == "v1beta2" {
+		return cluster, err
+	}
+	v2 := schema.GroupVersionResource{Group: "cluster.x-k8s.io", Version: "v1beta2", Resource: "clusters"}
+	status, err := c.dynamic.Resource(v2).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return cluster, nil
+		}
+		return nil, err
+	}
+	if status.GetUID() != cluster.GetUID() {
+		return nil, fmt.Errorf("VKS cluster UID differs between v1beta1 and v1beta2")
+	}
+	return status, nil
+}
+
 func (c *Client) ValidateCluster(ctx context.Context, id uuid.UUID, name, releaseName string, spec model.ClusterVKSSpec) error {
 	obj, err := BuildCluster(id, name, releaseName, spec)
 	if err != nil {
@@ -157,6 +178,46 @@ func Available(obj *unstructured.Unstructured) bool {
 	}
 	available, _, _ := unstructured.NestedBool(obj.Object, "status", "available")
 	return available
+}
+
+// ReplicasReady requires the observed control plane and worker counts to reach
+// the topology requested by MAP. Supervisor may set Available before all
+// control plane machines have become ready.
+func ReplicasReady(obj *unstructured.Unstructured) bool {
+	for _, path := range [][]string{{"status", "conditions"}, {"status", "v1beta2", "conditions"}} {
+		conditions, _, _ := unstructured.NestedSlice(obj.Object, path...)
+		for _, raw := range conditions {
+			condition, ok := raw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if (condition["type"] == "Ready" || condition["type"] == "ControlPlaneMachinesUpToDate") && condition["status"] != "True" {
+				return false
+			}
+		}
+	}
+	controlPlane, workers, err := VKSReplicas(obj)
+	if err != nil {
+		return false
+	}
+	for role, desired := range map[string]int64{"controlPlane": controlPlane, "workers": workers} {
+		if desired < 1 {
+			return false
+		}
+		for _, field := range []string{"desiredReplicas", "availableReplicas"} {
+			count, found, err := unstructured.NestedInt64(obj.Object, "status", role, field)
+			if err != nil || !found || count != desired {
+				return false
+			}
+		}
+		for _, field := range []string{"replicas", "readyReplicas", "upToDateReplicas"} {
+			count, found, err := unstructured.NestedInt64(obj.Object, "status", role, field)
+			if err != nil || found && count != desired {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func configureClusterAPIVersion(obj *unstructured.Unstructured, version string) error {

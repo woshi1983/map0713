@@ -401,8 +401,8 @@
             </clr-password-container>
             <clr-combobox-container>
               <clr-control-helper>{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED-HELP' | translate }}</clr-control-helper>
-              <label class="clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED' | translate }}</label>
-              <clr-combobox class="clr-col-md-10" name="prometheusCluster" clrMulti="true" formControlName="prometheusCluster">
+              <label class="required clr-col-md-2">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-LINKED' | translate }}</label>
+              <clr-combobox class="clr-col-md-10" name="prometheusCluster" clrMulti="true" formControlName="prometheusCluster" required>
                 <ng-container *clrOptionSelected="let selected">
                   <clr-icon shape="cluster" role="img"></clr-icon> {{selected.name}}
                 </ng-container>

@@ -6,11 +6,23 @@ package resolver
 import (
 	"strings"
 
+	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/auth"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/graphql/model"
 	model1 "gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/textutil"
 	"gorm.io/gorm"
 )
+
+// Users have no organization_id column. Their role bindings determine which
+// organizations may expose them to a non-superadmin caller.
+func filterVisibleUsers(db *gorm.DB, sess *auth.SessionInfo) *gorm.DB {
+	if sess.Admin {
+		return db
+	}
+	roles := db.Session(&gorm.Session{NewDB: true}).Model(&model1.RoleBinding{}).Select("user_binding_id")
+	roles = sess.FilterQueryByOrganization(roles, model1.PermReadOnly, model1.PolicyObjectUser)
+	return db.Where("`user_binding`.`id` IN (?)", roles)
+}
 
 func convertUserFromSQLModel(user *model1.UserBinding) *model.User {
 	obj := &model.User{

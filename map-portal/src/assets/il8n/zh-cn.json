@@ -895,7 +895,7 @@
       "GRAFANA-CONFIRM-HELP": "请再次输入admin初始密码。",
       "GRAFANA-CONFIRM-ERROR": "密码与确认密码不一致！",
       "GRAFANA-LINKED": "关联集群",
-      "GRAFANA-LINKED-HELP": "选择Grafana关联的集群，只有启动Promethues Stack的集群才能被关联。",
+      "GRAFANA-LINKED-HELP": "至少选择一个已启用 Prometheus Stack 的集群，Grafana 需要 Prometheus 数据源。",
       "LOGGING-PAGETITLE": "Logging Stack参数",
       "LOGGING-PAGEALERT1": "每个集群最多启动一个Logging Stack服务。",
       "LOGGING-PAGEALERT2": "选择的启动集群至少应有 >9.5 Core CPU, >22 Gi内存，>160 Gi磁盘的可用资源(0个数据节点时)，具体的资源需求取决于数据节点参数设置。",

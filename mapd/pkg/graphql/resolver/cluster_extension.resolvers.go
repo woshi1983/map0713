@@ -98,6 +98,9 @@ func (r *mutationResolver) EnableClusterExtension(ctx context.Context, input mod
 		}
 	}
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
+		if ext.Name == model1.ClusterExtensionNameGrafana && len(input.Related) == 0 {
+			return errInvalidRequest(ctx, "input.related", "Grafana requires at least one related cluster with an enabled Prometheus extension")
+		}
 		c := &model1.Cluster{ID: ext.ClusterID.UUID}
 		if err := tx.Take(c).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -140,6 +143,21 @@ func (r *mutationResolver) EnableClusterExtension(ctx context.Context, input mod
 			}
 			if c.Provisioned < model1.ClusterProvisionFinish {
 				return errInvalidRequest(ctx, fmt.Sprintf("input.related.%d", i), "cluster is not ready", each.String())
+			}
+			if ext.Name == model1.ClusterExtensionNameGrafana {
+				var prometheus model1.ClusterExtension
+				err := tx.Where("`cluster_id` = ? AND `name` = ? AND `state` = ? AND `status` = ?", each,
+					model1.ClusterExtensionNamePrometheus, model1.ClusterExtensionStateEnabled, model1.ClusterExtensionStatusProvisioned).Take(&prometheus).Error
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return errInvalidRequest(ctx, fmt.Sprintf("input.related.%d", i), "select a cluster with a provisioned Prometheus extension", each.String())
+				}
+				if err != nil {
+					panic(&ErrDBConnection{err})
+				}
+				var endpoints []string
+				if err := json.Unmarshal(prometheus.Endpoints, &endpoints); err != nil || len(endpoints) == 0 {
+					return errInvalidRequest(ctx, fmt.Sprintf("input.related.%d", i), "the selected Prometheus extension has no endpoint yet", each.String())
+				}
 			}
 			rel := &model1.ClusterExtensionRelatedCluster{
 				ID:          uuid.New(),
