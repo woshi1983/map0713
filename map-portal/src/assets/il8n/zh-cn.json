@@ -104,7 +104,7 @@
     "CLUSTERROUTE": "多集群路由",
     "INGRESSES": "七层路由",
     "CLUSTERSTATUS": "集群状态",
-    "CLUSTERTIPS": "x/y表示共有y个，其中x个健康。",
+    "CLUSTERTIPS": "统计所有项目：x/y 表示共 y 个集群，其中 x 个健康。",
     "HEALTHYCLUSTER": "健康集群：",
     "UNHEALTHYCLUSTER": "不健康集群：",
     "HEALTHY": "健康",
@@ -126,7 +126,7 @@
       "INSTANCE": "当前无实例"
     },
     "PROJECTRESOURCEINFO": "项目资源使用情况",
-    "PROJECTRESOURCEINFOTIPS": "仅统计设置资源配额的项目。",
+    "PROJECTRESOURCEINFOTIPS": "仅统计设置了正数资源配额的项目；不计入无限制或未设置配额的项目。",
     "NOQUOTA": "当前没有项目启用资源配额！",
     "CPUTOTAL": "总CPU使用量(Core)",
     "MEMTOTAL": "总内存使用量(Gi)",

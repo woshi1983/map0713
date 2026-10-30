@@ -104,7 +104,7 @@
     "CLUSTERROUTE": "Routers",
     "INGRESSES": "Ingresses",
     "CLUSTERSTATUS": "Cluster Status",
-    "CLUSTERTIPS": "x/y means a total of y, of which x are healthy.",
+    "CLUSTERTIPS": "Across all projects, x/y means a total of y clusters, of which x are healthy.",
     "HEALTHYCLUSTER": "Healthy: ",
     "UNHEALTHYCLUSTER": "Unhealthy: ",
     "HEALTHY": "Healthy",
@@ -126,7 +126,7 @@
       "INSTANCE": "no instances"
     },
     "PROJECTRESOURCEINFO": "Project Resource Usage",
-    "PROJECTRESOURCEINFOTIPS": "Only projects that set resource quotas are counted.",
+    "PROJECTRESOURCEINFOTIPS": "Only projects with positive resource quotas are counted. Unlimited or unset quotas are excluded.",
     "NOQUOTA": "No projects have resource quotas enabled!",
     "CPUTOTAL": "Total CPU usage (Core)",
     "MEMTOTAL": "Total memory usage (Gi)",

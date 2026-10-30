@@ -252,25 +252,25 @@ export class SummaryComponent implements OnInit {
           let memoryFree = 0;
           let storageUsed = 0;
           let storageFree = 0;
-          if(org.quota.total.cpus !== 0){
+          if(org.quota.total.cpus > 0){
             cpuFree = org.quota.total.cpus - org.quota.used.cpus;
             cpuUsed = org.quota.used.cpus;
             this.allOrgResourceMetrics.totalResource.cpu.used = this.allOrgResourceMetrics.totalResource.cpu.used + org.quota.used.cpus;
             this.allOrgResourceMetrics.totalResource.cpu.total = this.allOrgResourceMetrics.totalResource.cpu.total + org.quota.total.cpus;
           }
-          if(org.quota.total.memoryMi !== 0){
+          if(org.quota.total.memoryMi > 0){
             memoryFree = Math.round(((org.quota.total.memoryMi - org.quota.used.memoryMi) / 1024 + Number.EPSILON) * 1000 ) / 1000;
             memoryUsed = Math.round((org.quota.used.memoryMi / 1024 + Number.EPSILON) * 1000 ) / 1000;
             allOrgMemoryUsedMi = allOrgMemoryUsedMi + org.quota.used.memoryMi;
             allOrgMemoryTotalMi = allOrgMemoryTotalMi + org.quota.total.memoryMi;
           }
-          if(org.quota.total.storageGi !== 0){
+          if(org.quota.total.storageGi > 0){
             storageFree = org.quota.total.storageGi - org.quota.used.storageGi;
             storageUsed = org.quota.used.storageGi;
             this.allOrgResourceMetrics.totalResource.storage.used = this.allOrgResourceMetrics.totalResource.storage.used + org.quota.used.storageGi;
             this.allOrgResourceMetrics.totalResource.storage.total = this.allOrgResourceMetrics.totalResource.storage.total + org.quota.total.storageGi;
           }
-          if(org.quota.total.cpus !== 0 || org.quota.total.memoryMi !== 0 || org.quota.total.storageGi !== 0){
+          if(org.quota.total.cpus > 0 || org.quota.total.memoryMi > 0 || org.quota.total.storageGi > 0){
             this.allOrgResourceMetrics.orgMetrics.name.push(org.name);
             this.allOrgResourceMetrics.orgMetrics.cpuUsed.push(cpuUsed);
             this.allOrgResourceMetrics.orgMetrics.cpuFree.push(cpuFree);
