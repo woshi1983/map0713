@@ -48,9 +48,21 @@ func (e *ErrCriticalFailure) Error() string {
 }
 
 func IsCriticalError(err error) bool {
+	if dependency, ok := err.(*ErrDependency); ok {
+		return !dependency.Pending
+	}
 	_, ok := err.(*ErrCriticalFailure)
 	return ok
 }
+
+// ErrDependency carries a safe, user-facing reason for an extension that is
+// waiting on (or cannot use) a related extension.
+type ErrDependency struct {
+	Reason  string
+	Pending bool
+}
+
+func (e *ErrDependency) Error() string { return e.Reason }
 
 func postJob(client *k8s.Kubernetes, job *batchv1.Job) (*batchv1.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), mapd.GlobalConfig.HTTPClientTimeout)

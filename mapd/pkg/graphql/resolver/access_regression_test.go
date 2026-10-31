@@ -97,3 +97,45 @@ func TestUserRejectsEmptyID(t *testing.T) {
 		t.Fatalf("expected GraphQL validation error, got %v", err)
 	}
 }
+
+func TestObjectQueriesRejectEmptyID(t *testing.T) {
+	ctx := auth.Context(context.Background(), &auth.SessionInfo{Admin: true})
+	r := &queryResolver{}
+	tests := []struct {
+		name string
+		run  func() error
+	}{
+		{"Cluster", func() error { _, err := r.Cluster(ctx, uuid.Nil); return err }},
+		{"Component", func() error { _, err := r.Component(ctx, uuid.Nil); return err }},
+		{"Route", func() error { _, err := r.Route(ctx, uuid.Nil); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.run()
+			if err == nil || !IsGQLError(err) || !strings.Contains(err.Error(), "invalid request") {
+				t.Fatalf("expected invalid request, got %v", err)
+			}
+		})
+	}
+}
+
+func TestRemainingMutationsRejectEmptyID(t *testing.T) {
+	ctx := auth.Context(context.Background(), &auth.SessionInfo{Admin: true})
+	r := &mutationResolver{}
+	tests := []struct {
+		name string
+		run  func() error
+	}{
+		{"UpdateUser", func() error { _, err := r.UpdateUser(ctx, model.UpdateUser{ID: uuid.Nil}); return err }},
+		{"DeleteCluster", func() error { _, err := r.DeleteCluster(ctx, model.DeleteCluster{ID: uuid.Nil}); return err }},
+		{"UpdateRoute", func() error { _, err := r.UpdateRoute(ctx, model.UpdateRoute{ID: uuid.Nil}); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.run()
+			if err == nil || !IsGQLError(err) || !strings.Contains(err.Error(), "invalid request") {
+				t.Fatalf("expected invalid request, got %v", err)
+			}
+		})
+	}
+}

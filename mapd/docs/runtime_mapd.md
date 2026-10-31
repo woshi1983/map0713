@@ -14,6 +14,7 @@
 |`MAPD_IDP_DEX_API`|`--idp-dex-api`|`localhost:5557`|
 |`MAPD_IDP_DEX_API_CERT`|`--idp-dex-api-cert`||
 |`MAPD_IDP_DEX_API_KEY`|`--idp-dex-api-key`||
+|`MAPD_IDP_CLIENT_SECRET`|environment only|Generated and stored in MAP's database; set this to the existing secret for a read-only Dex client|
 |`MAPD_IDP_CROSS_CLIENT_TOKEN_SHARING`|`--idp-cross-client-token-sharing`|`false`|
 |`MAPD_LOG_LEVEL`|`-L`, `--log-level`|`info`|
 |`MAPD_DB_HOST`|`--db-host`|`[::1]:3306`|

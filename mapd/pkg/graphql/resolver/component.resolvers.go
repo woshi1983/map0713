@@ -776,6 +776,9 @@ func (r *queryResolver) Component(ctx context.Context, id uuid.UUID) (*model.Com
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 
 	db := mapd.Database()
 	if !IsGuardSilenced(ctx) {
@@ -784,7 +787,7 @@ func (r *queryResolver) Component(ctx context.Context, id uuid.UUID) (*model.Com
 
 	com := &model1.Component{ID: id}
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(com).Error; err != nil {
+		if err := tx.Where("`id` = ?", id).Take(com).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "id", id.String())
 			}

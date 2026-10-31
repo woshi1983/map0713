@@ -29,6 +29,9 @@ func convertRouteFromSQLModel(route *model1.Route) *model.Route {
 		CreatedAt:    route.CreatedAt,
 		LastModified: route.UpdatedAt,
 	}
+	if route.LastError != "" {
+		obj.ErrorReason = &route.LastError
+	}
 	switch route.Type {
 	case model1.LoadBalancerTypeAVI:
 		spec := &model1.RouteAVISpec{}

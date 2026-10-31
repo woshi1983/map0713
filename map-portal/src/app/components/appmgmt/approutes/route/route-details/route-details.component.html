@@ -1,5 +1,10 @@
 <clr-modal [(clrModalOpen)]="open" [clrModalClosable]="false">
   <h3 class="modal-title">{{route?.name}} {{ 'APPROUTE.ROUTE-DETAILS.TITLE' | translate }}</h3>
+  <div class="alert alert-danger alert-sm" role="alert" *ngIf="route?.errorReason">
+    <div class="alert-items"><div class="alert-item static">
+      <span class="alert-text">{{ 'APPROUTE.ROUTE.DATAGRIDFIELD.ERRORREASON' | translate }}: {{route.errorReason}}</span>
+    </div></div>
+  </div>
   <div class="modal-body" *ngIf="data.length > 0">
     <div echarts (chartInit)="routeStatusChartInit($event)" [options]="chartOption" class="div-inline"></div>
     <div style="margin-top: -40px;">

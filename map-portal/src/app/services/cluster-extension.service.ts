@@ -21,6 +21,7 @@ export class ClusterExtensionService {
                 endpoints
                 state
                 status
+                errorReason
                 spec
                 related {edge { nodes {id name}}}
                 cluster {id name}

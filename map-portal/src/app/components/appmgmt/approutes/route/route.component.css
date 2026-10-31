@@ -36,3 +36,12 @@
   text-align: left;
   display: inline-block;
 }
+
+.route-error {
+  display: block;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #c21d00;
+}

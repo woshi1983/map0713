@@ -5,6 +5,7 @@ type ClusterExtension {
   spec: Map
   state: ClusterExtensionState!
   status: ClusterExtensionStatus!
+  errorReason: String
   related(page: QueryPage = {}, filters: [QueryFilter!] = []): Clusters!
   cluster: Cluster!
   organization: Organization!

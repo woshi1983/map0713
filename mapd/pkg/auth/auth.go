@@ -31,7 +31,6 @@ import (
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/model"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/httputil"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/identicon"
-	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/randutil"
 	"gitlab.eng.vmware.com/cn-se-solution/mapd/pkg/util/textutil"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -688,11 +687,10 @@ func NewAuth(group *echo.Group, logger *zap.SugaredLogger) (*Auth, error) {
 	}
 
 	oauth2Cfg := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: randutil.StringN(64),
-		RedirectURL:  mapd.GlobalConfig.GetCallbackURI().String(),
-		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile", "email", "groups", "offline_access"},
+		ClientID:    clientID,
+		RedirectURL: mapd.GlobalConfig.GetCallbackURI().String(),
+		Endpoint:    provider.Endpoint(),
+		Scopes:      []string{oidc.ScopeOpenID, "profile", "email", "groups", "offline_access"},
 	}
 	if err := initDexData(dex, oauth2Cfg); err != nil {
 		return nil, errors.Wrap(err, "error initialize dex data")
@@ -729,7 +727,7 @@ func newDexClient(hostAndPort string, clientCfg *tls.Config) (api.DexClient, err
 }
 
 func initDexData(dex api.DexClient, cfg *oauth2.Config) error {
-	if err := initDexClient(dex, cfg); err != nil {
+	if err := initPersistentDexClient(dex, cfg); err != nil {
 		return errors.Wrap(err, "failed to initialize OpenID client for Dex")
 	}
 	if err := initAdminAndDefaultOrg(dex, mapd.GlobalConfig.Auth.AdminInitialPassword); err != nil {
@@ -738,7 +736,7 @@ func initDexData(dex api.DexClient, cfg *oauth2.Config) error {
 	return nil
 }
 
-func initDexClient(dex api.DexClient, cfg *oauth2.Config) error {
+func initDexClient(dex api.DexClient, cfg *oauth2.Config, replace, configuredSecret bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), mapd.GlobalConfig.HTTPClientTimeout)
 	defer cancel()
 
@@ -749,30 +747,45 @@ func initDexClient(dex api.DexClient, cfg *oauth2.Config) error {
 		RedirectUris: []string{cfg.RedirectURL},
 	}
 
-	// Try to delete first, ignore error if client doesn't exist or is static (read-only)
-	_, err := dex.DeleteClient(ctx, &api.DeleteClientReq{Id: cfg.ClientID})
-	if err != nil {
-		// Check if it's a read-only static client error, if so skip deletion
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "read-only") || strings.Contains(errMsg, "static") {
-			// Client is static/read-only, skip deletion and just try to create
-		} else {
-			return errors.Wrap(err, "failed to remove OIDC client")
+	readOnly := false
+	if replace {
+		_, err := dex.DeleteClient(ctx, &api.DeleteClientReq{Id: cfg.ClientID})
+		if err != nil {
+			if !isReadOnlyDexClientError(err) || !configuredSecret {
+				return errors.Wrap(err, "failed to remove OIDC client; a read-only client requires MAPD_IDP_CLIENT_SECRET")
+			}
+			readOnly = true
 		}
 	}
 
 	resp, err := dex.CreateClient(ctx, &api.CreateClientReq{Client: client})
 	if err != nil {
-		// If already exists, that's fine (for static clients)
-		if strings.Contains(err.Error(), "already exists") {
-			return nil
+		if !strings.Contains(err.Error(), "already exists") {
+			return errors.Wrap(err, "failed to create OIDC client")
 		}
-		return errors.Wrap(err, "failed to create OIDC client")
+		resp = &api.CreateClientResp{AlreadyExists: true}
 	}
 	if resp.GetAlreadyExists() {
-		return fmt.Errorf("failed to create OIDC client %q: client already exists after delete", cfg.ClientID)
+		if replace && !readOnly {
+			return fmt.Errorf("failed to create OIDC client %q: client already exists after delete", cfg.ClientID)
+		}
+		updated, err := dex.UpdateClient(ctx, &api.UpdateClientReq{Id: cfg.ClientID, RedirectUris: client.RedirectUris, Name: client.Name})
+		if err != nil {
+			if !configuredSecret || !isReadOnlyDexClientError(err) {
+				return errors.Wrap(err, "failed to update OIDC client")
+			}
+			return nil
+		}
+		if updated.GetNotFound() {
+			return fmt.Errorf("OIDC client %q disappeared during startup", cfg.ClientID)
+		}
 	}
 	return nil
+}
+
+func isReadOnlyDexClientError(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "read-only") || strings.Contains(msg, "read only") || strings.Contains(msg, "static")
 }
 
 func initAdminAndDefaultOrg(dex api.DexClient, password string) error {

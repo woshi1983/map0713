@@ -260,7 +260,15 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 		switch obj.State {
 		case model.ClusterExtensionStateEnabling:
 			if err := installer.Install(); err != nil {
+				if dependency, ok := err.(*extension.ErrDependency); ok {
+					updates["last_error"] = dependency.Reason
+				} else {
+					updates["last_error"] = ""
+				}
 				if extension.IsCriticalError(err) {
+					if updates["last_error"] == "" {
+						updates["last_error"] = "extension installation failed; check the mapd logs"
+					}
 					updates["status"] = model.ClusterExtensionStatusFailed
 					if err := tx.Model(obj).Updates(updates).Error; err != nil {
 						return err
@@ -280,6 +288,7 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			// wait for another deadline threshold for endpoint
 			if time.Since(obj.UpdatedAt) > defExtensionEndpointDeadlineSecs*time.Second {
 				updates["status"] = model.ClusterExtensionStatusFailed
+				updates["last_error"] = "extension endpoint was not available before the timeout"
 				if err := tx.Model(obj).Updates(updates).Error; err != nil {
 					return err
 				}
@@ -299,6 +308,7 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			updates["endpoints"] = string(b)
 			updates["status"] = model.ClusterExtensionStatusProvisioned
 			updates["state"] = model.ClusterExtensionStateEnabled
+			updates["last_error"] = ""
 			if err := tx.Model(obj).Updates(updates).Error; err != nil {
 				return err
 			}

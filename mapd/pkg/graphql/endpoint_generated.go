@@ -516,6 +516,7 @@ type ComplexityRoot struct {
 		Cluster      func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		Endpoints    func(childComplexity int) int
+		ErrorReason  func(childComplexity int) int
 		ID           func(childComplexity int) int
 		LastModified func(childComplexity int) int
 		Name         func(childComplexity int) int
@@ -1597,6 +1598,7 @@ type ComplexityRoot struct {
 		Component    func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		Description  func(childComplexity int) int
+		ErrorReason  func(childComplexity int) int
 		ID           func(childComplexity int) int
 		IP           func(childComplexity int) int
 		LastModified func(childComplexity int) int
@@ -4426,6 +4428,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ClusterExtension.Endpoints(childComplexity), true
+
+	case "ClusterExtension.errorReason":
+		if e.complexity.ClusterExtension.ErrorReason == nil {
+			break
+		}
+
+		return e.complexity.ClusterExtension.ErrorReason(childComplexity), true
 
 	case "ClusterExtension.id":
 		if e.complexity.ClusterExtension.ID == nil {
@@ -10374,6 +10383,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Route.Description(childComplexity), true
 
+	case "Route.errorReason":
+		if e.complexity.Route.ErrorReason == nil {
+			break
+		}
+
+		return e.complexity.Route.ErrorReason(childComplexity), true
+
 	case "Route.id":
 		if e.complexity.Route.ID == nil {
 			break
@@ -14494,6 +14510,7 @@ input DeleteClusterBackupSchedule {
   spec: Map
   state: ClusterExtensionState!
   status: ClusterExtensionStatus!
+  errorReason: String
   related(page: QueryPage = {}, filters: [QueryFilter!] = []): Clusters!
   cluster: Cluster!
   organization: Organization!
@@ -14595,7 +14612,8 @@ input ModifyClusterExtension {
 
 input DisableClusterExtension {
   id: ID!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 	{Name: "../../docs/graphql/cluster_provider.graphql", Input: `type ClusterProvider {
   id: ID!
   name: String!
@@ -17707,6 +17725,8 @@ input DeleteRoleBinding {
   backends: [RouteBackend!]
   spec: RouteSpec
   status: RouteStatus!
+  """Last provisioning error. Empty after the route progresses successfully."""
+  errorReason: String
   component: Component!
   application: Application!
   loadBalancer: LoadBalancer!
@@ -34091,6 +34111,47 @@ func (ec *executionContext) fieldContext_ClusterExtension_status(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _ClusterExtension_errorReason(ctx context.Context, field graphql.CollectedField, obj *model.ClusterExtension) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ClusterExtension_errorReason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorReason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ClusterExtension_errorReason(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ClusterExtension",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ClusterExtension_related(ctx context.Context, field graphql.CollectedField, obj *model.ClusterExtension) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ClusterExtension_related(ctx, field)
 	if err != nil {
@@ -34450,6 +34511,8 @@ func (ec *executionContext) fieldContext_ClusterExtensionNodes_nodes(ctx context
 				return ec.fieldContext_ClusterExtension_state(ctx, field)
 			case "status":
 				return ec.fieldContext_ClusterExtension_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_ClusterExtension_errorReason(ctx, field)
 			case "related":
 				return ec.fieldContext_ClusterExtension_related(ctx, field)
 			case "cluster":
@@ -46411,6 +46474,8 @@ func (ec *executionContext) fieldContext_InstanceFederation_routes(ctx context.C
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -51410,6 +51475,8 @@ func (ec *executionContext) fieldContext_Mutation_EnableClusterExtension(ctx con
 				return ec.fieldContext_ClusterExtension_state(ctx, field)
 			case "status":
 				return ec.fieldContext_ClusterExtension_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_ClusterExtension_errorReason(ctx, field)
 			case "related":
 				return ec.fieldContext_ClusterExtension_related(ctx, field)
 			case "cluster":
@@ -51489,6 +51556,8 @@ func (ec *executionContext) fieldContext_Mutation_ModifyClusterExtension(ctx con
 				return ec.fieldContext_ClusterExtension_state(ctx, field)
 			case "status":
 				return ec.fieldContext_ClusterExtension_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_ClusterExtension_errorReason(ctx, field)
 			case "related":
 				return ec.fieldContext_ClusterExtension_related(ctx, field)
 			case "cluster":
@@ -51568,6 +51637,8 @@ func (ec *executionContext) fieldContext_Mutation_DisableClusterExtension(ctx co
 				return ec.fieldContext_ClusterExtension_state(ctx, field)
 			case "status":
 				return ec.fieldContext_ClusterExtension_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_ClusterExtension_errorReason(ctx, field)
 			case "related":
 				return ec.fieldContext_ClusterExtension_related(ctx, field)
 			case "cluster":
@@ -55323,6 +55394,8 @@ func (ec *executionContext) fieldContext_Mutation_CreateRoute(ctx context.Contex
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -55412,6 +55485,8 @@ func (ec *executionContext) fieldContext_Mutation_UpdateRoute(ctx context.Contex
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -55501,6 +55576,8 @@ func (ec *executionContext) fieldContext_Mutation_DeleteRoute(ctx context.Contex
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -66975,6 +67052,8 @@ func (ec *executionContext) fieldContext_Query_ClusterExtension(ctx context.Cont
 				return ec.fieldContext_ClusterExtension_state(ctx, field)
 			case "status":
 				return ec.fieldContext_ClusterExtension_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_ClusterExtension_errorReason(ctx, field)
 			case "related":
 				return ec.fieldContext_ClusterExtension_related(ctx, field)
 			case "cluster":
@@ -70369,6 +70448,8 @@ func (ec *executionContext) fieldContext_Query_Route(ctx context.Context, field 
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -74188,6 +74269,47 @@ func (ec *executionContext) fieldContext_Route_status(ctx context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _Route_errorReason(ctx context.Context, field graphql.CollectedField, obj *model.Route) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Route_errorReason(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ErrorReason, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Route_errorReason(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Route",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Route_component(ctx context.Context, field graphql.CollectedField, obj *model.Route) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Route_component(ctx, field)
 	if err != nil {
@@ -74982,6 +75104,8 @@ func (ec *executionContext) fieldContext_RouteNodes_nodes(ctx context.Context, f
 				return ec.fieldContext_Route_spec(ctx, field)
 			case "status":
 				return ec.fieldContext_Route_status(ctx, field)
+			case "errorReason":
+				return ec.fieldContext_Route_errorReason(ctx, field)
 			case "component":
 				return ec.fieldContext_Route_component(ctx, field)
 			case "application":
@@ -107916,6 +108040,10 @@ func (ec *executionContext) _ClusterExtension(ctx context.Context, sel ast.Selec
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "errorReason":
+
+			out.Values[i] = ec._ClusterExtension_errorReason(ctx, field, obj)
+
 		case "related":
 			field := field
 
@@ -117481,6 +117609,10 @@ func (ec *executionContext) _Route(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "errorReason":
+
+			out.Values[i] = ec._Route_errorReason(ctx, field, obj)
+
 		case "component":
 			field := field
 

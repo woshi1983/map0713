@@ -9,6 +9,8 @@ type Route {
   backends: [RouteBackend!]
   spec: RouteSpec
   status: RouteStatus!
+  """Last provisioning error. Empty after the route progresses successfully."""
+  errorReason: String
   component: Component!
   application: Application!
   loadBalancer: LoadBalancer!

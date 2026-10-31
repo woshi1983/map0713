@@ -130,6 +130,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	user := &model1.UserBinding{ID: input.ID}
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
@@ -137,7 +140,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUse
 			return errInsufficientPrivileges(ctx)
 		}
 
-		if err := tx.Take(user).Error; err != nil {
+		if err := tx.Where("`id` = ?", input.ID).Take(user).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", user.ID.String())
 			}

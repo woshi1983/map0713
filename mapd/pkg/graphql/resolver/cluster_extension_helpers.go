@@ -14,6 +14,25 @@ import (
 	"gorm.io/gorm"
 )
 
+// prometheusCannotServeGrafana accepts an installing Prometheus so Grafana can
+// queue; the installer waits for a usable endpoint before creating its job.
+func prometheusCannotServeGrafana(prometheus *model1.ClusterExtension) string {
+	if prometheus.Status == model1.ClusterExtensionStatusFailed || prometheus.State == model1.ClusterExtensionStateDisabling {
+		return "the selected Prometheus extension failed or is being disabled"
+	}
+	if prometheus.State != model1.ClusterExtensionStateEnabling && prometheus.State != model1.ClusterExtensionStateEnabled {
+		return "the selected Prometheus extension is not enabled"
+	}
+	if prometheus.Status != model1.ClusterExtensionStatusProvisioned {
+		return ""
+	}
+	var endpoints []string
+	if err := json.Unmarshal(prometheus.Endpoints, &endpoints); err != nil || len(endpoints) == 0 {
+		return "the selected Prometheus extension is provisioned but has no endpoint"
+	}
+	return ""
+}
+
 func convertClusterExtensionFromSQLModel(ext *model1.ClusterExtension) *model.ClusterExtension {
 	obj := &model.ClusterExtension{
 		ID:           ext.ID,
@@ -23,6 +42,9 @@ func convertClusterExtensionFromSQLModel(ext *model1.ClusterExtension) *model.Cl
 		Status:       model.ClusterExtensionStatus(ext.Status.String()),
 		CreatedAt:    ext.CreatedAt,
 		LastModified: ext.UpdatedAt,
+	}
+	if ext.LastError != "" {
+		obj.ErrorReason = &ext.LastError
 	}
 	endpoints := ext.Endpoints
 	if len(endpoints) == 0 {

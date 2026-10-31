@@ -130,7 +130,13 @@
       <clr-dg-cell *ngIf="route.ip" style="min-width: 120px;"><a href="http://{{route.ip}}:{{route.port}}" target="_blank">{{route.ip}}{{route.port === 80 ? '' : ':' + route.port}}</a></clr-dg-cell>
       <clr-dg-cell *ngIf="!route.ip" style="min-width: 120px;"></clr-dg-cell>
       <clr-dg-cell>{{route.protocol}}</clr-dg-cell>
-      <clr-dg-cell>{{route.status}}</clr-dg-cell>
+      <clr-dg-cell>
+        {{route.status}}
+        <span *ngIf="route.errorReason" class="route-error" [title]="route.errorReason">
+          <clr-icon shape="error-standard" aria-hidden="true"></clr-icon>
+          {{ 'APPROUTE.ROUTE.DATAGRIDFIELD.ERRORREASON' | translate }}: {{route.errorReason}}
+        </span>
+      </clr-dg-cell>
       <clr-dg-cell style="padding: 0 12px;" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="12px">
         <span>{{!!route.backends ? route.backends.length > 1 ? 2 : 1 : 0}}/2</span>
         <div *ngIf="!!route?.backends && route.backends.length > 0" style="cursor: pointer;" (click)="openRouteDetailsPage(route.id)">

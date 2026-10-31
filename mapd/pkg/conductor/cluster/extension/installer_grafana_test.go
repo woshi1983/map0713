@@ -10,7 +10,7 @@ import (
 
 func TestUnmarshalGrafanaEnvAcceptsPrometheusEndpointWithPort(t *testing.T) {
 	endpoints, _ := json.Marshal([]string{"http://prometheus.example:32699"})
-	ext := &model.ClusterExtension{Related: []model.Cluster{{Name: "monitoring", Extensions: []model.ClusterExtension{{Name: model.ClusterExtensionNamePrometheus, Endpoints: endpoints}}}}}
+	ext := &model.ClusterExtension{Related: []model.Cluster{{Name: "monitoring", Extensions: []model.ClusterExtension{{Name: model.ClusterExtensionNamePrometheus, State: model.ClusterExtensionStateEnabled, Status: model.ClusterExtensionStatusProvisioned, Endpoints: endpoints}}}}}
 	env := map[string]string{}
 	if err := unmarshalGrafanaEnv(ext, env); err != nil {
 		t.Fatal(err)
@@ -33,8 +33,8 @@ func TestUnmarshalGrafanaEnvRequiresPrometheusEndpoint(t *testing.T) {
 func TestUnmarshalGrafanaEnvUsesFirstValidEndpointAsDefault(t *testing.T) {
 	endpoints, _ := json.Marshal([]string{"https://prometheus.example:9090"})
 	ext := &model.ClusterExtension{Related: []model.Cluster{
-		{Name: "a-without-endpoint", Extensions: []model.ClusterExtension{{Name: model.ClusterExtensionNamePrometheus}}},
-		{Name: "b-with-endpoint", Extensions: []model.ClusterExtension{{Name: model.ClusterExtensionNamePrometheus, Endpoints: endpoints}}},
+		{Name: "a-without-endpoint"},
+		{Name: "b-with-endpoint", Extensions: []model.ClusterExtension{{Name: model.ClusterExtensionNamePrometheus, State: model.ClusterExtensionStateEnabled, Status: model.ClusterExtensionStatusProvisioned, Endpoints: endpoints}}},
 	}}
 	env := map[string]string{}
 	if err := unmarshalGrafanaEnv(ext, env); err != nil {

@@ -3,6 +3,7 @@ import { ActivatedRouteSnapshot, CanActivate, CanActivateChild, Router } from '@
 import { Observable } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { OrganizationService } from '../../services/organization.service';
+import { handleObject } from '../../classes/role';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +21,10 @@ export class OrgRolePermissionGuard implements CanActivate, CanActivateChild {
 
   canActivate (route: ActivatedRouteSnapshot): Observable<boolean> | boolean {
     const object = route.data.permissionParam.resource;
-    if (!this.authService.can(this.orgId, object)) {
+    const allowed = object === handleObject.OVERVIEW
+      ? this.authService.canRead(this.orgId, object)
+      : this.authService.can(this.orgId, object);
+    if (!allowed) {
       this.router.navigate(['/portal/no-permission']);
       return false;
     }

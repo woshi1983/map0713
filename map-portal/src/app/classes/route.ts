@@ -48,6 +48,7 @@ export class Route {
   backends: RouteBackend[];
   spec: RouteSpec;
   status: RouteStatus;
+  errorReason?: string;
   component: CustomComponent;
   application: Application;
   loadBalancer: LoadBalancer;

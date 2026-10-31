@@ -51,15 +51,21 @@ func unmarshalFluentBitEnv(ext *model.ClusterExtension, env map[string]string) e
 	}
 
 	var prefixes []string
-	sort.Slice(ext.Related, func(i, j int) bool { return ext.Related[i].Name < ext.Related[j].Name })
-	for i, rc := range ext.Related {
+	related := append([]model.Cluster(nil), ext.Related...)
+	sort.Slice(related, func(i, j int) bool { return related[i].Name < related[j].Name })
+	foundElasticsearch := false
+	for i, rc := range related {
 		prefix := "CLUSTER" + strconv.Itoa(i)
 		for i := range rc.Extensions {
 			each := &rc.Extensions[i]
 			if each.Name == model.ClusterExtensionNameElasticSearch {
+				foundElasticsearch = true
+				if err := requireRelatedExtensionReady(rc.Name, "Elasticsearch", each); err != nil {
+					return err
+				}
 				endpoints := []string{}
 				if err := json.Unmarshal(each.Endpoints, &endpoints); err != nil {
-					return err
+					return &ErrDependency{Reason: fmt.Sprintf("invalid Elasticsearch endpoints on cluster %s", rc.Name)}
 				}
 				for _, endpoint := range endpoints {
 					u, err := url.Parse(endpoint)
@@ -94,6 +100,9 @@ func unmarshalFluentBitEnv(ext *model.ClusterExtension, env map[string]string) e
 				break
 			}
 		}
+	}
+	if foundElasticsearch && len(prefixes) == 0 {
+		return &ErrDependency{Reason: "Fluent Bit requires a related Elasticsearch endpoint on port 9200"}
 	}
 	env["FLUENTBIT_CONTEXT_PREFIX_MAPPING"] = strings.Join(prefixes, ",")
 	return nil

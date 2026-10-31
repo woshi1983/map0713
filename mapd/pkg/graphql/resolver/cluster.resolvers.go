@@ -1510,6 +1510,9 @@ func (r *mutationResolver) DeleteCluster(ctx context.Context, input model.Delete
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	force := input.Force != nil && *input.Force
 	if force && !sess.Admin {
@@ -1522,7 +1525,7 @@ func (r *mutationResolver) DeleteCluster(ctx context.Context, input model.Delete
 		removedClusterBackupSchedule []model1.ClusterBackupSchedule
 	)
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(cluster).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`id` = ?", input.ID).Take(cluster).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", cluster.ID.String())
 			}
@@ -1706,6 +1709,9 @@ func (r *queryResolver) Cluster(ctx context.Context, id uuid.UUID) (*model.Clust
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 
 	db := mapd.Database()
 	if !IsGuardSilenced(ctx) {
@@ -1713,7 +1719,7 @@ func (r *queryResolver) Cluster(ctx context.Context, id uuid.UUID) (*model.Clust
 	}
 
 	cluster := &model1.Cluster{ID: id}
-	if err := db.Take(cluster).Error; err != nil {
+	if err := db.Where("`id` = ?", id).Take(cluster).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}
@@ -1737,31 +1743,6 @@ func (r *queryResolver) Cluster(ctx context.Context, id uuid.UUID) (*model.Clust
 		}
 	}
 	return result, nil
-}
-
-var errVKSClusterOwnershipMismatch = errors.New("Supervisor cluster ownership or UID mismatch")
-
-func refreshVKSClusterReplicaCounts(ctx context.Context, cluster *model1.Cluster, result *model.Cluster, fetch func(context.Context, string, string) (*unstructured.Unstructured, error)) error {
-	spec, ok := result.Spec.(*model.VKSClusterSpec)
-	if !ok {
-		return fmt.Errorf("VKS cluster spec is unavailable")
-	}
-	remote, err := fetch(ctx, spec.Namespace, cluster.Name)
-	if err != nil {
-		return err
-	}
-	if remote == nil {
-		return fmt.Errorf("Supervisor returned an empty VKS cluster")
-	}
-	if remote.GetLabels()[vks.OwnerLabel] != cluster.ID.String() || spec.RemoteUID == "" || string(remote.GetUID()) != spec.RemoteUID {
-		return errVKSClusterOwnershipMismatch
-	}
-	cp, workers, err := vks.VKSReplicas(remote)
-	if err != nil {
-		return err
-	}
-	spec.CtlPlaneReplicas, spec.WorkerReplicas = cp, workers
-	return nil
 }
 
 // Clusters is the resolver for the Clusters field.

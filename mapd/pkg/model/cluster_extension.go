@@ -18,6 +18,7 @@ type ClusterExtension struct {
 	Spec           []byte                 `gorm:"type:mediumblob"`
 	State          ClusterExtensionState  `gorm:"type:varchar(128);index"`
 	Status         ClusterExtensionStatus `gorm:"type:varchar(128);index"`
+	LastError      string                 `gorm:"type:text"`
 	ClusterID      NullUUID               `gorm:"type:varchar(255)"`
 	OrganizationID NullUUID               `gorm:"type:varchar(255)"`
 	CreatedAt      time.Time              `gorm:"type:datetime(6)"`

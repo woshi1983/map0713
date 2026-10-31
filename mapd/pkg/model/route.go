@@ -22,6 +22,7 @@ type Route struct {
 	Spec           []byte `gorm:"type:mediumblob"`
 	ProvisionPhase RouteProvision
 	Provisioned    RouteProvision
+	LastError      string `gorm:"type:text"`
 	ComponentID    NullUUID       `gorm:"type:varchar(255)"`
 	ApplicationID  NullUUID       `gorm:"type:varchar(255)"`
 	LoadBalancerID NullUUID       `gorm:"type:varchar(255)"`

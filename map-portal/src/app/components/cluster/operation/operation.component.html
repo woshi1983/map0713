@@ -135,6 +135,9 @@
                 </div>
               </div>
             </div>
+            <div class="extension-error" *ngIf="extension.errorReason && extension.status !== 'PROVISIONED'" [title]="extension.errorReason">
+              {{ 'OPERATION.VIEWPAGE.ERRORREASON' | translate }}: {{extension.errorReason}}
+            </div>
           </footer>
         </div>
       </div>
@@ -373,6 +376,16 @@
                 <clr-icon class="alert-icon" shape="exclamation-triangle"></clr-icon>
               </div>
               <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGEALERT2' | translate }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-info alert-sm" role="alert">
+          <div class="alert-items">
+            <div class="alert-item static">
+              <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="info-circle"></clr-icon>
+              </div>
+              <span class="alert-text" style="font-size: 12px">{{ 'OPERATION.ADDOPERATION-PAGE2.GRAFANA-PAGEALERT3' | translate }}</span>
             </div>
           </div>
         </div>

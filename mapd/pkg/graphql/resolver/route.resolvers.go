@@ -365,6 +365,9 @@ func (r *mutationResolver) UpdateRoute(ctx context.Context, input model.UpdateRo
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if input.ID == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "input.id", "ID cannot be empty")
+	}
 
 	route := &model1.Route{ID: input.ID}
 	updates := make(map[string]interface{})
@@ -379,7 +382,7 @@ func (r *mutationResolver) UpdateRoute(ctx context.Context, input model.UpdateRo
 	}
 
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Take(route).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("`id` = ?", input.ID).Take(route).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "input.id", route.ID.String())
 			}
@@ -583,6 +586,7 @@ func (r *mutationResolver) UpdateRoute(ctx context.Context, input model.UpdateRo
 		if requiresProvision > 0 {
 			updates["provisioned"] = model1.RouteProvisionNone
 			updates["provision_phase"] = model1.RouteProvisionPrepare
+			updates["last_error"] = ""
 		}
 		// for backward compatibility
 		if route.Protocol == model1.RouteProtocolUnknown {
@@ -686,6 +690,9 @@ func (r *queryResolver) Route(ctx context.Context, id uuid.UUID) (*model.Route, 
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 
 	db := mapd.Database()
 	if !IsGuardSilenced(ctx) {
@@ -693,7 +700,7 @@ func (r *queryResolver) Route(ctx context.Context, id uuid.UUID) (*model.Route, 
 	}
 
 	route := &model1.Route{ID: id}
-	if err := db.Take(route).Error; err != nil {
+	if err := db.Where("`id` = ?", id).Take(route).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", route.ID.String())
 		}

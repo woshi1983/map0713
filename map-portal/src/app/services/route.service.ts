@@ -48,6 +48,7 @@ export class RouteService {
                 application {id name}
                 loadBalancer {id name}
                 status
+                errorReason
                 ip
                 port
                 createdAt
@@ -69,6 +70,7 @@ export class RouteService {
         query($id: ID!) {
           Route(id: $id) {
             name
+            errorReason
             backends {
               ratio
               instance {

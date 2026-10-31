@@ -92,19 +92,19 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				if spec.VSID != "" {
 					if err := ac.DeleteVirtualService(spec.VSID); err != nil && !avi.IsErrObjectNotExists(err) {
 						log.Errorf("failed to delete virtual service of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to delete virtual service: %v", err))
 					}
 				}
 				if spec.VSVIPID != "" && !spec.PersistentVSVIP {
 					if err := ac.DeleteVSVIP(spec.VSVIPID); err != nil && !avi.IsErrObjectNotExists(err) {
 						log.Errorf("failed to delete vsvip of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to delete VSVIP: %v", err))
 					}
 				}
 				if spec.PoolID != "" {
 					if err := ac.DeletePool(spec.PoolID); err != nil && !avi.IsErrObjectNotExists(err) {
 						log.Errorf("failed to delete pool of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to delete pool: %v", err))
 					}
 				}
 				if err := tx.Where("`route_id` = ?", route.ID).Delete(&model.RouteBackend{}).Error; err != nil {
@@ -177,13 +177,13 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					log.Infof("updating pool %s [%s]...", route.Name, poolName)
 					if _, err = ac.UpdatePool(pool); err != nil {
 						log.Errorf("failed to update pool of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to update pool: %v", err))
 					}
 				} else {
 					log.Infof("creating pool %s [%s]...", route.Name, poolName)
 					if pool, err = ac.CreatePool(pool); err != nil {
 						log.Errorf("failed to create pool of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to create pool: %v", err))
 					}
 					spec.PoolID = pool.UUID
 				}
@@ -195,6 +195,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				}
 				updates["provisioned"] = model.RouteProvisionPrepare
 				updates["provision_phase"] = model.RouteProvisionIP
+				updates["last_error"] = ""
 				if err := tx.Model(route).Updates(updates).Error; err != nil {
 					return err
 				}
@@ -208,7 +209,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					vsvip, err = ac.GetVSVIP(spec.VSVIPID)
 					if err != nil {
 						log.Errorf("failed to obtain VsVip of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain VSVIP: %v", err))
 					}
 				} else {
 					lbSpec := &model.LoadBalancerAVISpec{}
@@ -230,7 +231,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 						network, err := findNetwork(ac, lbSpec.PreferredNetwork)
 						if err != nil {
 							log.Errorf("failed to obtain network from load balancer %s due to: %v.", strconv.Quote(lb.Name), err)
-							return nil
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI network: %v", err))
 						}
 						if network != nil {
 							log.Infof("found dedicated network %s: %s.", network.Name, network.UUID)
@@ -240,7 +241,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 							networkRuntime, err := ac.GetNetworkRuntime(network.UUID)
 							if err != nil {
 								log.Errorf("failed to obtain network runtime from load balancer %s due to: %v.", strconv.Quote(lb.Name), err)
-								return nil
+								return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI network runtime: %v", err))
 							}
 						LOOP:
 							for _, subnetRuntime := range networkRuntime.SubnetRuntime {
@@ -258,7 +259,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 							}
 							if vip.Subnet == nil && vip.Subnet6 == nil {
 								log.Errorf("no available subnet for creating VsVip on network %s from load balancer %s.", lbSpec.PreferredNetwork, strconv.Quote(lb.Name))
-								return nil
+								return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI network %s has no available IPv4 subnet for the route VIP", lbSpec.PreferredNetwork))
 							}
 							vip.IPAMNetworkSubnet = &avi.IPNetworkSubnet{
 								NetworkRef: vip.NetworkRef,
@@ -267,7 +268,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 							}
 						} else {
 							log.Errorf("unable to find preferred network %s. Attempt to proceed the provision later.", lbSpec.PreferredNetwork)
-							return nil
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI preferred network %s was not found", lbSpec.PreferredNetwork))
 						}
 					} else {
 						log.Infof("no preferred network was specified on load balancer %s. Attempt to allocate VsVip from global network.", strconv.Quote(lb.Name))
@@ -281,12 +282,12 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					if err != nil {
 						if !avi.IsErrObjectAlreadyExists(err) {
 							log.Errorf("failed to create VsVip of route %s due to: %v.", route.Name, err)
-							return nil
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to allocate AVI route VIP: %v", err))
 						}
 						v, e := findVSVIP(ac, vsVip.Name)
 						if e != nil {
 							log.Errorf("failed to create VsVip of route %s due to: %v.", route.Name, err)
-							return nil
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to find existing AVI route VIP: %v", e))
 						}
 						vsvip = v
 					}
@@ -304,7 +305,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					if err := tx.Model(route).Updates(updates).Error; err != nil {
 						return err
 					}
-					return nil
+					return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI VSVIP %s has no allocated IP address", vsvip.Name))
 				}
 
 				updates["spec"], err = json.Marshal(spec)
@@ -314,6 +315,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				updates["ip"] = vsvip.VIP[0].IPAddress.Addr
 				updates["provisioned"] = model.RouteProvisionIP
 				updates["provision_phase"] = model.RouteProvisionRoute
+				updates["last_error"] = ""
 				if err := tx.Model(route).Updates(updates).Error; err != nil {
 					return err
 				}
@@ -331,11 +333,11 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					ap, err := findApplicationProfile(ac, defAVIVirtualServiceApplicationProfile)
 					if err != nil {
 						log.Errorf("failed to obtain application profile from load balancer %s due to: %v.", strconv.Quote(lb.Name), err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI application profile: %v", err))
 					}
 					if ap == nil {
 						log.Errorf("unable to find application profile %s.", defAVIVirtualServiceApplicationProfile)
-						return fmt.Errorf("no such application profile: %s", defAVIVirtualServiceApplicationProfile)
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI application profile %s was not found", defAVIVirtualServiceApplicationProfile))
 					}
 					spec.ApplicationProfileID = ap.UUID
 				}
@@ -351,11 +353,11 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					np, err := findNetworkProfile(ac, profileName)
 					if err != nil {
 						log.Errorf("failed to obtain default network profile %s from load balancer %s due to: %v.", profileName, strconv.Quote(lb.Name), err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI network profile %s: %v", profileName, err))
 					}
 					if np == nil {
 						log.Errorf("unable to find default network profile %s.", profileName)
-						return fmt.Errorf("no such default network profile: %s", profileName)
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI network profile %s was not found", profileName))
 					}
 					spec.NetworkProfileID = np.UUID
 				}
@@ -365,13 +367,13 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				if spec.VSID != "" {
 					if _, err := updateVirtualService(ac, spec.VSID, vsName, int32(route.Port), spec, lbSpec.SEGroupID); err != nil {
 						log.Errorf("failed to update virtual service of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to update AVI virtual service: %v", err))
 					}
 				} else {
 					vs, err := createVirtualService(ac, vsName, int32(route.Port), spec, lbSpec.SEGroupID)
 					if err != nil {
 						log.Errorf("failed to create virtual service of route %s due to: %v.", route.Name, err)
-						return nil
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to create AVI virtual service: %v", err))
 					}
 					spec.VSID = vs.UUID
 				}
@@ -381,6 +383,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				}
 				updates["provisioned"] = model.RouteProvisionRoute
 				updates["provision_phase"] = model.RouteProvisionFinish
+				updates["last_error"] = ""
 				if err := tx.Model(route).Updates(updates).Error; err != nil {
 					return err
 				}
@@ -390,6 +393,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			case model.RouteProvisionFinish:
 				updates := make(map[string]interface{})
 				updates["provisioned"] = model.RouteProvisionFinish
+				updates["last_error"] = ""
 				if err := tx.Model(route).Updates(updates).Error; err != nil {
 					return err
 				}
@@ -411,7 +415,27 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			OID:  id,
 		})
 	}
+	if route.LastError != "" && route.ProvisionPhase >= model.RouteProvisionPrepare && route.ProvisionPhase < model.RouteProvisionFinish && next < 0 {
+		// A configuration error (for example, AVI IPAM without a usable network)
+		// will not heal in seconds. Retry after an operator can inspect it.
+		next = time.Minute
+	}
 	return next
+}
+
+func recordRouteProvisionError(tx *gorm.DB, route *model.Route, message string) error {
+	const maxRouteErrorLength = 2048
+	if len(message) > maxRouteErrorLength {
+		message = message[:maxRouteErrorLength]
+	}
+	if route.LastError == message {
+		return nil
+	}
+	if err := tx.Model(route).Update("last_error", message).Error; err != nil {
+		return err
+	}
+	route.LastError = message
+	return nil
 }
 
 func findVSVIP(client *avi.AVI, name string) (ap *avi.VSVIP, err error) {

@@ -210,6 +210,7 @@ type authConfig struct {
 	IDPDexAPICert              string
 	IDPDexAPIKey               string
 	IDPDexAPIInsecure          bool
+	IDPClientSecret            string
 	IDPCrossClientTokenSharing bool
 
 	AdminInitialPassword string
@@ -253,6 +254,8 @@ func (cfg *authConfig) Apply(flags *pflag.FlagSet, envs *envutil.Namespace) {
 		&cfg.IDPDexAPIInsecure, "idp-dex-api-insecure", cfg.IDPDexAPIInsecure, "Do not validate the TLS connection while communicating with Dex API.",
 	)
 	envs.BindBool("IDP_DEX_API_INSECURE", &cfg.IDPDexAPIInsecure, cfg.IDPDexAPIInsecure)
+	// A deployment with a preconfigured, read-only Dex client must provide its secret.
+	envs.BindString("IDP_CLIENT_SECRET", &cfg.IDPClientSecret, cfg.IDPClientSecret)
 
 	flags.BoolVar(
 		&cfg.IDPCrossClientTokenSharing, "idp-cross-client-token-sharing", cfg.IDPCrossClientTokenSharing, "Whether allow to use tokens that are issued to other client",

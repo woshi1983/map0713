@@ -35,6 +35,7 @@ export class ClusterExtension {
   spec?: JSON;
   state: ClusterExtensionState;
   status?: ClusterExtensionStatus;
+  errorReason?: string;
   related?: Clusters;
   cluster?: Cluster;
   organization?: Organization;

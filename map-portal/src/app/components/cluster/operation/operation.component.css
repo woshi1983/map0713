@@ -72,6 +72,13 @@
     border-color: var(--clr-card-clickable-border-color,#179bd3);
 }
 
+.extension-error {
+  padding: .25rem .5rem;
+  color: #a32100;
+  overflow-wrap: anywhere;
+  font-size: .6rem;
+}
+
 a {
   text-decoration: none;
   color: #000;

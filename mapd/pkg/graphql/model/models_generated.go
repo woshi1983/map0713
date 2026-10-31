@@ -679,6 +679,7 @@ type ClusterExtension struct {
 	Spec         map[string]string      `json:"spec"`
 	State        ClusterExtensionState  `json:"state"`
 	Status       ClusterExtensionStatus `json:"status"`
+	ErrorReason  *string                `json:"errorReason"`
 	Related      *Clusters              `json:"related"`
 	Cluster      *Cluster               `json:"cluster"`
 	Organization *Organization          `json:"organization"`
@@ -2771,22 +2772,24 @@ type RollingUpdateDeployment struct {
 }
 
 type Route struct {
-	ID           uuid.UUID        `json:"id"`
-	Name         string           `json:"name"`
-	Description  string           `json:"description"`
-	Type         LoadBalancerType `json:"type"`
-	Protocol     RouteProtocol    `json:"protocol"`
-	IP           net.IP           `json:"ip"`
-	Port         int64            `json:"port"`
-	Backends     []*RouteBackend  `json:"backends"`
-	Spec         RouteSpec        `json:"spec"`
-	Status       RouteStatus      `json:"status"`
-	Component    *Component       `json:"component"`
-	Application  *Application     `json:"application"`
-	LoadBalancer *LoadBalancer    `json:"loadBalancer"`
-	Organization *Organization    `json:"organization"`
-	CreatedAt    time.Time        `json:"createdAt"`
-	LastModified time.Time        `json:"lastModified"`
+	ID          uuid.UUID        `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Type        LoadBalancerType `json:"type"`
+	Protocol    RouteProtocol    `json:"protocol"`
+	IP          net.IP           `json:"ip"`
+	Port        int64            `json:"port"`
+	Backends    []*RouteBackend  `json:"backends"`
+	Spec        RouteSpec        `json:"spec"`
+	Status      RouteStatus      `json:"status"`
+	// Last provisioning error. Empty after the route progresses successfully.
+	ErrorReason  *string       `json:"errorReason"`
+	Component    *Component    `json:"component"`
+	Application  *Application  `json:"application"`
+	LoadBalancer *LoadBalancer `json:"loadBalancer"`
+	Organization *Organization `json:"organization"`
+	CreatedAt    time.Time     `json:"createdAt"`
+	LastModified time.Time     `json:"lastModified"`
 }
 
 type RouteBackend struct {
