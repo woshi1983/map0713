@@ -68,6 +68,8 @@ const (
 
 type LoadBalancerAVISpec struct {
 	SEGroupID        string         `json:"segroup_id,omitempty"`
+	CloudID          string         `json:"cloud_id,omitempty"`
+	CloudName        string         `json:"cloud_name,omitempty"`
 	LicenseTier      AVILicenseTier `json:"license_tier,omitempty"`
 	PreferredNetwork string         `json:"preferred_network,omitempty"`
 }

@@ -3125,6 +3125,8 @@
        "FAILED": "Connection testing failed, please check!",
        "NETWORK": "Dedicated Network",
        "NETWORK-HELP": "Set a dedicated routing network for the load balancer. The value is the network name in the AVI, which is used to assign the IP address of the application route. If it is not set, the IP address of the application route will be randomly assigned by the AVI.",
+       "CLOUD": "AVI Cloud",
+       "CLOUD-HELP": "Enter the AVI Cloud name (for example, vc210). Specify it when the same SE Group name exists in multiple Clouds. The Cloud, SE Group, and routing network must match.",
        "SEGROUP": "SE Group",
        "SEGROUP-HELP": "Set the SE group name to used for this load balancer."
      },
@@ -3140,6 +3142,7 @@
         "TYPE": "Type",
         "LICENSE": "License",
         "AUTHUSER": "Administrator",
+        "CLOUD": "AVI Cloud",
         "NETWORK": "Dedicated network",
        "SEGROUP": "SE Group",
         "NOLB": "No LoadBalancer added"

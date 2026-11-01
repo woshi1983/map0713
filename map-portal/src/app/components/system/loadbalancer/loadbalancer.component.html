@@ -118,6 +118,11 @@
     </clr-dg-column>
     <clr-dg-column *featureToggle="featureGates.appMgmt">
       <ng-container *clrDgHideableColumn="{hidden: false}">
+        {{ 'LBMGMT.DATAGRIDFIELD.CLOUD' | translate }}
+      </ng-container>
+    </clr-dg-column>
+    <clr-dg-column *featureToggle="featureGates.appMgmt">
+      <ng-container *clrDgHideableColumn="{hidden: false}">
         {{ 'LBMGMT.DATAGRIDFIELD.NETWORK' | translate }}
       </ng-container>
     </clr-dg-column>
@@ -141,6 +146,7 @@
       <clr-dg-cell>{{!!lb.spec?.licenseTier ? lb.spec.licenseTier : '-'}}</clr-dg-cell>
       <clr-dg-cell>{{!!lb.authUser ? lb.authUser : '-'}}</clr-dg-cell>
       <clr-dg-cell *featureToggle="featureGates.appMgmt">{{!!lb.spec?.seGroup ? lb.spec.seGroup : '-'}}</clr-dg-cell>
+      <clr-dg-cell *featureToggle="featureGates.appMgmt">{{lb.spec?.cloud || '-'}}</clr-dg-cell>
       <clr-dg-cell *featureToggle="featureGates.appMgmt">{{!!lb.spec?.preferredNetwork ? lb.spec.preferredNetwork : '-'}}</clr-dg-cell>
       <clr-dg-cell>{{lb.createdAt | datetimeTransition}}</clr-dg-cell>
       <clr-dg-cell>{{lb.lastModified | datetimeTransition}}</clr-dg-cell>
@@ -259,6 +265,11 @@
                  </div>
                 </div>
               </div>
+              <clr-input-container>
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.CLOUD' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.CLOUD-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput formControlName="cloud" type="text" placeholder="vc210" required/>
+              </clr-input-container>
               <clr-input-container *featureToggle="featureGates.appMgmt">
                 <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.SEGROUP' | translate }}</label>
                 <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SEGROUP-HELP' | translate }}</clr-control-helper>
@@ -368,6 +379,11 @@
                  </div>
                 </div>
               </div>
+              <clr-input-container>
+                <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.CLOUD' | translate }}</label>
+                <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.CLOUD-HELP' | translate }}</clr-control-helper>
+                <input class="clr-col-md-9" clrInput formControlName="cloud" type="text" placeholder="vc210" required/>
+              </clr-input-container>
               <clr-input-container *featureToggle="featureGates.appMgmt">
                 <label class="clr-col-md-3">{{ 'LBMGMT.ADDLB-PAGE.SEGROUP' | translate }}</label>
                 <clr-control-helper>{{ 'LBMGMT.ADDLB-PAGE.SEGROUP-HELP' | translate }}</clr-control-helper>

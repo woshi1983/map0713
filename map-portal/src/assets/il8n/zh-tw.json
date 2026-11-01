@@ -2652,7 +2652,9 @@
        "AUTHPASS-ERROR": "管理員密碼是必填項！",
        "CONTECTTEST": "連接測試",
        "SUCCESS": "測試通過！",
-       "FAILED": "測試錯誤，請檢查！"
+       "FAILED": "測試錯誤，請檢查！",
+       "CLOUD": "AVI Cloud 名稱",
+       "CLOUD-HELP": "輸入 AVI 中的 Cloud 名稱（例如 vc210）。Cloud、SE 群組和路由網路必須相同。"
      },
      "MOREACTIONS": "更多操作",
      "ACTION": {
@@ -2681,6 +2683,7 @@
         "ADDRESS": "倉庫地址",
         "TYPE": "倉庫類型",
         "AUTHUSER": "認證使用者",
+        "CLOUD": "AVI Cloud",
         "CREATETIME": "新增時間",
         "UPDATETIME": "修改時間",
         "FOOTER": "正在顯示：",

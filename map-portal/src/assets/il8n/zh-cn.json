@@ -3125,6 +3125,8 @@
        "FAILED": "连接错误，请检查！",
        "NETWORK": "路由专用网络",
        "NETWORK-HELP": "为该负载均衡器设置专有的路由网络，值为AVI中网络名称，将用于分配应用路由IP地址。不设置将由AVI随机分配。",
+       "CLOUD": "AVI Cloud 名称",
+       "CLOUD-HELP": "填写 AVI 中的 Cloud 名称（例如 vc210）。同名 SE 组存在于多个 Cloud 时，请明确指定。Cloud、SE 组和路由网络必须属于同一个 Cloud。",
        "SEGROUP": "SE组名称",
        "SEGROUP-HELP": "为该负载均衡器设置要使用的SE组名。"
      },
@@ -3140,6 +3142,7 @@
         "TYPE": "负载均衡器类型",
         "LICENSE": "负载均衡器许可",
         "AUTHUSER": "认证用户",
+        "CLOUD": "AVI Cloud",
         "SEGROUP": "SE组名",
         "NETWORK": "路由专有网络",
         "NOLB": "您还未创建负载均衡器"

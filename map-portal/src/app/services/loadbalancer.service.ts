@@ -36,6 +36,7 @@ export class LoadbalancerService {
                       licenseTier
                       preferredNetwork
                       seGroup
+                      cloud
                   }
                 }
                 createdAt

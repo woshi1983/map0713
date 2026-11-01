@@ -305,6 +305,7 @@ type AviCloud struct {
 
 type AviLoadBalancerSpec struct {
 	LoadBalancer     uuid.UUID `json:"_loadBalancer"`
+	Cloud            *string   `json:"cloud"`
 	SeGroup          *string   `json:"seGroup"`
 	LicenseTier      *string   `json:"licenseTier"`
 	PreferredNetwork *string   `json:"preferredNetwork"`
@@ -841,6 +842,7 @@ type ConfigMapVolumeInput struct {
 }
 
 type CreateAVILoadBalancerSpec struct {
+	Cloud            *string `json:"cloud"`
 	PreferredNetwork *string `json:"preferredNetwork"`
 	SeGroup          *string `json:"seGroup"`
 }
@@ -3255,6 +3257,7 @@ type TemplateSpecVolumeKeyToPathInput struct {
 }
 
 type UpdateAVILoadBalancerSpec struct {
+	Cloud            *string `json:"cloud"`
 	PreferredNetwork *string `json:"preferredNetwork"`
 }
 

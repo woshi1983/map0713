@@ -39,6 +39,9 @@ func convertLoadBalancerFromSQLModel(lb *model1.LoadBalancer) *model.LoadBalance
 		}
 
 		v := &model.AviLoadBalancerSpec{LoadBalancer: lb.ID}
+		if spec.CloudName != "" {
+			v.Cloud = util.StringPtr(spec.CloudName)
+		}
 		if spec.PreferredNetwork != "" {
 			v.PreferredNetwork = &spec.PreferredNetwork
 		}
@@ -87,9 +90,10 @@ func finalizeLoadBalancerQueryFilter(db *gorm.DB, filters ...*model.FilterInfo) 
 	return db
 }
 
-func createServiceEngineGroup(client *avi.AVI, name string, licenseTier model1.AVILicenseTier) (*avi.ServiceEngineGroup, error) {
+func createServiceEngineGroup(client *avi.AVI, name string, licenseTier model1.AVILicenseTier, cloudRef string) (*avi.ServiceEngineGroup, error) {
 	obj := &avi.ServiceEngineGroup{
 		Name:             name,
+		CloudRef:         cloudRef,
 		MinScaleoutPerVS: 2,
 		MaxScaleoutPerVS: 4,
 		MinSE:            2,

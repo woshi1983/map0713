@@ -10,6 +10,7 @@ export class AviLoadBalancerSpec {
   licenseTier: string;
   preferredNetwork: string;
   seGroup: string;
+  cloud: string;
 }
 
 export type LoadBalancerSpec = AviLoadBalancerSpec;
@@ -93,6 +94,7 @@ export class LoadBalancers {
 export class CreateAVILoadBalancerSpec {
   preferredNetwork?: string;
   seGroup?: string;
+  cloud?: string;
 }
 
 export class CreateLoadBalancerSpec {
@@ -116,6 +118,7 @@ export class CreateLoadBalancer {
 
 export class UpdateAVILoadBalancerSpec {
   preferredNetwork?: string;
+  cloud?: string;
 }
 
 export class UpdateLoadBalancerSpec {

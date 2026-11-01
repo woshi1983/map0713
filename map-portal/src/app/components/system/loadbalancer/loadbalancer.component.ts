@@ -78,6 +78,7 @@ export class LoadbalancerComponent {
     user: new FormControl(''),
     password: new FormControl(''),
     seGroup: new FormControl('Default-Group'),
+    cloud: new FormControl(''),
     routeAviNetwork: new FormControl('')
   });
 
@@ -93,6 +94,7 @@ export class LoadbalancerComponent {
     user: new FormControl(''),
     password: new FormControl(''),
     seGroup: new FormControl('Default-Group'),
+    cloud: new FormControl(''),
     routeAviNetwork: new FormControl('')
   });
 
@@ -148,7 +150,8 @@ export class LoadbalancerComponent {
       user: selectedGlb?.authUser,
       password: '',
       routeAviNetwork: selectedGlb.spec?.preferredNetwork ? selectedGlb.spec.preferredNetwork : '',
-      seGroup: selectedGlb.spec?.seGroup ? selectedGlb.spec?.seGroup : 'Default-Group'
+      seGroup: selectedGlb.spec?.seGroup ? selectedGlb.spec?.seGroup : 'Default-Group',
+      cloud: selectedGlb.spec?.cloud || ''
     });
     this.editGlbOpen = true;
   }
@@ -232,7 +235,8 @@ export class LoadbalancerComponent {
       spec: {
         avi: {
           preferredNetwork: this.basicGlbForm.value.routeAviNetwork,
-          seGroup: this.basicGlbForm.value.seGroup
+          seGroup: this.basicGlbForm.value.seGroup,
+          cloud: this.basicGlbForm.value.cloud?.trim() || undefined
         }
       },
       organization: this.orgId
@@ -277,7 +281,8 @@ export class LoadbalancerComponent {
       authUser: this.editGlbForm.value.user,
       spec: {
         avi: {
-          preferredNetwork: this.editGlbForm.value.routeAviNetwork
+          preferredNetwork: this.editGlbForm.value.routeAviNetwork,
+          cloud: this.editGlbForm.value.cloud?.trim() || undefined
         }
       }
     };

@@ -125,6 +125,14 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			switch route.ProvisionPhase {
 			case model.RouteProvisionPrepare:
 				log.Infof("provisioning pools for route %s...", route.Name)
+				lbSpec := &model.LoadBalancerAVISpec{}
+				if err := json.Unmarshal(lb.Spec, lbSpec); err != nil {
+					panic(err)
+				}
+				cloudRef, err := routeAVICloudRef(ac, lbSpec)
+				if err != nil {
+					return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to resolve AVI route cloud: %v", err))
+				}
 				var backends []model.RouteBackend
 				if err := tx.Where("`route_id` = ?", route.ID).Find(&backends).Error; err != nil {
 					return err
@@ -133,6 +141,7 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				poolName := "map-pool-" + standardizeString(route.Name) + "-" + route.OrganizationID.String()
 				pool := &avi.Pool{
 					Name:                            poolName,
+					CloudRef:                        cloudRef,
 					LBAlgorithm:                     spec.LBAlgorithm,
 					LBAlgorithmHash:                 spec.LBAlgorithmHash,
 					LBAlgorithmConsistentHashHeader: spec.LBAlgorithmConsistentHashHeader,
@@ -173,6 +182,28 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				}
 
 				if spec.PoolID != "" {
+					existing, err := ac.GetPool(spec.PoolID)
+					if err != nil {
+						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI route pool: %v", err))
+					}
+					if existing.CloudRef != cloudRef {
+						if spec.VSID != "" {
+							return recordRouteProvisionError(tx, route, "AVI route pool belongs to another cloud and is attached to a virtual service")
+						}
+						if err := ac.DeletePool(spec.PoolID); err != nil {
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to replace AVI route pool from another cloud: %v", err))
+						}
+						spec.PoolID = ""
+						updatedSpec, err := json.Marshal(spec)
+						if err != nil {
+							panic(err)
+						}
+						if err := tx.Model(route).Update("spec", updatedSpec).Error; err != nil {
+							return err
+						}
+					}
+				}
+				if spec.PoolID != "" {
 					pool.UUID = spec.PoolID
 					log.Infof("updating pool %s [%s]...", route.Name, poolName)
 					if _, err = ac.UpdatePool(pool); err != nil {
@@ -204,6 +235,14 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 
 			case model.RouteProvisionIP:
 				log.Infof("provisioning IP address for route %s...", route.Name)
+				lbSpec := &model.LoadBalancerAVISpec{}
+				if err := json.Unmarshal(lb.Spec, lbSpec); err != nil {
+					panic(err)
+				}
+				cloudRef, err := routeAVICloudRef(ac, lbSpec)
+				if err != nil {
+					return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to resolve AVI route cloud: %v", err))
+				}
 				var vsvip *avi.VSVIP
 				if spec.VSVIPID != "" {
 					vsvip, err = ac.GetVSVIP(spec.VSVIPID)
@@ -211,10 +250,22 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 						log.Errorf("failed to obtain VsVip of route %s due to: %v.", route.Name, err)
 						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain VSVIP: %v", err))
 					}
+					if vsvip.CloudRef != cloudRef {
+						return recordRouteProvisionError(tx, route, "existing AVI VSVIP belongs to a different cloud; recreate the route with a VSVIP in the selected cloud")
+					}
 				} else {
-					lbSpec := &model.LoadBalancerAVISpec{}
-					if err := json.Unmarshal(lb.Spec, lbSpec); err != nil {
-						panic(err)
+					if spec.PoolID != "" && spec.VSVIPID == "" {
+						pool, err := ac.GetPool(spec.PoolID)
+						if err != nil {
+							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI route pool: %v", err))
+						}
+						if pool.CloudRef != cloudRef {
+							if err := tx.Model(route).Updates(map[string]interface{}{"provision_phase": model.RouteProvisionPrepare, "last_error": ""}).Error; err != nil {
+								return err
+							}
+							next = time.Second
+							return nil
+						}
 					}
 
 					vip := &avi.VIP{
@@ -228,12 +279,15 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 					}
 					if lbSpec.PreferredNetwork != "" {
 						log.Infof("using network %s as a dedicated network on load balancer %s. Attempt to allocate VsVip on network %s.", lbSpec.PreferredNetwork, strconv.Quote(lb.Name), lbSpec.PreferredNetwork)
-						network, err := findNetwork(ac, lbSpec.PreferredNetwork)
+						network, err := findNetwork(ac, lbSpec.PreferredNetwork, lbSpec.CloudName, cloudRef)
 						if err != nil {
 							log.Errorf("failed to obtain network from load balancer %s due to: %v.", strconv.Quote(lb.Name), err)
 							return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to obtain AVI network: %v", err))
 						}
 						if network != nil {
+							if network.CloudRef != cloudRef {
+								return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI network %s belongs to a different cloud than the selected service engine group", network.Name))
+							}
 							log.Infof("found dedicated network %s: %s.", network.Name, network.UUID)
 							vip.NetworkRef = network.URL
 
@@ -274,8 +328,9 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 						log.Infof("no preferred network was specified on load balancer %s. Attempt to allocate VsVip from global network.", strconv.Quote(lb.Name))
 					}
 					vsVip := &avi.VSVIP{
-						Name: "map-vsvip-" + standardizeString(route.Name) + "-" + route.OrganizationID.String(),
-						VIP:  []*avi.VIP{vip},
+						Name:     "map-vsvip-" + standardizeString(route.Name) + "-" + route.OrganizationID.String(),
+						CloudRef: cloudRef,
+						VIP:      []*avi.VIP{vip},
 					}
 
 					vsvip, err = ac.CreateVSVIP(vsVip)
@@ -328,6 +383,10 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				if err := json.Unmarshal(lb.Spec, lbSpec); err != nil {
 					panic(err)
 				}
+				cloudRef, err := routeAVICloudRef(ac, lbSpec)
+				if err != nil {
+					return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to resolve AVI route cloud: %v", err))
+				}
 
 				if spec.ApplicationProfileID == "" {
 					ap, err := findApplicationProfile(ac, defAVIVirtualServiceApplicationProfile)
@@ -365,12 +424,12 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 				vsName := "map-vs-" + standardizeString(route.Name) + "-" + route.OrganizationID.String()
 				updates := make(map[string]interface{})
 				if spec.VSID != "" {
-					if _, err := updateVirtualService(ac, spec.VSID, vsName, int32(route.Port), spec, lbSpec.SEGroupID); err != nil {
+					if _, err := updateVirtualService(ac, spec.VSID, vsName, int32(route.Port), spec, lbSpec.SEGroupID, cloudRef); err != nil {
 						log.Errorf("failed to update virtual service of route %s due to: %v.", route.Name, err)
 						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to update AVI virtual service: %v", err))
 					}
 				} else {
-					vs, err := createVirtualService(ac, vsName, int32(route.Port), spec, lbSpec.SEGroupID)
+					vs, err := createVirtualService(ac, vsName, int32(route.Port), spec, lbSpec.SEGroupID, cloudRef)
 					if err != nil {
 						log.Errorf("failed to create virtual service of route %s due to: %v.", route.Name, err)
 						return recordRouteProvisionError(tx, route, fmt.Sprintf("failed to create AVI virtual service: %v", err))
@@ -474,20 +533,44 @@ func findNetworkProfile(client *avi.AVI, name string) (ap *avi.NetworkProfile, e
 	return list.Results[0], nil
 }
 
-func findNetwork(client *avi.AVI, name string) (network *avi.Network, err error) {
-	list, err := client.ListNetwork(&avi.ListNetworkOptions{Name: name})
+func findNetwork(client *avi.AVI, name, cloudName, cloudRef string) (network *avi.Network, err error) {
+	list, err := client.ListNetwork(&avi.ListNetworkOptions{Name: name, CloudName: cloudName})
 	if err != nil {
 		return nil, err
 	}
-	if list.Count < 1 {
-		return nil, nil
-	}
-	return list.Results[0], nil
+	return selectRouteNetwork(list.Results, name, cloudRef), nil
 }
 
-func createVirtualService(client *avi.AVI, name string, port int32, spec *model.RouteAVISpec, segroupRef string) (*avi.VirtualService, error) {
+func selectRouteNetwork(networks []*avi.Network, name, cloudRef string) *avi.Network {
+	for _, network := range networks {
+		if network != nil && network.Name == name && network.CloudRef == cloudRef {
+			return network
+		}
+	}
+	return nil
+}
+
+func routeAVICloudRef(client *avi.AVI, spec *model.LoadBalancerAVISpec) (string, error) {
+	if spec.SEGroupID == "" {
+		return "", fmt.Errorf("load balancer has no service engine group")
+	}
+	group, err := client.GetSEGroup(spec.SEGroupID)
+	if err != nil {
+		return "", err
+	}
+	if group.CloudRef == "" {
+		return "", fmt.Errorf("service engine group %s has no cloud", group.Name)
+	}
+	if spec.CloudID != "" && group.CloudRef != client.CloudRef(spec.CloudID).String() {
+		return "", fmt.Errorf("service engine group %s belongs to a different cloud than %s", group.Name, spec.CloudName)
+	}
+	return group.CloudRef, nil
+}
+
+func createVirtualService(client *avi.AVI, name string, port int32, spec *model.RouteAVISpec, segroupRef, cloudRef string) (*avi.VirtualService, error) {
 	obj := &avi.VirtualService{
 		Name:                  name,
+		CloudRef:              cloudRef,
 		Enabled:               true,
 		Type:                  "VS_TYPE_NORMAL",
 		ApplicationProfileRef: client.ApplicationProfileRef(spec.ApplicationProfileID).String(),
@@ -504,9 +587,10 @@ func createVirtualService(client *avi.AVI, name string, port int32, spec *model.
 	return client.CreateVirtualService(obj)
 }
 
-func updateVirtualService(client *avi.AVI, uuid, name string, port int32, spec *model.RouteAVISpec, segroupRef string) (*avi.VirtualService, error) {
+func updateVirtualService(client *avi.AVI, uuid, name string, port int32, spec *model.RouteAVISpec, segroupRef, cloudRef string) (*avi.VirtualService, error) {
 	obj := &avi.VirtualService{
 		Name:                  name,
+		CloudRef:              cloudRef,
 		Enabled:               true,
 		Type:                  "VS_TYPE_NORMAL",
 		ApplicationProfileRef: client.ApplicationProfileRef(spec.ApplicationProfileID).String(),

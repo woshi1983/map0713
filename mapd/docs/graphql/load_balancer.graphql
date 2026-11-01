@@ -68,6 +68,7 @@ union LoadBalancerSpec = AviLoadBalancerSpec
 
 type AviLoadBalancerSpec {
   _loadBalancer: ID!
+  cloud: String
   seGroup: String
   licenseTier: String
   preferredNetwork: String
@@ -174,6 +175,7 @@ input CreateLoadBalancerSpec {
 }
 
 input CreateAVILoadBalancerSpec {
+  cloud: String
   preferredNetwork: String
   seGroup: String = "Default-Group"
 }
@@ -197,6 +199,7 @@ input UpdateLoadBalancerSpec {
 }
 
 input UpdateAVILoadBalancerSpec {
+  cloud: String
   preferredNetwork: String
 }
 

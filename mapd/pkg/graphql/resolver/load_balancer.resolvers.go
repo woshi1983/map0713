@@ -481,18 +481,21 @@ func (r *mutationResolver) CreateLoadBalancer(ctx context.Context, input model.C
 					panic(err)
 				}
 
-				spec := &model1.LoadBalancerAVISpec{}
-				if input.Spec != nil && input.Spec.Avi != nil && input.Spec.Avi.PreferredNetwork != nil {
-					spec.PreferredNetwork = *input.Spec.Avi.PreferredNetwork
-					if spec.PreferredNetwork != "" {
-						networks, err := listNetwork(client, &avi.ListNetworkOptions{Name: spec.PreferredNetwork})
-						if err != nil {
-							return errGatewayError(ctx, err)
-						}
-						if len(networks) == 0 {
-							return errObjectNotFound(ctx, "input.spec.avi.preferedNetwork", spec.PreferredNetwork)
-						}
+				cloudName, groupName, networkName := "", defAVIServiceEngineGroup, ""
+				if input.Spec != nil && input.Spec.Avi != nil {
+					if input.Spec.Avi.Cloud != nil {
+						cloudName = strings.TrimSpace(*input.Spec.Avi.Cloud)
 					}
+					if input.Spec.Avi.SeGroup != nil && *input.Spec.Avi.SeGroup != "" {
+						groupName = *input.Spec.Avi.SeGroup
+					}
+					if input.Spec.Avi.PreferredNetwork != nil {
+						networkName = *input.Spec.Avi.PreferredNetwork
+					}
+				}
+				spec, err := prepareAVILoadBalancerSpec(client, cloudName, groupName, networkName, false)
+				if err != nil {
+					return errInvalidRequest(ctx, "input.spec.avi", err.Error())
 				}
 
 				lb.Spec, err = json.Marshal(spec)
@@ -513,42 +516,22 @@ func (r *mutationResolver) CreateLoadBalancer(ctx context.Context, input model.C
 				panic(err)
 			}
 
-			spec, seGroupName := &model1.LoadBalancerAVISpec{}, defAVIServiceEngineGroup
+			cloudName, seGroupName, networkName := "", defAVIServiceEngineGroup, ""
 			if input.Spec != nil && input.Spec.Avi != nil {
+				if input.Spec.Avi.Cloud != nil {
+					cloudName = strings.TrimSpace(*input.Spec.Avi.Cloud)
+				}
 				if input.Spec.Avi.SeGroup != nil && *input.Spec.Avi.SeGroup != "" {
 					seGroupName = *input.Spec.Avi.SeGroup
 				}
-				if input.Spec.Avi.PreferredNetwork != nil && *input.Spec.Avi.PreferredNetwork != "" {
-					spec.PreferredNetwork = *input.Spec.Avi.PreferredNetwork
-					if spec.PreferredNetwork != "" {
-						networks, err := listNetwork(client, &avi.ListNetworkOptions{Name: spec.PreferredNetwork})
-						if err != nil {
-							return errGatewayError(ctx, err)
-						}
-						if len(networks) == 0 {
-							return errObjectNotFound(ctx, "input.spec.avi.preferedNetwork", spec.PreferredNetwork)
-						}
-					}
+				if input.Spec.Avi.PreferredNetwork != nil {
+					networkName = *input.Spec.Avi.PreferredNetwork
 				}
 			}
-			var seGroup *avi.ServiceEngineGroup
-			seGroups, err := listSEGroup(client, &avi.ListSEGroupOptions{Name: seGroupName})
+			spec, err := prepareAVILoadBalancerSpec(client, cloudName, seGroupName, networkName, true)
 			if err != nil {
-				return errGatewayError(ctx, err)
+				return errInvalidRequest(ctx, "input.spec.avi", err.Error())
 			}
-			if len(seGroups) > 0 {
-				seGroup = seGroups[0]
-			} else {
-				tier, err := getHighestAVILicenseTier(client, false)
-				if err != nil {
-					return errGatewayError(ctx, err)
-				}
-				seGroup, err = createServiceEngineGroup(client, seGroupName, tier)
-				if err != nil {
-					return errGatewayError(ctx, err)
-				}
-			}
-			spec.SEGroupID, spec.LicenseTier = seGroup.UUID, model1.AVILicenseTier(seGroup.LicenseTier)
 
 			lb.Spec, err = json.Marshal(spec)
 			if err != nil {
@@ -648,23 +631,50 @@ func (r *mutationResolver) UpdateLoadBalancer(ctx context.Context, input model.U
 					if err := json.Unmarshal(lb.Spec, spec); err != nil {
 						panic(err)
 					}
-
-					if input.Spec.Avi.PreferredNetwork != nil {
-						if *input.Spec.Avi.PreferredNetwork != "" {
-							client, err := avi.NewAVI(lb.Endpoint, lb.AuthUser, block.Decrypt(lb.AuthPassword), lb.InsecureTLS, lb.CACert)
-							if err != nil {
-								panic(err)
+					if input.Spec.Avi.Cloud != nil && strings.TrimSpace(*input.Spec.Avi.Cloud) == "" {
+						return errInvalidRequest(ctx, "input.spec.avi.cloud", "AVI cloud cannot be empty")
+					}
+					if input.Spec.Avi.Cloud != nil || input.Spec.Avi.PreferredNetwork != nil {
+						client, err := avi.NewAVI(lb.Endpoint, lb.AuthUser, block.Decrypt(lb.AuthPassword), lb.InsecureTLS, lb.CACert)
+						if err != nil {
+							panic(err)
+						}
+						networkName := spec.PreferredNetwork
+						if input.Spec.Avi.PreferredNetwork != nil {
+							networkName = *input.Spec.Avi.PreferredNetwork
+						}
+						if input.Spec.Avi.Cloud != nil {
+							groupName := defAVIServiceEngineGroup
+							if spec.SEGroupID != "" {
+								group, err := client.GetSEGroup(spec.SEGroupID)
+								if err != nil {
+									return errGatewayError(ctx, err)
+								}
+								groupName = group.Name
 							}
-
-							networks, err := listNetwork(client, &avi.ListNetworkOptions{Name: *input.Spec.Avi.PreferredNetwork})
+							createGroup := input.Dryrun == nil || !*input.Dryrun
+							spec, err = prepareAVILoadBalancerSpec(client, strings.TrimSpace(*input.Spec.Avi.Cloud), groupName, networkName, createGroup)
+							if err != nil {
+								return errInvalidRequest(ctx, "input.spec.avi", err.Error())
+							}
+						} else if networkName != "" {
+							options := &avi.ListNetworkOptions{Name: networkName}
+							if spec.CloudName != "" {
+								options.CloudName = spec.CloudName
+							}
+							networks, err := listNetwork(client, options)
 							if err != nil {
 								return errGatewayError(ctx, err)
 							}
-							if len(networks) == 0 {
-								return errObjectNotFound(ctx, "input.spec.avi.preferedNetwork", *input.Spec.Avi.PreferredNetwork)
+							if spec.CloudID != "" {
+								if _, err := selectAVINetwork(networks, networkName, client.CloudRef(spec.CloudID).String()); err != nil {
+									return errInvalidRequest(ctx, "input.spec.avi.preferredNetwork", err.Error())
+								}
+							} else if len(networks) == 0 {
+								return errObjectNotFound(ctx, "input.spec.avi.preferredNetwork", networkName)
 							}
 						}
-						spec.PreferredNetwork = *input.Spec.Avi.PreferredNetwork
+						spec.PreferredNetwork = networkName
 					}
 
 					b, err := json.Marshal(spec)

@@ -188,6 +188,7 @@ type ComplexityRoot struct {
 	}
 
 	AviLoadBalancerSpec struct {
+		Cloud            func(childComplexity int) int
 		LicenseTier      func(childComplexity int) int
 		LoadBalancer     func(childComplexity int) int
 		PreferredNetwork func(childComplexity int) int
@@ -2896,6 +2897,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AviCloud.Vtype(childComplexity), true
+
+	case "AviLoadBalancerSpec.cloud":
+		if e.complexity.AviLoadBalancerSpec.Cloud == nil {
+			break
+		}
+
+		return e.complexity.AviLoadBalancerSpec.Cloud(childComplexity), true
 
 	case "AviLoadBalancerSpec.licenseTier":
 		if e.complexity.AviLoadBalancerSpec.LicenseTier == nil {
@@ -16583,6 +16591,7 @@ union LoadBalancerSpec = AviLoadBalancerSpec
 
 type AviLoadBalancerSpec {
   _loadBalancer: ID!
+  cloud: String
   seGroup: String
   licenseTier: String
   preferredNetwork: String
@@ -16689,6 +16698,7 @@ input CreateLoadBalancerSpec {
 }
 
 input CreateAVILoadBalancerSpec {
+  cloud: String
   preferredNetwork: String
   seGroup: String = "Default-Group"
 }
@@ -16712,12 +16722,14 @@ input UpdateLoadBalancerSpec {
 }
 
 input UpdateAVILoadBalancerSpec {
+  cloud: String
   preferredNetwork: String
 }
 
 input DeleteLoadBalancer {
   id: ID!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 	{Name: "../../docs/graphql/metrics.graphql", Input: `type Metrics {
   activeUsers: Int!
   localUsersDisabled: Boolean!
@@ -24023,6 +24035,47 @@ func (ec *executionContext) fieldContext_AviLoadBalancerSpec__loadBalancer(ctx c
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AviLoadBalancerSpec_cloud(ctx context.Context, field graphql.CollectedField, obj *model.AviLoadBalancerSpec) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_AviLoadBalancerSpec_cloud(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cloud, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_AviLoadBalancerSpec_cloud(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AviLoadBalancerSpec",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -94070,13 +94123,21 @@ func (ec *executionContext) unmarshalInputCreateAVILoadBalancerSpec(ctx context.
 		asMap["seGroup"] = "Default-Group"
 	}
 
-	fieldsInOrder := [...]string{"preferredNetwork", "seGroup"}
+	fieldsInOrder := [...]string{"cloud", "preferredNetwork", "seGroup"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "cloud":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cloud"))
+			it.Cloud, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "preferredNetwork":
 			var err error
 
@@ -101416,13 +101477,21 @@ func (ec *executionContext) unmarshalInputUpdateAVILoadBalancerSpec(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"preferredNetwork"}
+	fieldsInOrder := [...]string{"cloud", "preferredNetwork"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "cloud":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cloud"))
+			it.Cloud, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "preferredNetwork":
 			var err error
 
@@ -105639,6 +105708,10 @@ func (ec *executionContext) _AviLoadBalancerSpec(ctx context.Context, sel ast.Se
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "cloud":
+
+			out.Values[i] = ec._AviLoadBalancerSpec_cloud(ctx, field, obj)
+
 		case "seGroup":
 			field := field
 
