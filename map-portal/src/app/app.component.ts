@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BnNgIdleService } from 'bn-ng-idle';
 import { Router } from '@angular/router';
+import { BrandingService } from './services/branding.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,12 @@ import { Router } from '@angular/router';
 export class AppComponent implements OnInit {
   constructor (
     private bnIdle: BnNgIdleService,
-    private router: Router
+    private router: Router,
+    private branding: BrandingService
   ) {}
 
   ngOnInit (): void {
+    this.branding.load().subscribe({ error: error => console.warn('Unable to load branding settings:', error) });
     console.log('The Application is Starting.');
 
     // set 10 min idle timeout

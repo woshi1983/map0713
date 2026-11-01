@@ -53,6 +53,7 @@
     "SYSTEMPROVIDER": "集群供应商",
     "SYSTEMREPO": "仓库管理",
     "SYSTEMSTANDARDPACKAGE": "标准包管理",
+    "SYSTEMBRANDING": "品牌设置",
     "SYSTEMLB": "负载均衡器管理",
     "THEME": "浅色主题"
   },

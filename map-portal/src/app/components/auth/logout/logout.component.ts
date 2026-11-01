@@ -2,6 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import {AboutDialogComponent} from "../../base/about-dialog/about-dialog.component";
 import {ModalEvent} from "../../../classes";
 import {AuthService} from "../../../services/auth.service";
+import {BrandingService} from '../../../services/branding.service';
 
 
 @Component({
@@ -15,7 +16,8 @@ export class LogoutComponent implements OnInit {
   aboutDialogView: AboutDialogComponent;
 
   constructor(
-    private authService: AuthService
+    private authService: AuthService,
+    public branding: BrandingService
     ) { }
 
   ngOnInit(): void {

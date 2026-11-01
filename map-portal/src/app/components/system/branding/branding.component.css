@@ -1,0 +1,4 @@
+.branding-settings { max-width: 680px; padding: 16px 24px; }
+.branding-settings .clr-form-control { margin: 20px 0; }
+.branding-settings .clr-input { width: min(100%, 480px); }
+.branding-preview { display: block; max-width: 240px; max-height: 96px; object-fit: contain; margin: 12px 0; }

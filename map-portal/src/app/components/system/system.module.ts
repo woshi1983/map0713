@@ -8,6 +8,7 @@ import { SupervisorNamespaceComponent } from './providerdetail/namespace/namespa
 import { CatrustComponent } from './providerdetail/catrust/catrust.component';
 import { LoadbalancerComponent } from './loadbalancer/loadbalancer.component';
 import { StandardPackageRepositoryComponent } from './standard-package-repository/standard-package-repository.component';
+import { BrandingComponent } from './branding/branding.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { StandardPackageRepositoryComponent } from './standard-package-repositor
     SupervisorNamespaceComponent,
     CatrustComponent,
     LoadbalancerComponent,
-    StandardPackageRepositoryComponent
+    StandardPackageRepositoryComponent,
+    BrandingComponent
   ],
   imports: [
     SharedModule,

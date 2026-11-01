@@ -4,10 +4,10 @@
           <div class="modal-content">
               <div class="modal-body dialog-body">
                   <div class="map-logo-black">
-                      <img src="{{logoImage}}" class="map-icon">
+                      <img [src]="branding.logoUrl" class="map-icon" alt="">
                   </div>
                   <div class="content" tabindex="1">
-                      <div><b>{{ 'LOGINPAGE.TITLE' | translate }}</b></div>
+                      <div><b>{{ branding.name }}</b></div>
                       <div>
                           <span class="p5 about-version">{{ 'NAVHEADER.ABOUT.VERSION' | translate }} {{version}}</span>
                       </div>

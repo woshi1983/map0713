@@ -45,6 +45,7 @@ func Upgrade(tx *gorm.DB, log *zap.SugaredLogger) error {
 	err := Upgrader.Upgrade(tx, currentVersion,
 		ModelApplication,
 		ModelAuditLog,
+		ModelBrandingSetting,
 		ModelClusterBackupScheduleComponent,
 		ModelClusterBackupSchedule,
 		ModelClusterExtensionRelatedCluster,

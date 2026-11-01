@@ -1,8 +1,8 @@
 <header class="header header-6">
   <div class="branding">
     <a routerLink="/portal/cluster/management" [class.disabled]="getRouteUrl === '/portal/no-org' || getRouteUrl === '/portal/logout' ? true : null" class="nav-link">
-      <img style="max-height: 32px;" src="{{logoImage}}">
-      <span class="title">{{ 'LOGINPAGE.TITLE' | translate }}</span>
+      <img style="max-height: 32px;" [src]="branding.logoUrl" alt="">
+      <span class="title">{{ branding.name }}</span>
     </a>
   </div>
   <div class="header-nav" *ngIf="authService.isLoggedIn">

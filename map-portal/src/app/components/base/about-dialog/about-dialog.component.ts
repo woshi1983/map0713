@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import {environment} from "../../../../environments/environment";
 import {CommonService} from "../../../services/common.service";
+import {BrandingService} from '../../../services/branding.service';
 
 @Component({
   selector: 'app-about-dialog',
@@ -11,13 +11,11 @@ export class AboutDialogComponent implements OnInit {
 
   version: string;
   opened: boolean = false;
-  logoImage: string;
 
   constructor(
-    private commonService: CommonService
-  ) {
-    this.logoImage = environment.assetsPath + 'images/tanzu-back.png';
-  }
+    private commonService: CommonService,
+    public branding: BrandingService
+  ) {}
 
   ngOnInit(): void {
   }

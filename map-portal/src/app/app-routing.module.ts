@@ -5,6 +5,7 @@ import { handleObject } from './classes';
 import { AuthGuard } from './utils/guard/auth.guard';
 import { OrgRolePermissionGuard } from './utils/guard/org-role-permission.guard';
 import { FeatureGuard } from './utils/guard/feature.guard';
+import { AdminBrandingGuard } from './utils/guard/admin-branding.guard';
 
 import { HomeComponent } from './components/base/home/home.component';
 
@@ -36,6 +37,7 @@ import { ProviderdetailComponent } from './components/system/providerdetail/prov
 import { LoadbalancerComponent } from './components/system/loadbalancer/loadbalancer.component';
 import { RepositorysComponent } from './components/system/repositorys/repositorys.component';
 import { StandardPackageRepositoryComponent } from './components/system/standard-package-repository/standard-package-repository.component';
+import { BrandingComponent } from './components/system/branding/branding.component';
 
 import { LogoutComponent } from './components/auth/logout/logout.component';
 import { UserNoOrgComponent } from './components/base/user-no-org/user-no-org.component';
@@ -288,6 +290,11 @@ const routes: Routes = [
           {
             path: 'standard-packages',
             component: StandardPackageRepositoryComponent
+          },
+          {
+            path: 'branding',
+            canActivate: [AdminBrandingGuard],
+            component: BrandingComponent
           }
         ]
       }

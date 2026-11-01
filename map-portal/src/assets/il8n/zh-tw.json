@@ -49,6 +49,7 @@
     "SYSTEMPROVIDER": "叢集供應商",
     "SYSTEMREPO": "倉庫管理",
     "SYSTEMSTANDARDPACKAGE": "標準包管理",
+    "SYSTEMBRANDING": "品牌設定",
     "SYSTEMLB": "負載平衡器管理",
     "THEME": "淺色主題"
   },

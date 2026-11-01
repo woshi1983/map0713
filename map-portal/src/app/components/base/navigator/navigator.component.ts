@@ -7,7 +7,7 @@ import {OrganizationService} from "../../../services/organization.service";
 import {Router} from "@angular/router";
 import {LANG_LOCALSTORAGE_KEY, DeFaultLang, languageNames} from "../../../utils/static-entries/shared.const";
 import {ToastrService} from "ngx-toastr";
-import { environment} from '../../../../environments/environment';
+import { BrandingService } from '../../../services/branding.service';
 
 @Component({
   selector: 'app-navigator',
@@ -24,10 +24,10 @@ export class NavigatorComponent implements OnInit {
     public authService: AuthService,
     public orgService: OrganizationService,
     private router: Router,
-    private eventbusService: EventbusService
+    private eventbusService: EventbusService,
+    public branding: BrandingService
   ) { }
 
-  logoImage = environment.assetsPath + 'images/logo.png';
 
   selectedLang: string;
   languageNames = languageNames;

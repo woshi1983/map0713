@@ -184,6 +184,9 @@ func (m *API) PreRun() error {
 		}
 		return c.JSON(code, &m.status)
 	})
+	APIRouter.GET("/branding", m.getBranding)
+	APIRouter.GET("/branding/logo", m.getBrandingLogo)
+	APIRouter.PUT("/branding", m.putBranding, guard.Middleware())
 	APIRouter.POST("/graphql", echo.WrapHandler(gqlPost), guard.Middleware())
 	APIRouter.GET("/graphql", guard.GraphQLWebsocketHandler(gqlGet))
 	return nil

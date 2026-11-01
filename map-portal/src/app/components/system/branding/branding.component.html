@@ -1,0 +1,28 @@
+<div *ngIf="authService.getUserInfo()?.admin; else denied" class="branding-settings">
+  <h2>品牌设置</h2>
+  <p>设置平台显示名称和徽标。登录页、导航栏及关于窗口将使用这些内容。</p>
+  <div *ngIf="loading">正在读取品牌设置…</div>
+  <form *ngIf="!loading" (ngSubmit)="save()">
+    <div class="clr-form-control">
+      <label for="branding-name-zh" class="clr-control-label">中文名称</label>
+      <div class="clr-control-container"><input id="branding-name-zh" class="clr-input" name="nameZh" [(ngModel)]="nameZh" required maxlength="60" /></div>
+    </div>
+    <div class="clr-form-control">
+      <label for="branding-name-en" class="clr-control-label">英文名称</label>
+      <div class="clr-control-container"><input id="branding-name-en" class="clr-input" name="nameEn" [(ngModel)]="nameEn" required maxlength="60" /></div>
+    </div>
+    <div class="clr-form-control">
+      <label for="branding-logo" class="clr-control-label">平台徽标</label>
+      <div class="clr-control-container">
+        <img [src]="previewLogo" alt="当前平台徽标" class="branding-preview" />
+        <input id="branding-logo" type="file" accept="image/png,image/jpeg" (change)="selectLogo($event)" />
+        <p class="p6">支持 PNG、JPEG；不超过 256 KiB，尺寸不超过 2048 × 1024 像素。</p>
+        <button type="button" class="btn btn-outline btn-sm" (click)="useDefaultLogo()">恢复默认徽标</button>
+      </div>
+    </div>
+    <p *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</p>
+    <p *ngIf="success" class="alert alert-success" role="status">{{ success }}</p>
+    <button class="btn btn-primary" type="submit" [disabled]="saving">{{ saving ? '保存中…' : '保存设置' }}</button>
+  </form>
+</div>
+<ng-template #denied><div class="alert alert-danger" role="alert">仅超级管理员可以访问品牌设置。</div></ng-template>

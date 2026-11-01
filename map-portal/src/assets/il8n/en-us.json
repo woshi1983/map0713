@@ -53,6 +53,7 @@
     "SYSTEMPROVIDER": "Cluster Providers",
     "SYSTEMREPO": "Repositories",
     "SYSTEMSTANDARDPACKAGE": "Standard Packages",
+    "SYSTEMBRANDING": "Branding",
     "SYSTEMLB": "LoadBalancers",
     "THEME": "LIGHT"
   },
