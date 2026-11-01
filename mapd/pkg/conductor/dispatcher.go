@@ -99,11 +99,12 @@ LOOP:
 	for {
 		select {
 		case <-ticker.C:
-			next := func() time.Duration {
+			next := func() (next time.Duration) {
 				defer func() {
 					defer log.Sync()
 
 					if r := recover(); r != nil {
+						next = -1
 						errmsg := fmt.Sprintf("handler has just recovered from a panic: %v. Please contact customer support to report a bug. Stacktrace:\n---\n%s\n", r, debug.Stack())
 						log.Errorf(strings.ReplaceAll(errmsg, "\n", "\n> "))
 					}

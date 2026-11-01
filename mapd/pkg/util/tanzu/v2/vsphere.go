@@ -593,6 +593,9 @@ func getClusterControlPlaneCount(clusterInfo *ClusterObjects) string {
 }
 
 func getClusterStatus(clusterInfo *ClusterObjects) TKGClusterPhase {
+	if clusterInfo == nil || clusterInfo.Cluster == nil || clusterInfo.KubeadmControlPlane == nil {
+		return TKGClusterPhaseCreating
+	}
 	if strings.EqualFold(clusterInfo.Cluster.Status.Phase, string(TKGClusterPhaseDeleting)) {
 		return TKGClusterPhaseDeleting
 	}
@@ -605,6 +608,9 @@ func getClusterStatus(clusterInfo *ClusterObjects) TKGClusterPhase {
 		readyReplicas > 0
 
 	if !creationCompleteCondition {
+		return TKGClusterPhaseCreating
+	}
+	if clusterInfo.KubeadmControlPlane.Spec.Replicas == nil {
 		return TKGClusterPhaseCreating
 	}
 

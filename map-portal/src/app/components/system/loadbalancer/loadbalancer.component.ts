@@ -279,13 +279,21 @@ export class LoadbalancerComponent {
       caCert: !this.editGlbForm.value.skipTLS ? this.editGlbForm.value.caCert : null,
       insecureSkipTLSVerify: this.editGlbForm.value.skipTLS,
       authUser: this.editGlbForm.value.user,
-      spec: {
-        avi: {
-          preferredNetwork: this.editGlbForm.value.routeAviNetwork,
-          cloud: this.editGlbForm.value.cloud?.trim() || undefined
-        }
-      }
+      spec: undefined
     };
+    const cloud = this.editGlbForm.value.cloud?.trim() || '';
+    const previousCloud = this.selectedLB?.spec?.cloud || '';
+    const network = this.editGlbForm.value.routeAviNetwork || '';
+    const previousNetwork = this.selectedLB?.spec?.preferredNetwork || '';
+    if (cloud !== previousCloud || network !== previousNetwork) {
+      param.spec = { avi: {} };
+      if (cloud !== previousCloud) {
+        param.spec.avi.cloud = cloud;
+      }
+      if (network !== previousNetwork) {
+        param.spec.avi.preferredNetwork = network;
+      }
+    }
     if (this.editGlbForm.value.password) {
       param.authPassword = this.editGlbForm.value.password
     }

@@ -312,8 +312,8 @@ func syncRoute(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 								}
 							}
 							if vip.Subnet == nil && vip.Subnet6 == nil {
-								log.Errorf("no available subnet for creating VsVip on network %s from load balancer %s.", lbSpec.PreferredNetwork, strconv.Quote(lb.Name))
-								return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI network %s has no available IPv4 subnet for the route VIP", lbSpec.PreferredNetwork))
+								log.Errorf("no free IPv4 VIP addresses in configured AVI IPAM ranges on network %s from load balancer %s.", lbSpec.PreferredNetwork, strconv.Quote(lb.Name))
+								return recordRouteProvisionError(tx, route, fmt.Sprintf("AVI network %s has no free IPv4 VIP addresses in its configured IPAM ranges", lbSpec.PreferredNetwork))
 							}
 							vip.IPAMNetworkSubnet = &avi.IPNetworkSubnet{
 								NetworkRef: vip.NetworkRef,

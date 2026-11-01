@@ -88,6 +88,9 @@ func (r *aviLoadBalancerStatusResolver) Clouds(ctx context.Context, obj *model.A
 	for _, each := range filters {
 		switch each.Key {
 		case "name":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.name", "AVI name filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.Name = val
 			}
@@ -137,6 +140,9 @@ func (r *aviLoadBalancerStatusResolver) NetworkProfiles(ctx context.Context, obj
 	for _, each := range filters {
 		switch each.Key {
 		case "name":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.name", "AVI name filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.Name = val
 			}
@@ -209,10 +215,16 @@ func (r *aviLoadBalancerStatusResolver) Networks(ctx context.Context, obj *model
 	for _, each := range filters {
 		switch each.Key {
 		case "name":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.name", "AVI name filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.Name = val
 			}
 		case "cloud":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.cloud", "AVI cloud filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.CloudName = val
 			}
@@ -278,10 +290,16 @@ func (r *aviLoadBalancerStatusResolver) VsVips(ctx context.Context, obj *model.A
 	for _, each := range filters {
 		switch each.Key {
 		case "name":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.name", "AVI name filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.Name = val
 			}
 		case "cloud":
+			if len(each.Value) > 1 {
+				return nil, errInvalidRequest(ctx, "filters.cloud", "AVI cloud filter accepts exactly one value")
+			}
 			for _, val := range each.Value {
 				options.CloudName = val
 			}
@@ -631,9 +649,6 @@ func (r *mutationResolver) UpdateLoadBalancer(ctx context.Context, input model.U
 					if err := json.Unmarshal(lb.Spec, spec); err != nil {
 						panic(err)
 					}
-					if input.Spec.Avi.Cloud != nil && strings.TrimSpace(*input.Spec.Avi.Cloud) == "" {
-						return errInvalidRequest(ctx, "input.spec.avi.cloud", "AVI cloud cannot be empty")
-					}
 					if input.Spec.Avi.Cloud != nil || input.Spec.Avi.PreferredNetwork != nil {
 						client, err := avi.NewAVI(lb.Endpoint, lb.AuthUser, block.Decrypt(lb.AuthPassword), lb.InsecureTLS, lb.CACert)
 						if err != nil {
@@ -643,7 +658,10 @@ func (r *mutationResolver) UpdateLoadBalancer(ctx context.Context, input model.U
 						if input.Spec.Avi.PreferredNetwork != nil {
 							networkName = *input.Spec.Avi.PreferredNetwork
 						}
-						if input.Spec.Avi.Cloud != nil {
+						if input.Spec.Avi.Cloud != nil && strings.TrimSpace(*input.Spec.Avi.Cloud) == "" {
+							spec.CloudID = ""
+							spec.CloudName = ""
+						} else if input.Spec.Avi.Cloud != nil {
 							groupName := defAVIServiceEngineGroup
 							if spec.SEGroupID != "" {
 								group, err := client.GetSEGroup(spec.SEGroupID)
