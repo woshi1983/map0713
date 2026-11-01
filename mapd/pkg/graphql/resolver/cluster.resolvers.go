@@ -36,7 +36,10 @@ import (
 
 // TLSCertChain is the resolver for the tlsCertChain field.
 func (r *clusterResolver) TLSCertChain(ctx context.Context, obj *model.Cluster) ([]*model.X509Certificate, error) {
-	if obj.Endpoint == nil {
+	// Certificate expiry is a best-effort preview for healthy clusters. For an
+	// unavailable cluster, probing its stale endpoint can turn the entire list
+	// query into a gateway error while the cluster row itself is still useful.
+	if obj.Endpoint == nil || obj.Status != model.ClusterStatusHealthy {
 		return nil, nil
 	}
 
