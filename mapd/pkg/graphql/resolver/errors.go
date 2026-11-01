@@ -89,6 +89,11 @@ func IsGQLError(e error) bool {
 	return ok
 }
 
+func isObjectNotFound(e error) bool {
+	gqlerr, ok := e.(*gqlerror.Error)
+	return ok && gqlerr.Extensions["code"] == fmt.Sprintf("0x%08X", CodeObjectNotFound)
+}
+
 func errInvalidRequest(ctx context.Context, fieldName, reason string, fieldValue ...interface{}) *gqlerror.Error {
 	err := newGQLErrorf(ctx, CodeInvalidRequestError, "invalid request")
 	if fieldName != "" {

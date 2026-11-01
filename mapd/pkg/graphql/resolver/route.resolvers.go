@@ -758,7 +758,11 @@ func (r *routeResolver) Component(ctx context.Context, obj *model.Route) (*model
 	if obj.Component == nil {
 		return nil, nil
 	}
-	return r.Resolver.Query().(*queryResolver).Component(WithGuardSilenced(ctx), obj.Component.ID)
+	component, err := r.Resolver.Query().(*queryResolver).Component(WithGuardSilenced(ctx), obj.Component.ID)
+	if isObjectNotFound(err) {
+		return nil, nil
+	}
+	return component, err
 }
 
 // Application is the resolver for the application field.
@@ -766,7 +770,11 @@ func (r *routeResolver) Application(ctx context.Context, obj *model.Route) (*mod
 	if obj.Application == nil {
 		return nil, nil
 	}
-	return r.Resolver.Query().(*queryResolver).Application(WithGuardSilenced(ctx), obj.Application.ID)
+	application, err := r.Resolver.Query().(*queryResolver).Application(WithGuardSilenced(ctx), obj.Application.ID)
+	if isObjectNotFound(err) {
+		return nil, nil
+	}
+	return application, err
 }
 
 // LoadBalancer is the resolver for the loadBalancer field.
@@ -774,7 +782,11 @@ func (r *routeResolver) LoadBalancer(ctx context.Context, obj *model.Route) (*mo
 	if obj.LoadBalancer == nil {
 		return nil, nil
 	}
-	return r.Resolver.Query().(*queryResolver).LoadBalancer(WithGuardSilenced(ctx), obj.LoadBalancer.ID)
+	loadBalancer, err := r.Resolver.Query().(*queryResolver).LoadBalancer(WithGuardSilenced(ctx), obj.LoadBalancer.ID)
+	if isObjectNotFound(err) {
+		return nil, nil
+	}
+	return loadBalancer, err
 }
 
 // Organization is the resolver for the organization field.
@@ -782,7 +794,11 @@ func (r *routeResolver) Organization(ctx context.Context, obj *model.Route) (*mo
 	if obj.Organization == nil {
 		return nil, nil
 	}
-	return r.Resolver.Query().(*queryResolver).Organization(WithGuardSilenced(ctx), obj.Organization.ID)
+	organization, err := r.Resolver.Query().(*queryResolver).Organization(WithGuardSilenced(ctx), obj.Organization.ID)
+	if isObjectNotFound(err) {
+		return nil, nil
+	}
+	return organization, err
 }
 
 // Instance is the resolver for the instance field.
@@ -790,7 +806,11 @@ func (r *routeBackendResolver) Instance(ctx context.Context, obj *model.RouteBac
 	if obj.Instance == nil {
 		return nil, nil
 	}
-	return r.Resolver.Query().(*queryResolver).Instance(WithGuardSilenced(ctx), obj.Instance.ID)
+	instance, err := r.Resolver.Query().(*queryResolver).Instance(WithGuardSilenced(ctx), obj.Instance.ID)
+	if isObjectNotFound(err) {
+		return nil, nil
+	}
+	return instance, err
 }
 
 // Edge is the resolver for the edge field.

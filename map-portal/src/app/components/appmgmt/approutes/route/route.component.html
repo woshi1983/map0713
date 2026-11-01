@@ -31,7 +31,7 @@
               {{ 'SHARED.MOREACTIONS' | translate }}
           </button>
           <clr-dropdown-menu *clrIfOpen>
-            <button id='edit-route' type="button" (click)="showUpdateRoute(selectedRoute)" [disabled]="!selectedRoute"
+            <button id='edit-route' type="button" (click)="showUpdateRoute(selectedRoute)" [disabled]="!selectedRoute?.component || !selectedRoute?.application || !selectedRoute?.loadBalancer || !selectedRoute?.spec || hasMissingBackendInstance(selectedRoute)"
               clrDropdownItem>{{ 'APPROUTE.ROUTE.ACTION.EDITROUTE' | translate }}</button>
             <button id='delete-route' type="button" (click)="showDeleteRoute()" [disabled]="!selectedRoute"
               clrDropdownItem>{{ 'APPROUTE.ROUTE.ACTION.DELETEROUTE' | translate }}</button>
@@ -156,8 +156,8 @@
       </clr-dg-cell>
       <clr-dg-cell>{{route.spec.manualAllocatedVsVIP}}</clr-dg-cell>
       <clr-dg-cell>{{route.spec.persistentVsVIP}}</clr-dg-cell>
-      <clr-dg-cell class="datagrid-long-text"><a routerLink="/portal/appmgmt/components/{{route.component.id}}/{{route.component.name}}">{{route.component.name}}</a></clr-dg-cell>
-      <clr-dg-cell class="datagrid-long-text">{{route.application.name}}</clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text"><a *ngIf="route.component" routerLink="/portal/appmgmt/components/{{route.component.id}}/{{route.component.name}}">{{route.component.name}}</a></clr-dg-cell>
+      <clr-dg-cell class="datagrid-long-text">{{route.application?.name}}</clr-dg-cell>
       <clr-dg-cell>{{route.createdAt | datetimeTransition}}</clr-dg-cell>
       <clr-dg-cell>{{route.lastModified | datetimeTransition}}</clr-dg-cell>
     </clr-dg-row>

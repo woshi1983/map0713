@@ -33,10 +33,9 @@ export class RouteDetailsComponent implements OnInit, OnChanges, OnDestroy {
       this.routeService.getRoute(this.routeId).subscribe((d) => {
         if (!!d.data?.Route) {
           this.route = d.data.Route;
-          for(var i = 0; i < this.route.backends.length; i++){
-            i === 0 ?
-            this.data.push({ value: this.route.backends[0].ratio*5, name: `${this.route.backends[0].name} (${this.route.backends[0].instance.cluster.name}/${this.route.backends[0].instance.namespace})`}) :
-              this.data.push({ value: this.route.backends[1].ratio*5, name: `${this.route.backends[1].name} (${this.route.backends[1].instance.cluster.name}/${this.route.backends[1].instance.namespace}) `})
+          for (const backend of this.route.backends || []) {
+            const location = backend.instance ? ` (${backend.instance.cluster?.name || ''}/${backend.instance.namespace})` : '';
+            this.data.push({ value: backend.ratio * 5, name: `${backend.name}${location}` });
           }
           this.chartOption = {
             color: ['#0072a3', '#60b515'],

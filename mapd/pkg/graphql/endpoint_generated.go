@@ -17727,10 +17727,10 @@ input DeleteRoleBinding {
   status: RouteStatus!
   """Last provisioning error. Empty after the route progresses successfully."""
   errorReason: String
-  component: Component!
-  application: Application!
-  loadBalancer: LoadBalancer!
-  organization: Organization!
+  component: Component
+  application: Application
+  loadBalancer: LoadBalancer
+  organization: Organization
   createdAt: Time!
   lastModified: Time!
 }
@@ -17813,7 +17813,7 @@ type RouteBackend {
   ip: IP!
   port: Int!
   ratio: Int!
-  instance: Instance!
+  instance: Instance
 }
 
 enum RouteStatus {
@@ -74331,14 +74331,11 @@ func (ec *executionContext) _Route_component(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Component)
 	fc.Result = res
-	return ec.marshalNComponent2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐComponent(ctx, field.Selections, res)
+	return ec.marshalOComponent2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐComponent(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Route_component(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -74397,14 +74394,11 @@ func (ec *executionContext) _Route_application(ctx context.Context, field graphq
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Application)
 	fc.Result = res
-	return ec.marshalNApplication2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐApplication(ctx, field.Selections, res)
+	return ec.marshalOApplication2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐApplication(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Route_application(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -74457,14 +74451,11 @@ func (ec *executionContext) _Route_loadBalancer(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.LoadBalancer)
 	fc.Result = res
-	return ec.marshalNLoadBalancer2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐLoadBalancer(ctx, field.Selections, res)
+	return ec.marshalOLoadBalancer2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐLoadBalancer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Route_loadBalancer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -74531,14 +74522,11 @@ func (ec *executionContext) _Route_organization(ctx context.Context, field graph
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Organization)
 	fc.Result = res
-	return ec.marshalNOrganization2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐOrganization(ctx, field.Selections, res)
+	return ec.marshalOOrganization2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐOrganization(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Route_organization(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -74991,14 +74979,11 @@ func (ec *executionContext) _RouteBackend_instance(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Instance)
 	fc.Result = res
-	return ec.marshalNInstance2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐInstance(ctx, field.Selections, res)
+	return ec.marshalOInstance2ᚖgitlabᚗengᚗvmwareᚗcomᚋcnᚑseᚑsolutionᚋmapdᚋpkgᚋgraphqlᚋmodelᚐInstance(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_RouteBackend_instance(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -117623,9 +117608,6 @@ func (ec *executionContext) _Route(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Route_component(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -117643,9 +117625,6 @@ func (ec *executionContext) _Route(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Route_application(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -117663,9 +117642,6 @@ func (ec *executionContext) _Route(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Route_loadBalancer(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -117683,9 +117659,6 @@ func (ec *executionContext) _Route(ctx context.Context, sel ast.SelectionSet, ob
 					}
 				}()
 				res = ec._Route_organization(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -117787,9 +117760,6 @@ func (ec *executionContext) _RouteBackend(ctx context.Context, sel ast.Selection
 					}
 				}()
 				res = ec._RouteBackend_instance(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 

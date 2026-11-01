@@ -11,10 +11,10 @@ type Route {
   status: RouteStatus!
   """Last provisioning error. Empty after the route progresses successfully."""
   errorReason: String
-  component: Component!
-  application: Application!
-  loadBalancer: LoadBalancer!
-  organization: Organization!
+  component: Component
+  application: Application
+  loadBalancer: LoadBalancer
+  organization: Organization
   createdAt: Time!
   lastModified: Time!
 }
@@ -97,7 +97,7 @@ type RouteBackend {
   ip: IP!
   port: Int!
   ratio: Int!
-  instance: Instance!
+  instance: Instance
 }
 
 enum RouteStatus {

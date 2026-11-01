@@ -2,9 +2,24 @@ package resolver
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
+
+func TestIsObjectNotFound(t *testing.T) {
+	if !isObjectNotFound(&gqlerror.Error{Extensions: map[string]interface{}{"code": fmt.Sprintf("0x%08X", CodeObjectNotFound)}}) {
+		t.Fatal("object not found error was not recognized")
+	}
+	if isObjectNotFound(&gqlerror.Error{Extensions: map[string]interface{}{"code": fmt.Sprintf("0x%08X", CodeInvalidRequestError)}}) {
+		t.Fatal("invalid request was treated as object not found")
+	}
+	if isObjectNotFound(errors.New("object not found")) {
+		t.Fatal("plain error was treated as object not found")
+	}
+}
 
 func TestGatewayErrorMessage(t *testing.T) {
 	tests := []struct {

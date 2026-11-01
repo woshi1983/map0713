@@ -218,11 +218,10 @@ export class RouteComponent implements OnInit {
 
   getChartOption(backends: any[]): EChartsOption {
     let data: any[] = [];
-    for(var i = 0; i < backends.length; i++){
-          i === 0 ?
-          data.push({ value: backends[0].ratio*5, name: `${backends[0].name} (${backends[0].instance.cluster.name}/${backends[0].instance.namespace})`}) :
-            data.push({ value: backends[1].ratio*5, name: `${backends[1].name} (${backends[1].instance.cluster.name}/${backends[1].instance.namespace}) `})
-        }
+    for (const backend of backends) {
+      const location = backend.instance ? ` (${backend.instance.cluster?.name || ''}/${backend.instance.namespace})` : '';
+      data.push({ value: backend.ratio * 5, name: `${backend.name}${location}` });
+    }
     let chartOption: EChartsOption;
     chartOption = {
       color: ['#0072a3', '#60b515'],
@@ -496,6 +495,10 @@ export class RouteComponent implements OnInit {
 
   public doRouteCancel(): void {
     this.doRouteReset();
+  }
+
+  hasMissingBackendInstance(route: Route): boolean {
+    return !!route?.backends?.some(backend => !backend.instance);
   }
 
   showUpdateRoute(selectedRoute: Route): void {
