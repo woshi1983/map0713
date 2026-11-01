@@ -326,6 +326,9 @@ func (r *mutationResolver) DisableClusterExtension(ctx context.Context, input mo
 
 // ClusterExtension is the resolver for the ClusterExtension field.
 func (r *queryResolver) ClusterExtension(ctx context.Context, id uuid.UUID) (*model.ClusterExtension, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
@@ -336,8 +339,8 @@ func (r *queryResolver) ClusterExtension(ctx context.Context, id uuid.UUID) (*mo
 		db = sess.FilterQueryByOrganization(db, model1.PermReadOnly, model1.PolicyObjectCluster)
 	}
 
-	ext := &model1.ClusterExtension{ID: id}
-	if err := db.Take(ext).Error; err != nil {
+	ext := &model1.ClusterExtension{}
+	if err := db.Where("id = ?", id).Take(ext).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}

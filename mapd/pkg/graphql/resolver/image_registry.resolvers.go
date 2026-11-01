@@ -498,6 +498,9 @@ func (r *mutationResolver) DeleteImageRegistry(ctx context.Context, input model.
 
 // ImageRegistry is the resolver for the ImageRegistry field.
 func (r *queryResolver) ImageRegistry(ctx context.Context, id uuid.UUID) (*model.ImageRegistry, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
@@ -508,8 +511,8 @@ func (r *queryResolver) ImageRegistry(ctx context.Context, id uuid.UUID) (*model
 		db = sess.FilterQueryByOrganization(db, model1.PermReadOnly, model1.PolicyObjectImageRegistry)
 	}
 
-	registry := &model1.ImageRegistry{ID: id}
-	if err := db.Take(registry).Error; err != nil {
+	registry := &model1.ImageRegistry{}
+	if err := db.Where("id = ?", id).Take(registry).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}

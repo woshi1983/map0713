@@ -13,3 +13,12 @@ func TestRouteConversionIncludesProvisionFailure(t *testing.T) {
 		t.Fatalf("expected route error %q, got %v", route.LastError, got.ErrorReason)
 	}
 }
+
+func TestRouteConversionCopiesProvisionFailure(t *testing.T) {
+	route := &model1.Route{LastError: "first route failed"}
+	got := convertRouteFromSQLModel(route)
+	route.LastError = "second route failed"
+	if got.ErrorReason == nil || *got.ErrorReason != "first route failed" {
+		t.Fatalf("route error changed with source row: %v", got.ErrorReason)
+	}
+}

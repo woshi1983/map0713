@@ -247,6 +247,9 @@ func (r *mutationResolver) DeleteStandardPackageRepository(ctx context.Context, 
 
 // StandardPackageRepository is the resolver for the StandardPackageRepository field.
 func (r *queryResolver) StandardPackageRepository(ctx context.Context, id uuid.UUID) (*model2.StandardPackageRepository, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
@@ -255,8 +258,8 @@ func (r *queryResolver) StandardPackageRepository(ctx context.Context, id uuid.U
 		return nil, errInsufficientPrivileges(ctx)
 	}
 
-	repo := &model1.StandardPackageRepository{ID: id}
-	if err := mapd.Database().Take(repo).Error; err != nil {
+	repo := &model1.StandardPackageRepository{}
+	if err := mapd.Database().Where("id = ?", id).Take(repo).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}

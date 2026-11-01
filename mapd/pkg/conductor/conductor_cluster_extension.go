@@ -262,6 +262,8 @@ func syncClusterExtension(id uuid.UUID, log *zap.SugaredLogger) time.Duration {
 			if err := installer.Install(); err != nil {
 				if dependency, ok := err.(*extension.ErrDependency); ok {
 					updates["last_error"] = dependency.Reason
+				} else if extension.IsCriticalError(err) {
+					updates["last_error"] = err.Error()
 				} else {
 					updates["last_error"] = ""
 				}

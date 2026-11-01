@@ -48,3 +48,12 @@ func TestClusterExtensionExposesStoredErrorReason(t *testing.T) {
 		t.Fatalf("empty stored error should be omitted, got %v", *got.ErrorReason)
 	}
 }
+
+func TestClusterExtensionConversionCopiesErrorReason(t *testing.T) {
+	ext := &model.ClusterExtension{LastError: "Grafana failed"}
+	got := convertClusterExtensionFromSQLModel(ext)
+	ext.LastError = "Fluent Bit failed"
+	if got.ErrorReason == nil || *got.ErrorReason != "Grafana failed" {
+		t.Fatalf("extension error changed with source row: %v", got.ErrorReason)
+	}
+}

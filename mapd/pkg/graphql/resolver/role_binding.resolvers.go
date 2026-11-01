@@ -157,17 +157,20 @@ func (r *mutationResolver) DeleteRoleBinding(ctx context.Context, input model.De
 
 // RoleBinding is the resolver for the RoleBinding field.
 func (r *queryResolver) RoleBinding(ctx context.Context, id uuid.UUID) (*model.RoleBinding, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
 	}
 
-	rb := &model1.RoleBinding{ID: id}
+	rb := &model1.RoleBinding{}
 	if err := mapd.Database().Transaction(func(tx *gorm.DB) error {
 		if !IsGuardSilenced(ctx) {
 			tx = sess.FilterQueryByOrganization(tx, model1.PermReadOnly, model1.PolicyObjectOrganization)
 		}
-		if err := tx.Take(rb).Error; err != nil {
+		if err := tx.Where("id = ?", id).Take(rb).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "id", id.String())
 			}

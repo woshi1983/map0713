@@ -19,6 +19,7 @@ import (
 )
 
 func convertClusterFromSQLModel(cluster *model1.Cluster) *model.Cluster {
+	errorReason := cluster.LastError
 	obj := &model.Cluster{
 		ID:                    cluster.ID,
 		Name:                  cluster.Name,
@@ -29,7 +30,7 @@ func convertClusterFromSQLModel(cluster *model1.Cluster) *model.Cluster {
 		InsecureSkipTLSVerify: cluster.InsecureTLS,
 		Version:               abstract.MustParseVersion(cluster.Version),
 		Status:                model.ClusterStatus(cluster.Status.String()),
-		ErrorReason:           &cluster.LastError,
+		ErrorReason:           &errorReason,
 		State:                 model.ClusterState(cluster.State.String()),
 		CreatedAt:             cluster.CreatedAt,
 		LastModified:          cluster.UpdatedAt,

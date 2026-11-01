@@ -767,6 +767,9 @@ func (r *mutationResolver) DeleteLoadBalancer(ctx context.Context, input model.D
 
 // LoadBalancer is the resolver for the LoadBalancer field.
 func (r *queryResolver) LoadBalancer(ctx context.Context, id uuid.UUID) (*model.LoadBalancer, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
@@ -777,8 +780,8 @@ func (r *queryResolver) LoadBalancer(ctx context.Context, id uuid.UUID) (*model.
 		db = sess.FilterQueryByOrganization(db, model1.PermReadOnly, model1.PolicyObjectLoadBalancer)
 	}
 
-	lb := &model1.LoadBalancer{ID: id}
-	if err := db.Take(lb).Error; err != nil {
+	lb := &model1.LoadBalancer{}
+	if err := db.Where("id = ?", id).Take(lb).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errObjectNotFound(ctx, "id", id.String())
 		}

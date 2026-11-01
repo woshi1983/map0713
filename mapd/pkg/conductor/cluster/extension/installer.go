@@ -198,7 +198,11 @@ func (k *GenericInstaller) provision(ext *model.ClusterExtension, enable bool) e
 
 	env := make(map[string]string)
 	if err := k.UnmarshalEnvFunc(k.Extension, env); err != nil {
-		k.log.Errorf("unexpected error: %v.", err)
+		if dependency, ok := err.(*ErrDependency); ok && dependency.Pending {
+			k.log.Debugf("extension dependency pending: %s.", dependency.Reason)
+		} else {
+			k.log.Errorf("extension configuration failed: %v.", err)
+		}
 		return err
 	}
 	env[SharedEnvVarEnableExtension] = strconv.FormatBool(enable)
@@ -317,19 +321,21 @@ LOOP:
 		}
 	}
 
+	jobFailureReason := "BackoffLimitExceeded"
 	for _, each := range job.Status.Conditions {
 		if each.Type == "Failed" {
 			if each.Reason == "DeadlineExceeded" {
-				k.log.Errorf("job %s/%s timed out for some reason. For details, please check events on cluster %s manually.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
-				return &ErrCriticalFailure{fmt.Errorf("job is failed")}
+				return k.failedJob(job, each.Reason)
+			}
+			if each.Reason != "" {
+				jobFailureReason = each.Reason
 			}
 			break
 		}
 	}
 	if job.Status.Active > 0 {
 		if time.Since(job.Status.StartTime.Time) > time.Duration(graceDeadlineSeconds)*time.Second {
-			k.log.Errorf("job %s/%s timed out for some reason. For details, please check pod logs on cluster %s manually.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
-			return &ErrCriticalFailure{fmt.Errorf("job is failed")}
+			return k.failedJob(job, "still active past grace deadline")
 		}
 		if recreate {
 			k.log.Warnf("job %s/%s requires recreation but it is still running. Pending update on cluster %s.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
@@ -342,8 +348,7 @@ LOOP:
 			goto RECREATE
 		}
 
-		k.log.Errorf("job %s/%s failed for some reason. For details, please check pod logs on cluster %s manually.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
-		return &ErrCriticalFailure{fmt.Errorf("job is failed")}
+		return k.failedJob(job, jobFailureReason)
 	}
 	if job.Status.Succeeded < 1 {
 		// we wait for another 10 seconds to make sure the job is failed
@@ -359,8 +364,7 @@ LOOP:
 			goto RECREATE
 		}
 
-		k.log.Errorf("job %s/%s is neither succeeded nor running, and we assume this job has failed. For details, please check pod logs on cluster %s manually.", k.JobNamespace, k.Job, strconv.Quote(k.Cluster))
-		return &ErrCriticalFailure{fmt.Errorf("job is failed")}
+		return k.failedJob(job, "not running or succeeded past grace deadline")
 	}
 	if recreate {
 		goto RECREATE

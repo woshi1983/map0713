@@ -44,7 +44,8 @@ func convertClusterExtensionFromSQLModel(ext *model1.ClusterExtension) *model.Cl
 		LastModified: ext.UpdatedAt,
 	}
 	if ext.LastError != "" {
-		obj.ErrorReason = &ext.LastError
+		errorReason := ext.LastError
+		obj.ErrorReason = &errorReason
 	}
 	endpoints := ext.Endpoints
 	if len(endpoints) == 0 {

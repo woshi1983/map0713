@@ -18,6 +18,9 @@ import (
 
 // Release is the resolver for the Release field.
 func (r *queryResolver) Release(ctx context.Context, id uuid.UUID) (*model.Release, error) {
+	if id == uuid.Nil {
+		return nil, errInvalidRequest(ctx, "id", "ID cannot be empty")
+	}
 	sess, ok := auth.FromContext(ctx)
 	if !ok {
 		panic(ErrIdentityNotFound)
@@ -28,9 +31,9 @@ func (r *queryResolver) Release(ctx context.Context, id uuid.UUID) (*model.Relea
 		db = sess.FilterQueryByOrganization(db, model1.PermReadOnly, model1.PolicyObjectComponent)
 	}
 
-	release := &model1.Release{ID: id}
+	release := &model1.Release{}
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Take(release).Error; err != nil {
+		if err := tx.Where("id = ?", id).Take(release).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errObjectNotFound(ctx, "id", id.String())
 			}
