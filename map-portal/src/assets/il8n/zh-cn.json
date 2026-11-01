@@ -3617,6 +3617,8 @@
     },
     "SUMMARY": {
       "GET-BASIC-FAILED": "查询概要信息失败",
+      "PARTIAL-TITLE": "部分概要统计不完整",
+      "PARTIAL-CLUSTERS": "以下集群无法查询，构建产物和入口数量可能不完整：",
       "GET-CLUSTER-FAILED": "查询集群状态信息失败",
       "GET-ORG-RESOURCE-FAILED": "查询项目资源信息失败"
     }

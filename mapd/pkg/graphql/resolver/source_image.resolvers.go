@@ -555,7 +555,7 @@ func (r *queryResolver) SourceImages(ctx context.Context, filters []*model.Query
 
 			objs, err := getImages(kpack, defNamespace, selectors...)
 			if err != nil {
-				gqlErrChan <- errGatewayError(ctx, err)
+				gqlErrChan <- errClusterGatewayError(ctx, c.Name, err)
 				continue
 			}
 

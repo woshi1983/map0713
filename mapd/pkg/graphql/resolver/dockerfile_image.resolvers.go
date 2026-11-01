@@ -440,7 +440,7 @@ func (r *queryResolver) DockerfileImages(ctx context.Context, filters []*model.Q
 
 			objs, err := getDockerfileImages(cli, defNamespace, selectors...)
 			if err != nil {
-				gqlErrChan <- errGatewayError(ctx, err)
+				gqlErrChan <- errClusterGatewayError(ctx, c.Name, err)
 				continue
 			}
 

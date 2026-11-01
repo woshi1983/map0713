@@ -3617,6 +3617,8 @@
     },
     "SUMMARY": {
       "GET-BASIC-FAILED": "Query overview information failed",
+      "PARTIAL-TITLE": "Some overview counts are incomplete",
+      "PARTIAL-CLUSTERS": "Some clusters could not be queried, so build and ingress counts may be incomplete:",
       "GET-CLUSTER-FAILED": "Query cluster status failed",
       "GET-ORG-RESOURCE-FAILED": "Query resources of org failed"
     }

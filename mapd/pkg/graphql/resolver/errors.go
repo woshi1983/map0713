@@ -176,6 +176,12 @@ func errGatewayError(ctx context.Context, e error) *gqlerror.Error {
 	return err
 }
 
+func errClusterGatewayError(ctx context.Context, clusterName string, e error) *gqlerror.Error {
+	err := errGatewayError(ctx, e)
+	err.Extensions["cluster"] = clusterName
+	return err
+}
+
 func gatewayErrorMessage(e error) (ErrCode, string) {
 	reason := strings.TrimSpace(e.Error())
 	if strings.Contains(reason, "the server could not find the requested resource") {

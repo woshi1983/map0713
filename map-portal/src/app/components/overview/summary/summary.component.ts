@@ -9,6 +9,7 @@ import {TranslateService} from "@ngx-translate/core";
 import {ClrDatagridPagination} from "@clr/angular";
 import {getSortIndexList} from "../../../utils/operator/sortindex";
 import {FEATUREGATES} from "../../../utils/static-entries/shared.const";
+import {splitSummaryErrors} from './summary-errors';
 
 @Component({
   selector: 'app-summary',
@@ -117,20 +118,28 @@ export class SummaryComponent implements OnInit {
     this.basicMetricsLoading = true;
     this.summaryService.getBasicMetrics().subscribe( data => {
       if (!!data.errors){
-        for (const each of data.errors){
+        const {clusters, otherErrors} = splitSummaryErrors(data.errors);
+        if (clusters.length > 0) {
+          this.toast.warning(
+            `${this.translate.instant('MESSAGE.SUMMARY.PARTIAL-CLUSTERS')} ${clusters.join(', ')}`,
+            this.translate.instant('MESSAGE.SUMMARY.PARTIAL-TITLE'),
+            {closeButton: true, extendedTimeOut: 0, timeOut: 0}
+          );
+        }
+        for (const each of otherErrors){
            if(!!each.message){
              this.toast.show( this.translate.instant('MESSAGE.SHARED.GETERROR')+` ${each.message} ${!!each.extensions?.reason ? ' : ' + each.extensions?.reason : '' }`, this.translate.instant('MESSAGE.SUMMARY.GET-BASIC-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0})
            }
         }
       }
       this.summaryBasic = {
-        orgCount: !!data.data.Organizations ? data.data.Organizations.totalCount : 0,
-        activeUsers: !!data.data.Metrics ? data.data.Metrics.activeUsers : 0,
-        customComponentCount: !!data.data.Components ? data.data.Components.totalCount : 0,
-        instanceCount: !!data.data.Instances ? data.data.Instances.totalCount : 0,
-        imageBuildsCount: (!!data.data.BinaryImages ? data.data.BinaryImages.length : 0) + (!!data.data.DockerfileImages ? data.data.DockerfileImages.length : 0) + (!!data.data.SourceImages ? data.data.SourceImages.length : 0),
-        ingressCount: !!data.data.Ingresses ? data.data.Ingresses.length : 0,
-        routeCount: !!data.data.Routes ? data.data.Routes.totalCount : 0,
+        orgCount: data.data?.Organizations?.totalCount ?? 0,
+        activeUsers: data.data?.Metrics?.activeUsers ?? 0,
+        customComponentCount: data.data?.Components?.totalCount ?? 0,
+        instanceCount: data.data?.Instances?.totalCount ?? 0,
+        imageBuildsCount: (data.data?.BinaryImages?.length ?? 0) + (data.data?.DockerfileImages?.length ?? 0) + (data.data?.SourceImages?.length ?? 0),
+        ingressCount: data.data?.Ingresses?.length ?? 0,
+        routeCount: data.data?.Routes?.totalCount ?? 0,
       }
     }, (e) => this.toast.show( this.translate.instant('MESSAGE.SHARED.UNGET')+` ${e}`, this.translate.instant('MESSAGE.SUMMARY.GET-BASIC-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => this.basicMetricsLoading = false)
   }

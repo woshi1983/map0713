@@ -560,7 +560,7 @@ func (r *queryResolver) Ingresses(ctx context.Context, filters []*model.QueryFil
 
 			objs, err := getIngresses(wc, "", selectors...)
 			if err != nil {
-				gqlErrChan <- errGatewayError(ctx, err)
+				gqlErrChan <- errClusterGatewayError(ctx, c.Name, err)
 				continue
 			}
 

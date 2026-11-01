@@ -1,13 +1,26 @@
 package resolver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
+
+func TestClusterGatewayErrorIdentifiesClusterWithoutLeakingTLSDetails(t *testing.T) {
+	ctx := graphql.WithFieldContext(context.Background(), &graphql.FieldContext{})
+	err := errClusterGatewayError(ctx, "vks-test03", errors.New("x509: certificate signed by unknown authority; token=secret"))
+	if err.Message != "gateway error: upstream TLS certificate validation failed" {
+		t.Fatalf("unexpected public message: %q", err.Message)
+	}
+	if err.Extensions["cluster"] != "vks-test03" || err.Extensions["reason"] != err.Message {
+		t.Fatalf("missing safe cluster context: %#v", err.Extensions)
+	}
+}
 
 func TestIsObjectNotFound(t *testing.T) {
 	if !isObjectNotFound(&gqlerror.Error{Extensions: map[string]interface{}{"code": fmt.Sprintf("0x%08X", CodeObjectNotFound)}}) {

@@ -454,7 +454,7 @@ func (r *queryResolver) BinaryImages(ctx context.Context, filters []*model.Query
 
 			objs, err := getBinaryImages(cli, defNamespace, selectors...)
 			if err != nil {
-				gqlErrChan <- errGatewayError(ctx, err)
+				gqlErrChan <- errClusterGatewayError(ctx, c.Name, err)
 				continue
 			}
 
