@@ -1,6 +1,7 @@
 package submodule
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -76,8 +77,8 @@ func parseBrandingLogo(value string) ([]byte, string, error) {
 	if http.DetectContentType(data) != mime {
 		return nil, "", errors.New("logo format does not match its content")
 	}
-	config, decodedMIME, err := image.DecodeConfig(strings.NewReader(string(data)))
-	if err != nil || decodedMIME != mime || config.Width < 1 || config.Height < 1 || config.Width > 2048 || config.Height > 1024 {
+	config, format, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil || format != strings.TrimPrefix(mime, "image/") || config.Width < 1 || config.Height < 1 || config.Width > 2048 || config.Height > 1024 {
 		return nil, "", errors.New("logo must be a valid image up to 2048 x 1024 pixels")
 	}
 	return data, mime, nil

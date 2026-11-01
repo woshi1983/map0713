@@ -1,7 +1,11 @@
 package submodule
 
 import (
+	"bytes"
 	"encoding/base64"
+	"image"
+	"image/color"
+	"image/png"
 	"strings"
 	"testing"
 )
@@ -20,6 +24,15 @@ func TestBrandingNameValidation(t *testing.T) {
 }
 
 func TestBrandingLogoValidation(t *testing.T) {
+	valid := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	valid.Set(0, 0, color.RGBA{R: 255, A: 255})
+	var encoded bytes.Buffer
+	if err := png.Encode(&encoded, valid); err != nil {
+		t.Fatal(err)
+	}
+	if _, mime, err := parseBrandingLogo("data:image/png;base64," + base64.StdEncoding.EncodeToString(encoded.Bytes())); err != nil || mime != "image/png" {
+		t.Fatalf("valid PNG rejected: %s, %v", mime, err)
+	}
 	png := []byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}
 	if _, _, err := parseBrandingLogo("data:image/png;base64," + base64.StdEncoding.EncodeToString(png)); err == nil {
 		t.Fatal("truncated PNG accepted")
