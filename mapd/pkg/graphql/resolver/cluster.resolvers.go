@@ -412,6 +412,9 @@ func (r *mutationResolver) CreateCluster(ctx context.Context, input model.Create
 
 		switch cluster.Class {
 		case model1.ClusterClassVKS:
+			if err := requireVKSProviderLicense(ctx, tx, cp); err != nil {
+				return err
+			}
 			spec, err := prepareVKSCluster(ctx, cp, cluster.ID, cluster.Name, input.Spec.Vks, cluster.Version, usage)
 			if err != nil {
 				return err
@@ -996,6 +999,13 @@ func (r *mutationResolver) UpdateCluster(ctx context.Context, input model.Update
 				if cpCount == nil && workerCount == nil && input.Version == nil {
 					break
 				}
+				providerForLicense := &model1.ClusterProvider{}
+				if err := tx.Where("id = ?", cluster.ProviderID.UUID).Take(providerForLicense).Error; err != nil {
+					return errGatewayError(ctx, err)
+				}
+				if err := requireVKSProviderLicense(ctx, tx, providerForLicense); err != nil {
+					return err
+				}
 				if (cpCount != nil || workerCount != nil) && input.Version != nil {
 					return errInvalidRequest(ctx, "input", "VKS version and node counts must be changed separately")
 				}
@@ -1558,6 +1568,9 @@ func (r *mutationResolver) DeleteCluster(ctx context.Context, input model.Delete
 
 			switch cp.Class {
 			case model1.ClusterClassVKS:
+				if err := requireVKSProviderLicense(ctx, tx, cp); err != nil {
+					return err
+				}
 				if err := deleteVKSCluster(ctx, cp, cluster); err != nil {
 					return errGatewayError(ctx, err)
 				}

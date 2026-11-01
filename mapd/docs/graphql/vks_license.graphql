@@ -1,0 +1,16 @@
+"""Authorization for a VKS Supervisor. TKGM providers do not use this license."""
+type VKSProviderLicenseStatus {
+  supervisorUID: String!
+  licensed: Boolean!
+  expiresAt: Time
+  message: String!
+}
+
+extend type Query {
+  VKSProviderLicense(providerID: ID!): VKSProviderLicenseStatus!
+}
+
+extend type Mutation {
+  """Only a platform super administrator may upload a signed license."""
+  UploadVKSProviderLicense(providerID: ID!, license: String!): VKSProviderLicenseStatus!
+}

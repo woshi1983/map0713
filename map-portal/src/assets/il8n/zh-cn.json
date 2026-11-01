@@ -2954,6 +2954,19 @@
   },
   "PROVIDERDETAIL": {
      "BACK": "返回集群供应商列表",
+     "LICENSE": {
+       "TITLE": "VKS 授权",
+       "SUPERVISOR-UID": "主管集群 UID",
+       "STATUS": "授权状态",
+       "ACTIVE": "已授权",
+       "INACTIVE": "未授权",
+       "EXPIRES-AT": "到期时间",
+       "FILE": "授权文件",
+       "UPLOAD": "上传授权",
+       "FILE-TOO-LARGE": "授权文件不能超过 64 KiB。",
+       "FILE-EMPTY": "授权文件不能为空。",
+       "FILE-READ-FAILED": "读取授权文件失败。"
+     },
      "TABS": {
        "NAMESPACE": "命名空间",
        "NAMESPACE-PAGE": {

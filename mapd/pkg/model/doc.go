@@ -52,6 +52,7 @@ func Upgrade(tx *gorm.DB, log *zap.SugaredLogger) error {
 		ModelClusterImageRegistry,
 		ModelClusterProviderImageRegistry,
 		ModelClusterProvider,
+		ModelVKSSupervisorLicense,
 		ModelClusterQuotaUsage,
 		ModelClusterRestoreInstance,
 		ModelClusterRestore,

@@ -3816,6 +3816,14 @@ type VKSOSImage struct {
 	Releases          []string `json:"releases"`
 }
 
+// Authorization for a VKS Supervisor. TKGM providers do not use this license.
+type VKSProviderLicenseStatus struct {
+	SupervisorUID string     `json:"supervisorUID"`
+	Licensed      bool       `json:"licensed"`
+	ExpiresAt     *time.Time `json:"expiresAt"`
+	Message       string     `json:"message"`
+}
+
 type VMClass struct {
 	Name string          `json:"name"`
 	Spec json.RawMessage `json:"spec"`

@@ -91,6 +91,18 @@ func NewClient(config *rest.Config) (*Client, error) {
 	return client, nil
 }
 
+// SupervisorUID is the kube-system namespace UID, independent of endpoint and credentials.
+func (c *Client) SupervisorUID(ctx context.Context) (string, error) {
+	ns, err := c.kube.CoreV1().Namespaces().Get(ctx, "kube-system", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	if ns.UID == "" {
+		return "", fmt.Errorf("Supervisor kube-system namespace has no UID")
+	}
+	return string(ns.UID), nil
+}
+
 func (c *Client) GetCluster(ctx context.Context, namespace, name string) (*unstructured.Unstructured, error) {
 	return c.dynamic.Resource(c.capiResource("clusters")).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 }

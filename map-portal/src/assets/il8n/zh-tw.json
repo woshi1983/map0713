@@ -2550,6 +2550,19 @@
   },
   "PROVIDERDETAIL": {
      "BACK": "返回叢集供應商列表",
+     "LICENSE": {
+       "TITLE": "VKS 授權",
+       "SUPERVISOR-UID": "主管叢集 UID",
+       "STATUS": "授權狀態",
+       "ACTIVE": "已授權",
+       "INACTIVE": "未授權",
+       "EXPIRES-AT": "到期時間",
+       "FILE": "授權檔案",
+       "UPLOAD": "上傳授權",
+       "FILE-TOO-LARGE": "授權檔案不得超過 64 KiB。",
+       "FILE-EMPTY": "授權檔案不可為空。",
+       "FILE-READ-FAILED": "讀取授權檔案失敗。"
+     },
      "//conment": "MORE ACTION USE SUPERVISOR-ACTION",
      "NODESC": "無描述",
      "ACTION": {

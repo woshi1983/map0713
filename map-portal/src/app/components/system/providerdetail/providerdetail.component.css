@@ -70,6 +70,16 @@
   padding-right: .6rem !important;
 }
 
+.vks-license-details,
+.vks-license-upload {
+  margin: 1rem;
+}
+
+.vks-license-upload input {
+  display: block;
+  margin: .5rem 0;
+}
+
 .label-form {
   margin-left: 10px;
   touch-action: manipulation;

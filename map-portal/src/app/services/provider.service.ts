@@ -22,6 +22,31 @@ export class ProviderService {
   constructor (private apollo: Apollo) {
   }
 
+  getVKSProviderLicense (providerID: string): Observable<any> {
+    return this.apollo.query<any>({
+      query: gql`query($providerID: ID!) {
+        VKSProviderLicense(providerID: $providerID) {
+          supervisorUID licensed expiresAt message
+        }
+      }`,
+      variables: { providerID },
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all'
+    });
+  }
+
+  uploadVKSProviderLicense (providerID: string, license: string): Observable<any> {
+    return this.apollo.mutate<any>({
+      mutation: gql`mutation($providerID: ID!, $license: String!) {
+        UploadVKSProviderLicense(providerID: $providerID, license: $license) {
+          supervisorUID licensed expiresAt message
+        }
+      }`,
+      variables: { providerID, license },
+      errorPolicy: 'all'
+    });
+  }
+
   getAllProviders (num: number, limit: number, filters: any): Observable<any> {
     return this.apollo.query<any>({
       query: gql`

@@ -23,6 +23,13 @@ import { prividerNamespacediffset } from 'app/utils/operator/namespacediffset';
 import { DELETEOBJECTBUTTON, DELETEOBJECTTYPE, CONFIRMATIONSTATE } from '../../../utils/static-entries/shared.const';
 import { DeleteObjectComponent } from '../../shared-components/delete-object/delete-object.component';
 
+interface VKSProviderLicenseStatus {
+  supervisorUID: string;
+  licensed: boolean;
+  expiresAt?: string;
+  message: string;
+}
+
 @Component({
   selector: 'app-providerdetail',
   templateUrl: './providerdetail.component.html',
@@ -63,6 +70,12 @@ export class ProviderdetailComponent implements OnInit {
   namespaceList: TKGMClusterProviderSpecNamespace[] = [];
   selectedNsUnexist = false;
   loading = false;
+  licenseStatus: VKSProviderLicenseStatus;
+  licenseStatusLoading = false;
+  licenseStatusError = '';
+  licenseFileName = '';
+  licenseFileContent = '';
+  uploadingLicense = false;
 
   showAddEditFile = false;
   editFilename: string;
@@ -129,9 +142,73 @@ export class ProviderdetailComponent implements OnInit {
         }
       }
       this.provider = data.data?.ClusterProvider ? data.data.ClusterProvider : null;
+      if (this.provider?.class === 'VKS') {
+        this.loadVKSProviderLicense();
+      }
     }, (e) => this.toast.show(this.translate.instant('MESSAGE.SHARED.UNGET') + ` ${e}`, this.translate.instant('MESSAGE.PROVIDER.GET-PROVIDER-FAILED'), { toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0 }), () => {
       this.loading = false;
     });
+  }
+
+  loadVKSProviderLicense (): void {
+    this.licenseStatusLoading = true;
+    this.licenseStatusError = '';
+    this.providerService.getVKSProviderLicense(this.providerId).subscribe(data => {
+      if (data.errors?.length) {
+        this.licenseStatusError = data.errors.map(error => error.message).join('; ');
+        this.licenseStatus = null;
+      } else {
+        this.licenseStatus = data.data?.VKSProviderLicense || null;
+      }
+    }, error => {
+      this.licenseStatusError = String(error);
+      this.licenseStatus = null;
+      this.licenseStatusLoading = false;
+    }, () => this.licenseStatusLoading = false);
+  }
+
+  selectVKSProviderLicense (event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    this.licenseFileContent = '';
+    this.licenseFileName = '';
+    if (!file) { return; }
+    if (file.size > 65536) {
+      this.licenseStatusError = this.translate.instant('PROVIDERDETAIL.LICENSE.FILE-TOO-LARGE');
+      input.value = '';
+      return;
+    }
+    this.licenseStatusError = '';
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.licenseFileContent = typeof reader.result === 'string' ? reader.result.trim() : '';
+      this.licenseFileName = this.licenseFileContent ? file.name : '';
+      if (!this.licenseFileContent) {
+        this.licenseStatusError = this.translate.instant('PROVIDERDETAIL.LICENSE.FILE-EMPTY');
+      }
+    };
+    reader.onerror = () => {
+      this.licenseStatusError = this.translate.instant('PROVIDERDETAIL.LICENSE.FILE-READ-FAILED');
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  uploadVKSProviderLicense (): void {
+    if (!this.authService.getUserInfo()?.admin || !this.licenseFileContent || this.uploadingLicense) { return; }
+    this.uploadingLicense = true;
+    this.licenseStatusError = '';
+    this.providerService.uploadVKSProviderLicense(this.providerId, this.licenseFileContent).subscribe(data => {
+      if (data.errors?.length) {
+        this.licenseStatusError = data.errors.map(error => error.message).join('; ');
+        return;
+      }
+      this.licenseStatus = data.data?.UploadVKSProviderLicense || null;
+      this.licenseFileContent = '';
+      this.licenseFileName = '';
+    }, error => {
+      this.licenseStatusError = String(error);
+      this.uploadingLicense = false;
+    }, () => this.uploadingLicense = false);
   }
 
   backToProvider (): void {

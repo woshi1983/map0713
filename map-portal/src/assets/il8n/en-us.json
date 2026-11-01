@@ -2954,6 +2954,19 @@
   },
   "PROVIDERDETAIL": {
      "BACK": "Back",
+     "LICENSE": {
+       "TITLE": "VKS License",
+       "SUPERVISOR-UID": "Supervisor UID",
+       "STATUS": "License status",
+       "ACTIVE": "Licensed",
+       "INACTIVE": "Unlicensed",
+       "EXPIRES-AT": "Expiration date",
+       "FILE": "License file",
+       "UPLOAD": "Upload license",
+       "FILE-TOO-LARGE": "License file must not exceed 64 KiB.",
+       "FILE-EMPTY": "License file cannot be empty.",
+       "FILE-READ-FAILED": "Failed to read license file."
+     },
      "TABS": {
        "NAMESPACE": "Namespaces",
        "NAMESPACE-PAGE": {

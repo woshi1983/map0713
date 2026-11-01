@@ -57,6 +57,28 @@
                 </clr-tab-content>
               </ng-template>
           </clr-tab>
+          <clr-tab *ngIf="provider.class === 'VKS'">
+              <button clrTabLink id="vks-license-link" type="button">{{ 'PROVIDERDETAIL.LICENSE.TITLE' | translate }}</button>
+              <clr-tab-content *clrIfActive id="vks-license-content">
+                <clr-spinner *ngIf="licenseStatusLoading">Loading ...</clr-spinner>
+                <div class="alert alert-danger" *ngIf="licenseStatusError" role="alert">{{ licenseStatusError }}</div>
+                <div *ngIf="licenseStatus && !licenseStatusLoading" class="vks-license-details">
+                  <p><strong>{{ 'PROVIDERDETAIL.LICENSE.SUPERVISOR-UID' | translate }}:</strong> {{ licenseStatus.supervisorUID || '-' }}</p>
+                  <p><strong>{{ 'PROVIDERDETAIL.LICENSE.STATUS' | translate }}:</strong>
+                    {{ (licenseStatus.licensed ? 'PROVIDERDETAIL.LICENSE.ACTIVE' : 'PROVIDERDETAIL.LICENSE.INACTIVE') | translate }}</p>
+                  <p *ngIf="licenseStatus.expiresAt"><strong>{{ 'PROVIDERDETAIL.LICENSE.EXPIRES-AT' | translate }}:</strong> {{ licenseStatus.expiresAt | date:'mediumDate' }}</p>
+                  <p *ngIf="licenseStatus.message">{{ licenseStatus.message }}</p>
+                </div>
+                <div *ngIf="authService.getUserInfo()?.admin" class="vks-license-upload">
+                  <label for="vks-license-file">{{ 'PROVIDERDETAIL.LICENSE.FILE' | translate }}</label>
+                  <input id="vks-license-file" type="file" accept=".lic,.txt" (change)="selectVKSProviderLicense($event)" />
+                  <span *ngIf="licenseFileName">{{ licenseFileName }}</span>
+                  <button type="button" class="btn btn-primary" [disabled]="!licenseFileContent || uploadingLicense" (click)="uploadVKSProviderLicense()">
+                    {{ 'PROVIDERDETAIL.LICENSE.UPLOAD' | translate }}
+                  </button>
+                </div>
+              </clr-tab-content>
+          </clr-tab>
         </clr-tabs>
     </div>
 

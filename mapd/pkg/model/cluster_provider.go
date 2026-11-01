@@ -109,6 +109,7 @@ type ClusterProviderTKG2SSpec struct {
 // running vSphere Kubernetes Service. The password is encrypted with the
 // provider ID, like the existing Supervisor provider credentials.
 type ClusterProviderVKSSpec struct {
+	SupervisorUID         string    `json:"supervisorUID,omitempty"`
 	Endpoint              string    `json:"endpoint,omitempty"`
 	CACert                []byte    `json:"caCert,omitempty"`
 	InsecureSkipTLSVerify bool      `json:"insecureSkipTLSVerify,omitempty"`
