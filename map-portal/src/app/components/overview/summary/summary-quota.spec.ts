@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 import { SummaryComponent } from './summary.component';
 
 describe('Summary quota metrics', () => {
-  it('counts only projects with finite positive resource quotas', () => {
+  it('includes resource usage from unlimited projects without treating finite quotas as a global limit', () => {
     const data = { data: { Organizations: { edge: { nodes: [
       { name: 'default', quota: { used: { cpus: 360, memoryMi: 1226744, storageGi: 2790 }, total: { cpus: -1, memoryMi: -1, storageGi: -1 } } },
       { name: 'unlimited', quota: { used: { cpus: 28, memoryMi: 106496, storageGi: 280 }, total: { cpus: 0, memoryMi: 0, storageGi: 0 } } },
@@ -19,13 +19,14 @@ describe('Summary quota metrics', () => {
     component.refreshOrgResourceMerics();
 
     expect(component.allOrgResourceMetrics.totalResource).toEqual({
-      cpu: { used: 2, total: 4 },
-      memory: { used: 4, total: 8 },
-      storage: { used: 25, total: 100 }
+      cpu: { used: 390, total: 4 },
+      memory: { used: 1305.992, total: 8 },
+      storage: { used: 3095, total: 100 }
     });
-    expect(component.allOrgResourceMetrics.orgMetrics.name).toEqual(['limited']);
-    expect(component.allOrgResourceMetrics.orgMetrics.cpuFree).toEqual([2]);
-    expect(component.allOrgResourceMetrics.orgMetrics.memoryFree).toEqual([4]);
-    expect(component.allOrgResourceMetrics.orgMetrics.storageFree).toEqual([75]);
+    expect(component.unlimitedQuota).toEqual({ cpu: true, memory: true, storage: true });
+    expect(component.allOrgResourceMetrics.orgMetrics.name).toEqual(['default', 'unlimited', 'limited']);
+    expect(component.allOrgResourceMetrics.orgMetrics.cpuFree).toEqual([0, 0, 2]);
+    expect(component.allOrgResourceMetrics.orgMetrics.memoryFree).toEqual([0, 0, 4]);
+    expect(component.allOrgResourceMetrics.orgMetrics.storageFree).toEqual([0, 0, 75]);
   });
 });

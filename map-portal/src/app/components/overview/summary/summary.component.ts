@@ -71,6 +71,7 @@ export class SummaryComponent implements OnInit {
   showExtensionDetailsModel = false;
 
   orgResourcesLoading = false;
+  unlimitedQuota = { cpu: false, memory: false, storage: false };
   allOrgResourceMetrics: OrgResourceMetrics = {
     totalResource: {
       cpu: {
@@ -254,6 +255,7 @@ export class SummaryComponent implements OnInit {
       if(!!data.data?.Organizations?.edge?.nodes){
         let allOrgMemoryUsedMi = 0;
         let allOrgMemoryTotalMi = 0;
+        this.unlimitedQuota = { cpu: false, memory: false, storage: false };
         for(let org of data.data.Organizations.edge.nodes){
           let cpuUsed = 0;
           let cpuFree = 0;
@@ -261,25 +263,31 @@ export class SummaryComponent implements OnInit {
           let memoryFree = 0;
           let storageUsed = 0;
           let storageFree = 0;
+          cpuUsed = org.quota.used.cpus;
+          memoryUsed = Math.round((org.quota.used.memoryMi / 1024 + Number.EPSILON) * 1000) / 1000;
+          storageUsed = org.quota.used.storageGi;
+          this.allOrgResourceMetrics.totalResource.cpu.used += cpuUsed;
+          allOrgMemoryUsedMi += org.quota.used.memoryMi;
+          this.allOrgResourceMetrics.totalResource.storage.used += storageUsed;
           if(org.quota.total.cpus > 0){
-            cpuFree = org.quota.total.cpus - org.quota.used.cpus;
-            cpuUsed = org.quota.used.cpus;
-            this.allOrgResourceMetrics.totalResource.cpu.used = this.allOrgResourceMetrics.totalResource.cpu.used + org.quota.used.cpus;
+            cpuFree = Math.max(0, org.quota.total.cpus - cpuUsed);
             this.allOrgResourceMetrics.totalResource.cpu.total = this.allOrgResourceMetrics.totalResource.cpu.total + org.quota.total.cpus;
+          } else if (cpuUsed > 0) {
+            this.unlimitedQuota.cpu = true;
           }
           if(org.quota.total.memoryMi > 0){
-            memoryFree = Math.round(((org.quota.total.memoryMi - org.quota.used.memoryMi) / 1024 + Number.EPSILON) * 1000 ) / 1000;
-            memoryUsed = Math.round((org.quota.used.memoryMi / 1024 + Number.EPSILON) * 1000 ) / 1000;
-            allOrgMemoryUsedMi = allOrgMemoryUsedMi + org.quota.used.memoryMi;
+            memoryFree = Math.max(0, Math.round(((org.quota.total.memoryMi - org.quota.used.memoryMi) / 1024 + Number.EPSILON) * 1000 ) / 1000);
             allOrgMemoryTotalMi = allOrgMemoryTotalMi + org.quota.total.memoryMi;
+          } else if (org.quota.used.memoryMi > 0) {
+            this.unlimitedQuota.memory = true;
           }
           if(org.quota.total.storageGi > 0){
-            storageFree = org.quota.total.storageGi - org.quota.used.storageGi;
-            storageUsed = org.quota.used.storageGi;
-            this.allOrgResourceMetrics.totalResource.storage.used = this.allOrgResourceMetrics.totalResource.storage.used + org.quota.used.storageGi;
+            storageFree = Math.max(0, org.quota.total.storageGi - storageUsed);
             this.allOrgResourceMetrics.totalResource.storage.total = this.allOrgResourceMetrics.totalResource.storage.total + org.quota.total.storageGi;
+          } else if (storageUsed > 0) {
+            this.unlimitedQuota.storage = true;
           }
-          if(org.quota.total.cpus > 0 || org.quota.total.memoryMi > 0 || org.quota.total.storageGi > 0){
+          if(cpuUsed > 0 || memoryUsed > 0 || storageUsed > 0 || org.quota.total.cpus > 0 || org.quota.total.memoryMi > 0 || org.quota.total.storageGi > 0){
             this.allOrgResourceMetrics.orgMetrics.name.push(org.name);
             this.allOrgResourceMetrics.orgMetrics.cpuUsed.push(cpuUsed);
             this.allOrgResourceMetrics.orgMetrics.cpuFree.push(cpuFree);

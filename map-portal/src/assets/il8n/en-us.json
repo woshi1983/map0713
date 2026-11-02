@@ -127,8 +127,9 @@
       "INSTANCE": "no instances"
     },
     "PROJECTRESOURCEINFO": "Project Resource Usage",
-    "PROJECTRESOURCEINFOTIPS": "Only projects with positive resource quotas are counted. Unlimited or unset quotas are excluded.",
-    "NOQUOTA": "No projects have resource quotas enabled!",
+    "PROJECTRESOURCEINFOTIPS": "Shows resources allocated to clusters in accessible projects, not live utilization. Projects without quotas count toward usage but not quota percentages.",
+    "NOQUOTA": "No cluster resources or quotas in the current projects.",
+    "UNLIMITED": "Includes unlimited projects",
     "CPUTOTAL": "Total CPU usage (Core)",
     "MEMTOTAL": "Total memory usage (Gi)",
     "STORAGETOTAL": "Total storage usage (Gi)",
@@ -136,7 +137,7 @@
     "CPUUSED": "CPU usage",
     "MEMUSED": "Memory usage",
     "STORAGEUSED": "Storage usage",
-    "PREPROJECTRESOURCE": "Quota Usage",
+    "PREPROJECTRESOURCE": "Project usage and quotas",
     "ALLOWANCE": "Quota balance"
   },
   "CLUSTERSMGMT": {

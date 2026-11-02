@@ -364,7 +364,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div echarts id="allTenantCpuChart" (chartInit)="allTenantCPUChartInit($event)" [options]="allTenantCPUOption" style="height: 160px;"></div>
+                        <div *ngIf="!unlimitedQuota.cpu" echarts id="allTenantCpuChart" (chartInit)="allTenantCPUChartInit($event)" [options]="allTenantCPUOption" style="height: 160px;"></div>
+                        <div *ngIf="unlimitedQuota.cpu" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>
@@ -379,7 +380,7 @@
                             <span style="font-size: 1.2vw;">
                               <b>{{allOrgResourceMetrics.totalResource.cpu.used}}</b>
                             </span>
-                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.cpu.total}}</span>
+                            <span style="font-size: 0.8vw;" *ngIf="!unlimitedQuota.cpu"> /{{allOrgResourceMetrics.totalResource.cpu.total}}</span>
                           </div>
                         </div>
                       </div>
@@ -392,7 +393,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div echarts id="allTenantMemoryChart" (chartInit)="allTenantMemoryChartInit($event)" [options]="allTenantMemoryOption" style="height: 160px;"></div>
+                        <div *ngIf="!unlimitedQuota.memory" echarts id="allTenantMemoryChart" (chartInit)="allTenantMemoryChartInit($event)" [options]="allTenantMemoryOption" style="height: 160px;"></div>
+                        <div *ngIf="unlimitedQuota.memory" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>
@@ -407,7 +409,7 @@
                             <span style="font-size: 1.2vw;">
                               <b>{{allOrgResourceMetrics.totalResource.memory.used}}</b>
                             </span>
-                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.memory.total}}</span>
+                            <span style="font-size: 0.8vw;" *ngIf="!unlimitedQuota.memory"> /{{allOrgResourceMetrics.totalResource.memory.total}}</span>
                           </div>
                         </div>
                       </div>
@@ -420,7 +422,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div echarts id="allTenantStorageChart" (chartInit)="allTenantStorageChartInit($event)" [options]="allTenantStoageOption" style="height: 160px;"></div>
+                        <div *ngIf="!unlimitedQuota.storage" echarts id="allTenantStorageChart" (chartInit)="allTenantStorageChartInit($event)" [options]="allTenantStoageOption" style="height: 160px;"></div>
+                        <div *ngIf="unlimitedQuota.storage" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>
@@ -435,7 +438,7 @@
                             <span style="font-size: 1.2vw;">
                               <b>{{allOrgResourceMetrics.totalResource.storage.used}}</b>
                             </span>
-                            <span style="font-size: 0.8vw;"> /{{allOrgResourceMetrics.totalResource.storage.total}}</span>
+                            <span style="font-size: 0.8vw;" *ngIf="!unlimitedQuota.storage"> /{{allOrgResourceMetrics.totalResource.storage.total}}</span>
                           </div>
                         </div>
                       </div>

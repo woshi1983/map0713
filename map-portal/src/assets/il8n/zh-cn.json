@@ -127,8 +127,9 @@
       "INSTANCE": "当前无实例"
     },
     "PROJECTRESOURCEINFO": "项目资源使用情况",
-    "PROJECTRESOURCEINFOTIPS": "仅统计设置了正数资源配额的项目；不计入无限制或未设置配额的项目。",
-    "NOQUOTA": "当前没有项目启用资源配额！",
+    "PROJECTRESOURCEINFOTIPS": "统计可访问项目中集群规格占用的资源，并非实时利用率。未设置配额的项目计入用量，但不参与配额百分比计算。",
+    "NOQUOTA": "当前项目没有集群资源占用或资源配额。",
+    "UNLIMITED": "包含不限额项目",
     "CPUTOTAL": "总CPU使用量(Core)",
     "MEMTOTAL": "总内存使用量(Gi)",
     "STORAGETOTAL": "总存储使用量(Gi)",
@@ -136,7 +137,7 @@
     "CPUUSED": "CPU使用量",
     "MEMUSED": "内存使用量",
     "STORAGEUSED": "存储使用量",
-    "PREPROJECTRESOURCE": "各项目资源配额用量",
+    "PREPROJECTRESOURCE": "各项目资源使用与配额",
     "ALLOWANCE": "配额余量"
   },
   "CLUSTERSMGMT": {
