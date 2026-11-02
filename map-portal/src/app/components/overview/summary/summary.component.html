@@ -364,8 +364,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div *ngIf="!unlimitedQuota.cpu" echarts id="allTenantCpuChart" (chartInit)="allTenantCPUChartInit($event)" [options]="allTenantCPUOption" style="height: 160px;"></div>
-                        <div *ngIf="unlimitedQuota.cpu" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
+                        <div echarts id="allTenantCpuChart" (chartInit)="allTenantCPUChartInit($event)" [options]="allTenantCPUOption" [style.height.px]="unlimitedQuota.cpu ? 135 : 160"></div>
+                        <div *ngIf="unlimitedQuota.cpu" style="font-size: 12px;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>
@@ -393,8 +393,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div *ngIf="!unlimitedQuota.memory" echarts id="allTenantMemoryChart" (chartInit)="allTenantMemoryChartInit($event)" [options]="allTenantMemoryOption" style="height: 160px;"></div>
-                        <div *ngIf="unlimitedQuota.memory" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
+                        <div echarts id="allTenantMemoryChart" (chartInit)="allTenantMemoryChartInit($event)" [options]="allTenantMemoryOption" [style.height.px]="unlimitedQuota.memory ? 135 : 160"></div>
+                        <div *ngIf="unlimitedQuota.memory" style="font-size: 12px;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>
@@ -422,8 +422,8 @@
               <div class="card card-no-shadow">
                   <div class="card-block" style="background-color: #fafafa">
                     <div class="card-text center-title" style="min-height: 160px;">
-                        <div *ngIf="!unlimitedQuota.storage" echarts id="allTenantStorageChart" (chartInit)="allTenantStorageChartInit($event)" [options]="allTenantStoageOption" style="height: 160px;"></div>
-                        <div *ngIf="unlimitedQuota.storage" style="padding-top: 3rem;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
+                        <div echarts id="allTenantStorageChart" (chartInit)="allTenantStorageChartInit($event)" [options]="allTenantStoageOption" [style.height.px]="unlimitedQuota.storage ? 135 : 160"></div>
+                        <div *ngIf="unlimitedQuota.storage" style="font-size: 12px;">{{ 'OVERVIEW.UNLIMITED' | translate }}</div>
                     </div>
                   </div>
               </div>

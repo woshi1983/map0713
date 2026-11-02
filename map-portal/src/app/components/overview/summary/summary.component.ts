@@ -304,9 +304,21 @@ export class SummaryComponent implements OnInit {
         const cpuPercent = this.allOrgResourceMetrics.totalResource.cpu.total === 0 ? 0 : Number((this.allOrgResourceMetrics.totalResource.cpu.used / this.allOrgResourceMetrics.totalResource.cpu.total)) * 100;
         const memoryPercent = this.allOrgResourceMetrics.totalResource.memory.total === 0 ? 0 : Number((this.allOrgResourceMetrics.totalResource.memory.used / this.allOrgResourceMetrics.totalResource.memory.total)) * 100;
         const storagePercent = this.allOrgResourceMetrics.totalResource.storage.total === 0 ? 0 : Number((this.allOrgResourceMetrics.totalResource.storage.used / this.allOrgResourceMetrics.totalResource.storage.total)) * 100;
-        this.drawAllTenantCpuGauge(Math.round((cpuPercent + Number.EPSILON) * 100) /100);
-        this.drawAllTenantMemoryGauge(Math.round((memoryPercent + Number.EPSILON) * 100) /100);
-        this.drawAllTenantStorageGauge(Math.round((storagePercent + Number.EPSILON) * 100) /100);
+        if (this.unlimitedQuota.cpu) {
+          this.allTenantCPUOption = this.drawUsageBreakdownChart(this.allOrgResourceMetrics.orgMetrics, 'cpuUsed', 'Core', '#0072a3');
+        } else {
+          this.drawAllTenantCpuGauge(Math.round((cpuPercent + Number.EPSILON) * 100) /100);
+        }
+        if (this.unlimitedQuota.memory) {
+          this.allTenantMemoryOption = this.drawUsageBreakdownChart(this.allOrgResourceMetrics.orgMetrics, 'memoryUsed', 'Gi', '#60b515');
+        } else {
+          this.drawAllTenantMemoryGauge(Math.round((memoryPercent + Number.EPSILON) * 100) /100);
+        }
+        if (this.unlimitedQuota.storage) {
+          this.allTenantStoageOption = this.drawUsageBreakdownChart(this.allOrgResourceMetrics.orgMetrics, 'storageUsed', 'Gi', '#f58403');
+        } else {
+          this.drawAllTenantStorageGauge(Math.round((storagePercent + Number.EPSILON) * 100) /100);
+        }
         this.drawAllTenantResourceUsageBar(this.allOrgResourceMetrics.orgMetrics);
         // compare the first five
         let cpuNameList = [];
@@ -344,6 +356,22 @@ export class SummaryComponent implements OnInit {
         this.drawStorageUsageTop5Bar(storageNameList, storageSortedResult);
       }
     }, (e) => this.toast.show( this.translate.instant('MESSAGE.SHARED.UNGET')+` ${e}`, this.translate.instant('MESSAGE.SUMMARY.GET-ORG-RESOURCE-FAILED'), {toastClass: 'alert-danger', closeButton: true, extendedTimeOut: 0, timeOut: 0}), () => this.orgResourcesLoading = false)
+  }
+
+  private drawUsageBreakdownChart(metrics: OrgMetrics, field: 'cpuUsed' | 'memoryUsed' | 'storageUsed', unit: string, color: string): EChartsOption {
+    const data = metrics.name.map((name, index) => ({ name, value: metrics[field][index] }))
+      .filter(item => item.value > 0);
+    return {
+      color: [color, '#9bc0d1', '#b4ca91', '#e7b47b', '#aa9dc4'],
+      tooltip: { trigger: 'item', formatter: `{b}: {c} ${unit} ({d}%)` },
+      series: [{
+        type: 'pie',
+        radius: ['48%', '76%'],
+        center: ['50%', '50%'],
+        label: { show: false },
+        data
+      }]
+    };
   }
 
   drawClusterHealthyChart(healthyClusterCount: number, unhealthyClusterCount: number): void {

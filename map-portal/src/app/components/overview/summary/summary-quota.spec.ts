@@ -28,5 +28,13 @@ describe('Summary quota metrics', () => {
     expect(component.allOrgResourceMetrics.orgMetrics.cpuFree).toEqual([0, 0, 2]);
     expect(component.allOrgResourceMetrics.orgMetrics.memoryFree).toEqual([0, 0, 4]);
     expect(component.allOrgResourceMetrics.orgMetrics.storageFree).toEqual([0, 0, 75]);
+    expect((component.allTenantCPUOption.series[0] as any).type).toBe('pie');
+    expect((component.allTenantCPUOption.series[0] as any).data).toEqual([
+      { name: 'default', value: 360 },
+      { name: 'unlimited', value: 28 },
+      { name: 'limited', value: 2 }
+    ]);
+    expect((component.allTenantMemoryOption.series[0] as any).type).toBe('pie');
+    expect((component.allTenantStoageOption.series[0] as any).type).toBe('pie');
   });
 });
