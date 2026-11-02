@@ -32,7 +32,7 @@
                 </div>
             </div>
           </div>
-          <div class="clr-col-lg-4 clr-col-12">
+          <div class="clr-col-lg-4 clr-col-12" *ngIf="authService.getUserInfo()?.admin">
               <div class="card card-no-shadow" style="margin-top: .6rem;">
                 <div class="card-block" style="background-color: #fafafa">
                   <div class="card-text">

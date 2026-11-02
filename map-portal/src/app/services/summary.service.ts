@@ -8,14 +8,14 @@ import { Observable } from 'rxjs';
 export class SummaryService {
   constructor (private apollo: Apollo) { }
 
-  getBasicMetrics (): Observable<any> {
+  getBasicMetrics (includePlatformMetrics: boolean): Observable<any> {
     return this.apollo.query<any>({
       query: gql`
-        query {
+        query BasicMetrics($includePlatformMetrics: Boolean!) {
           Organizations(page: {limit: -1}) {
             totalCount
           }
-          Metrics {
+          Metrics @include(if: $includePlatformMetrics) {
             activeUsers
           }
           Components(page: {limit: -1}) {
@@ -40,6 +40,7 @@ export class SummaryService {
             totalCount
           }
         }`,
+      variables: { includePlatformMetrics },
       errorPolicy: 'all'
     });
   }

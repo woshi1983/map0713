@@ -116,7 +116,7 @@ export class SummaryComponent implements OnInit {
 
   refreshBasicMerics(): void {
     this.basicMetricsLoading = true;
-    this.summaryService.getBasicMetrics().subscribe( data => {
+    this.summaryService.getBasicMetrics(!!this.authService.getUserInfo()?.admin).subscribe( data => {
       if (!!data.errors){
         const {clusters, otherErrors} = splitSummaryErrors(data.errors);
         if (clusters.length > 0) {
