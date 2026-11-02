@@ -1082,7 +1082,7 @@
       </div>
       <div style="line-height: 30px;">
         <span class="valueShow">{{ 'PROVIDERMGMT.ADDPROVIDER-PAGE3.BASIC-PAGE.TYPE' | translate }}</span>
-        <span>{{selectedProvider.class === 'TKGS' ? 'vSphere with Tanzu (TKGS)' : 'Tanzu Kubernetes Grid (TKGM)'}}</span>
+        <span>{{selectedProvider.class === 'VKS' ? 'VMware vSphere Kubernetes Service (VKS)' : selectedProvider.class === 'TKGS' ? 'vSphere with Tanzu (TKGS)' : 'Tanzu Kubernetes Grid (TKGM)'}}</span>
       </div>
       <div style="line-height: 30px;">
         <span class="valueShow">{{ 'PROVIDERMGMT.ACTION.VIEWPROVIDER-PAGE.ADDRESS' | translate }}</span>
