@@ -1,4 +1,7 @@
 # Installation and Configuration Guide
+
+For the current v0.13.0 local-image package and part1 dependency bundle, see the [offline deployment guide](offline_deployment_v0_13_0.md). The online-image workflow below describes an older installer.
+
 MAP can be installed by one of three approaches: 
 
 - **Online installer:** The installer downloads MAP's images from our official repository. For this reason, the installer is very small in size.

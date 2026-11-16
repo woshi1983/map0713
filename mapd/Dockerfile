@@ -3,12 +3,13 @@ FROM golang:1.20.6 as builder
 WORKDIR /usr/src/app
 
 ARG GOPROXY "https://proxy.golang.org,direct"
+ARG MAP_IMAGE_REGISTRY ""
 
 COPY go.mod go.sum ./
 RUN go mod download -x && go mod verify
 
 COPY . .
-RUN make
+RUN make IMAGE_REGISTRY="${MAP_IMAGE_REGISTRY}"
 
 
 FROM rockylinux:9.2 as base

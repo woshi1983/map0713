@@ -29,7 +29,7 @@
 #    example: make clean_image -e IMAGEREGISTRY=registry.example.com -e IMAGEREPO=map
 
 
-IMAGEREGISTRY?=harbor.huaruicloud.cn
+IMAGEREGISTRY?=
 IMAGEREPO?=map
 YARN_REGISTRY?=https://mirrors.cloud.tencent.com/npm/
 # used for run console in local
@@ -41,8 +41,9 @@ BUILDPATH=$(CURDIR)
 PACKAGEPATH=dist
 SRCPATH=./src
 VERSION ?= $(shell cat ${BUILDPATH}/VERSION)
-IMAGEVERSION="${IMAGEREGISTRY}/${IMAGEREPO}/map-console:${VERSION}"
-LASTIMAGEVERSION="${IMAGEREGISTRY}/${IMAGEREPO}/map-console:latest"
+IMAGEPREFIX=$(if $(IMAGEREGISTRY),$(IMAGEREGISTRY)/,)
+IMAGEVERSION="${IMAGEPREFIX}${IMAGEREPO}/map-console:${VERSION}"
+LASTIMAGEVERSION="${IMAGEPREFIX}${IMAGEREPO}/map-console:latest"
 
 # docker parameters
 DOCKERCMD=$(shell which docker)
@@ -72,7 +73,7 @@ run:
 	${DOCKERRUN} -d -e MAP_API_ENDPOINT=${MAP_API_ENDPOINT} -e DEX_IDP_ENDPOINT=${DEX_IDP_ENDPOINT} -e TZ='Asia/Shanghai' -p 0.0.0.0:80:80 --restart unless-stopped --name map-console ${IMAGEVERSION}
 
 .PHONY: release
-release: release_image push_image
+release: release_image
 
 release_image:
 	$(info "====build image of console for release...====")
@@ -80,6 +81,7 @@ release_image:
 
 push_image:
 		$(info "====push image to registry...====")
+		@test -n "${IMAGEREGISTRY}" || { echo "IMAGEREGISTRY is required for push_image" >&2; exit 1; }
 		${DOCKERLOGIN} ${IMAGEREGISTRY} && \
 		${DOCKERPUSH} ${IMAGEVERSION} && \
 		${DOCKERPUSH} ${LASTIMAGEVERSION}

@@ -103,7 +103,7 @@ type LogConfig struct {
 }
 
 const (
-	dockerComposeTemplate = `version: '{{.MAPVersion}}'
+	dockerComposeTemplate = `version: '2.4'
 services:
   log:
     image: {{if ne .PublicImageRegistry ""}}{{.PublicImageRegistry}}/{{end}}map/rsyslog:8.2106.0
@@ -130,7 +130,7 @@ services:
     networks:
       - map
   mariadb:
-    image: library/mariadb:10.6.7
+    image: mariadb:10.6.7
     container_name: map-mariadb
     restart: unless-stopped
     cap_drop:
@@ -354,6 +354,36 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-NginX-Proxy true;
     proxy_pass ${MAP_API_ENDPOINT};
+  }
+
+  # Dex uses a fixed logo path. Serve the MAP branding image there, or the
+  # same default image used by the portal when no custom logo is configured.
+  location = /dex/theme/logo.png {
+    proxy_method GET;
+    proxy_pass ${MAP_API_ENDPOINT}/api/branding/logo;
+    proxy_intercept_errors on;
+    error_page 404 = /portal/assets/images/logo.png;
+    add_header Cache-Control "no-store" always;
+  }
+
+  location = /portal/assets/images/logo.png {
+    root /usr/share/nginx/html;
+    add_header Cache-Control "no-store" always;
+  }
+
+  location = /portal/assets/dex-branding.js {
+    root /usr/share/nginx/html;
+    add_header Cache-Control "no-store" always;
+  }
+
+  location = /dex/auth/local/login {
+    proxy_set_header Accept-Encoding "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_pass ${DEX_IDP_ENDPOINT};
+    sub_filter '</body>' '<script src="/portal/assets/dex-branding.js" defer></script></body>';
+    sub_filter_once on;
   }
 
   location ^~ /dex/ {

@@ -18,14 +18,15 @@ set -e
 set -o noglob
 
 ROOTDIR=$(cd $(dirname $0); pwd)
-IMAGE_REGISTRY=${1:-harbor.huaruicloud.cn}
+IMAGE_REGISTRY=${1-}
 IMAGE_REPO=${IMAGE_REPO:-map}
 VERSION=$(cat "${ROOTDIR}/../VERSION")
 GOPROXY=${GOPROXY:-"https://proxy.golang.org,direct"}
+IMAGE_PREFIX=${IMAGE_REGISTRY:+${IMAGE_REGISTRY}/}
 
 pushd $ROOTDIR/..
     make clean && \
-    docker build --build-arg GOPROXY=${GOPROXY} -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/map-base:${VERSION} -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/map-base:latest --target base . && \
-    docker build --build-arg GOPROXY=${GOPROXY} -t ${IMAGE_REPO}/map-prepare:${VERSION} -t ${IMAGE_REPO}/map-prepare:latest -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/map-prepare:${VERSION} -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/map-prepare:latest --target prepare . && \
-    docker build --build-arg GOPROXY=${GOPROXY} -t ${IMAGE_REPO}/mapd:${VERSION} -t ${IMAGE_REPO}/mapd:latest -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/mapd:${VERSION} -t ${IMAGE_REGISTRY}/${IMAGE_REPO}/mapd:latest .
+    docker build --build-arg GOPROXY="${GOPROXY}" --build-arg MAP_IMAGE_REGISTRY="${IMAGE_REGISTRY}" -t "${IMAGE_PREFIX}${IMAGE_REPO}/map-base:${VERSION}" --target base . && \
+    docker build --build-arg GOPROXY="${GOPROXY}" --build-arg MAP_IMAGE_REGISTRY="${IMAGE_REGISTRY}" -t "${IMAGE_PREFIX}${IMAGE_REPO}/map-prepare:${VERSION}" --target prepare . && \
+    docker build --build-arg GOPROXY="${GOPROXY}" --build-arg MAP_IMAGE_REGISTRY="${IMAGE_REGISTRY}" -t "${IMAGE_PREFIX}${IMAGE_REPO}/mapd:${VERSION}" .
 popd

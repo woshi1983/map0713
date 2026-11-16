@@ -15,47 +15,41 @@
 # limitations under the License.
 
 set -e
-set -o noglob
-
-ROOTDIR=$(cd $(dirname $0); pwd)
-IMAGE_REGISTRY=${1:-harbor.huaruicloud.cn}
-IMAGE_REPO=${IMAGE_REPO:-map}
+ROOTDIR=$(cd "$(dirname "$0")" && pwd)
 VERSION=$(cat "${ROOTDIR}/../VERSION")
+workdir="${ROOTDIR}/../dist"
+mkdir -p "$workdir"
 
+images=()
+while IFS=, read -r type name; do
+    [ "$type" = image ] || continue
+    name="${name/\$\{VERSION\}/$VERSION}"
+    case "$name" in
+        harbor.huaruicloud.cn/*)
+            echo "Public Harbor image is forbidden in the offline core package: $name" >&2
+            exit 1;;
+    esac
+    docker image inspect "$name" >/dev/null || {
+        echo "Missing local core image: $name" >&2
+        exit 1
+    }
+    images+=("$name")
+done < "${ROOTDIR}/core.csv"
 
-workdir=${ROOTDIR}/../dist
-mkdir -p ${workdir}
-pushd ${workdir}
-    rm -rf map-offline-installer
-    cp -r ${ROOTDIR}/installer map-offline-installer
-    cmd="docker save -o map-offline-installer/map-${VERSION//./_}.tar"
-    while read line; do
-        evalline=$(eval "echo ${line}")
-        if [ -n ${evalline} ]; then
-            type=$(echo ${evalline} | awk -F ',' '{print $1}')
-            name=$(echo ${evalline} | awk -F ',' '{print $2}')
-            case $type in
-            image)
-                docker pull $name
+if [ "${#images[@]}" -eq 0 ]; then
+    echo "No core images listed in ${ROOTDIR}/core.csv" >&2
+    exit 1
+fi
 
-                cmd="$cmd $name"
-                if [ q"$(echo ${line} | awk -F ':' '{print $2}')" == q"\${VERSION}" ]; then
-                    latest_name="${name%$VERSION}latest"
-                    docker tag $name $latest_name
-
-                    cmd="$cmd $latest_name"
-                fi
-                ;;
-            bundle)
-                echo "WARN: auto-skipped ${name} due to: bundle images shall not be included in core images!" 1>&2
-                ;;
-            esac
-        fi
-    done < ${ROOTDIR}/core.csv
-    eval "$cmd" && \
-    tar -czf map-offline-installer-${VERSION//./_}.tgz map-offline-installer
-
-    rm -rf map-online-installer
-    cp -r ${ROOTDIR}/installer map-online-installer && \
-    tar -czf map-online-installer-${VERSION//./_}.tgz map-online-installer
-popd
+package_dir="${workdir}/map-offline-installer"
+rm -rf "$package_dir"
+mkdir -p "$package_dir"
+cp "${ROOTDIR}/installer/common.sh" \
+   "${ROOTDIR}/installer/config.yml.tmpl" \
+   "${ROOTDIR}/installer/installer.sh" \
+   "${ROOTDIR}/installer/prepare.sh" \
+   "${ROOTDIR}/installer/upload_dependency.sh" \
+   "$package_dir/"
+printf '%s\n' "${images[@]}" > "${package_dir}/core-images.txt"
+docker save -o "${package_dir}/map-${VERSION//./_}.tar" "${images[@]}"
+tar -czf "${workdir}/map-offline-installer-${VERSION//./_}.tgz" -C "$workdir" map-offline-installer

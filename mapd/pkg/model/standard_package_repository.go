@@ -4,6 +4,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,8 +13,7 @@ import (
 )
 
 const (
-	DefaultStandardPackageRepositoryName  = "harbor-standard-v210"
-	DefaultStandardPackageRepositoryImage = "harbor.huaruicloud.cn/tkg/packages/standard/repo:v2.1.0"
+	DefaultStandardPackageRepositoryName = "standard-v210"
 )
 
 type StandardPackageRepository struct {
@@ -50,10 +50,15 @@ func ModelStandardPackageRepository(next mapd.RegisterHandler) mapd.RegisterHand
 		if count > 0 {
 			return nil
 		}
+		registry := strings.TrimRight(mapd.PublicImageRegistry, "/")
+		if registry == "" {
+			// An air-gapped install must explicitly register its internal package repository.
+			return nil
+		}
 		return db.Create(&StandardPackageRepository{
 			ID:      uuid.New(),
 			Name:    DefaultStandardPackageRepositoryName,
-			Image:   DefaultStandardPackageRepositoryImage,
+			Image:   registry + "/tkg/packages/standard/repo:v2.1.0",
 			Default: true,
 		}).Error
 	}
